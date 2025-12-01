@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +48,7 @@
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
-using namespace tensorrt_llm::cutlass_extensions;
+using namespace tensorrt_llm::kernels::cutlass_extensions;
 
 using namespace CUTLASS_MOE_GEMM_KERNELS_NAMESPACE;
 using CUTLASS_MOE_GEMM_NAMESPACE::TmaWarpSpecializedGroupedGemmInput;
@@ -149,7 +150,8 @@ struct RandomDistributionRoutingConfig : public RoutingConfig
         , name(std::move(name))
     {
         TLLM_CHECK_WITH_INFO(num_experts == probabilities.size(),
-            "Cannot create random routing distribution. Number of experts does not match the number of weights");
+            "Cannot create random routing distribution. Number of "
+            "experts does not match the number of weights");
     }
 
     void start()
@@ -559,7 +561,7 @@ public:
     int mGroupSize = -1;
     std::array<LoraParams, NUM_BUFFERS> mLoraParams{};
 
-    std::optional<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> mSelectedConfig = std::nullopt;
+    std::optional<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> mSelectedConfig = std::nullopt;
 
     int64_t mBufferIndex = 0;
     size_t mGemmProfilerWorkspaceSize = 0;
@@ -712,12 +714,14 @@ public:
 #ifdef USING_OSS_CUTLASS_MOE_GEMM
         mGemmProfilerBackend.init(mMoERunner, GemmProfilerBackend::GemmToProfile::Undefined, typeToDtypeID<DataType>(),
             typeToDtypeID<WeightType>(), typeToDtypeID<OutputType>(), mNumExperts, mK, mHiddenSize, mHiddenSize,
-            mInterSize, mGroupSize, mActType, mUseBias, mUseLora, /*min_latency_mode=*/false,
+            mInterSize, mGroupSize, mActType, mUseBias, mUseLora,
+            /*min_latency_mode=*/false,
             /*need_weights=*/false, parallelism_config, /*enable_alltoall=*/false);
 #else
         mGemmProfilerBackend.init(mMoERunner, GemmProfilerBackend::GemmToProfile::Undefined, typeToDtypeID<DataType>(),
             typeToDtypeID<WeightType>(), typeToDtypeID<OutputType>(), mNumExperts, mK, mHiddenSize, mHiddenSize,
-            mInterSize, mGroupSize, mActType, mUseBias, mUseLora, /*min_latency_mode=*/false,
+            mInterSize, mGroupSize, mActType, mUseBias, mUseLora,
+            /*min_latency_mode=*/false,
             /*need_weights=*/false, parallelism_config);
 #endif
 
@@ -800,7 +804,8 @@ public:
     {
         mBufferIndex = (mBufferIndex + 1) % NUM_BUFFERS;
 
-        // Setup the profiler state for this iteration. CUDA Graphs will do this when it captures the graph.
+        // Setup the profiler state for this iteration. CUDA Graphs will do this
+        // when it captures the graph.
         if (gemm_to_profile != GemmToProfile::LAYER && !useCudaGraph)
         {
             prepareGemmProfiler(gemm_to_profile);
@@ -842,7 +847,8 @@ public:
         auto tactics = mMoERunner.getTactics(static_cast<MoeGemmId>(gemm_to_profile));
         ::nvtx3::scoped_range nvtx(tensorrt_llm::common::nvtx::nextColor(),
             "Tactic Profiling GEMM " + std::to_string(static_cast<int>(gemm_to_profile)));
-        // We save space by reusing the same workspace buffer for all tactics when doing full layer profiling. So we
+        // We save space by reusing the same workspace buffer for all tactics when
+        // doing full layer profiling. So we
         // need to hardcode the buffer index to 0.
         auto old_buffer_index = mBufferIndex;
         mBufferIndex = 0;
@@ -976,7 +982,9 @@ public:
             auto tactics = mMoERunner.getTactics(static_cast<MoeGemmId>(gemm_to_profile))[tactic_idx];
             if (static_cast<int>(gemm_to_profile) != static_cast<int>(mGemmProfilerBackend.mGemmToProfile))
             {
-                throw std::runtime_error("Configuration mismatch between mGemmProfilerBackend and runMoEPermute");
+                throw std::runtime_error(
+                    "Configuration mismatch between "
+                    "mGemmProfilerBackend and runMoEPermute");
             }
             mGemmProfilerBackend.mSampleIndex = mBufferIndex % mGemmProfilerBackend.NUM_ROUTING_SAMPLES;
             mGemmProfilerBackend.runProfiler(mTotalTokens, tactics,
@@ -1060,7 +1068,8 @@ void MixtureOfExpertsBenchmark<TypeTuple_>::runBenchmark(benchmark::State& state
     state.counters["gemm_to_profile"] = (int) gemm_to_profile;
 
     std::stringstream ss;
-    ss << "Experts,K,Hidden,Inter,TP,EP,Rank,Tokens,Bias,Scale,Actfn,Tactic1,Tactic2,Gemm,Routing=";
+    ss << "Experts,K,Hidden,Inter,TP,EP,Rank,Tokens,Bias,Scale,Actfn,Tactic1,"
+          "Tactic2,Gemm,Routing=";
     for (auto v : {num_experts, top_k, hidden_size, inter_size, tp_size, ep_size, world_rank, num_tokens,
              (int) mUseBias, (int) mUseFinalScale, (int) mActType, tactic_idx1, tactic_idx2, (int) gemm_to_profile})
     {
@@ -1070,7 +1079,8 @@ void MixtureOfExpertsBenchmark<TypeTuple_>::runBenchmark(benchmark::State& state
     // state.SetLabel(ss.str());
     state.SetLabel(routingConfigCache.at(routing_config)->getName());
 
-    // Always use EP size for moe config until we support TP+EP, we just divide the inter size for TP
+    // Always use EP size for moe config until we support TP+EP, we just divide
+    // the inter size for TP
     MOEParallelismConfig parallelism_config{tp_size, world_rank / ep_size, ep_size, world_rank % ep_size};
     initBuffersPermute(
         num_tokens, hidden_size, inter_size, num_experts, top_k, routing_config, parallelism_config, gemm_to_profile);

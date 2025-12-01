@@ -16,9 +16,8 @@
  */
 
 #include "doraPlugin.h"
-#include "tensorrt_llm/common/assert.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/memoryUtils.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
@@ -261,7 +260,8 @@ int32_t DoraPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc, nvinfer
         int idx = 0;
         for (int reqId = 0; reqId < numReqs; reqId++)
         {
-            // loraWeightModulePtrs has 3 pointers for each module: A,B, and an optional DoRA magnitude
+            // loraWeightModulePtrs has 3 pointers for each module: A,B, and an
+            // optional DoRA magnitude
             // the current DoRA plugin does not apply LoRA, so A and B are ignored.
             RequestType const reqType = static_cast<RequestType const>(hostRequestTypes[reqId]);
             auto const* modulePtr = reinterpret_cast<void const*>(loraWeightModulePtrs[reqId * 3 + 2]);
@@ -285,7 +285,10 @@ int32_t DoraPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc, nvinfer
         }
         if (idx != numTokens)
         {
-            TLLM_LOG_ERROR("LoraParams and input dims don't match, lora tokens %d input tokens %d", idx, numTokens);
+            TLLM_LOG_ERROR(
+                "LoraParams and input dims don't match, lora tokens %d "
+                "input tokens %d",
+                idx, numTokens);
             return -1;
         }
     }

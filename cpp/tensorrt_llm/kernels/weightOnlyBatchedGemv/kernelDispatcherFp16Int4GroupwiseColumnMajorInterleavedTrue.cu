@@ -17,10 +17,8 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/kernelDispatcher.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 INSTANTIATE_WEIGHT_ONLY_CUDA_DISPATCHERS(
@@ -29,6 +27,5 @@ INSTANTIATE_WEIGHT_ONLY_CUDA_DISPATCHERS(
 INSTANTIATE_WEIGHT_ONLY_CUDA_DISPATCHERS(
     KernelType::FP16Int4Groupwise, FP16DetailsA, Int4DetailsW, ColumnMajorInterleaved, true, 128);
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

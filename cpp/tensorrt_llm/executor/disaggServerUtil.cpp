@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,13 @@
  */
 
 #include "tensorrt_llm/executor/disaggServerUtil.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/utils.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
 
 #include <mutex>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::disagg_executor
+namespace tensorrt_llm::executor::disagg_executor
 {
 
 class DisaggExecutorOrchestrator::Impl
@@ -192,8 +190,9 @@ public:
                 mContextResponsesCV.wait(lock, pred);
                 storeResponses();
             }
-            TLLM_CHECK_WITH_INFO(
-                !contextIdx.has_value(), "contextIdx should not be provided when mhasContextAwaitThreads is true");
+            TLLM_CHECK_WITH_INFO(!contextIdx.has_value(),
+                "contextIdx should not be provided when "
+                "mhasContextAwaitThreads is true");
 
             return responses;
         }
@@ -555,6 +554,4 @@ std::vector<std::unique_ptr<texec::Executor>> const& DisaggExecutorOrchestrator:
 
 DisaggExecutorOrchestrator::~DisaggExecutorOrchestrator() = default;
 
-} // namespace executor::disagg_executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::disagg_executor

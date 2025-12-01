@@ -20,7 +20,8 @@
 
 namespace tr = tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -49,7 +50,7 @@ void NcclCommunicatorOp::recv(th::Tensor& tensor, int64_t fromRank) const
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto trtllmNcclCommunicator
     = torch::jit::class_<tensorrt_llm::torch_ext::NcclCommunicatorOp>("trtllm", "NcclCommunicatorOp")

@@ -32,10 +32,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 __forceinline__ __device__ float copysignf_pos(float a, float b)
 {
@@ -437,6 +434,4 @@ INSTANTIATE_RGLRU_UPDATE_DATA_TYPE(__nv_bfloat16);
 #endif
 #undef INSTANTIATE_RGLRU_UPDATE_DATA_TYPE
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

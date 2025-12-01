@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +26,8 @@
 #include <torch/extension.h>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -251,14 +253,17 @@ void memsetExpertIds(torch::Tensor expertsIds, torch::Tensor recvRankCountCumSum
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_comm(Tensor[] inputs, Tensor send_rank_cum_sum, Tensor send_indices, Tensor "
-        "recv_rank_cum_sum, Tensor recv_indices, Tensor all_workspaces, int output_allocation_count, int ep_rank, int "
-        "ep_size, bool[]? need_zero_output=None, bool? use_low_precision=None) -> Tensor[]");
+        "moe_comm(Tensor[] inputs, Tensor send_rank_cum_sum, Tensor "
+        "send_indices, Tensor "
+        "recv_rank_cum_sum, Tensor recv_indices, Tensor all_workspaces, int "
+        "output_allocation_count, int ep_rank, int "
+        "ep_size, bool[]? need_zero_output=None, bool? use_low_precision=None) "
+        "-> Tensor[]");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -268,7 +273,9 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("moe_initialize_workspace(Tensor(a!) all_workspaces, int ep_rank, int ep_size) -> ()");
+    m.def(
+        "moe_initialize_workspace(Tensor(a!) all_workspaces, int ep_rank, int "
+        "ep_size) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -299,9 +306,12 @@ TORCH_LIBRARY_IMPL(trtllm, CompositeExplicitAutograd, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "mnnvl_moe_alltoallv_prepare_without_allgather(Tensor experts_ids, Tensor? experts_statics, "
-        "Tensor allWorkspace, int max_token_count_per_rank, int ep_rank, int ep_size, int expert_count, int "
-        "slot_count, int top_k) -> (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor?)");
+        "mnnvl_moe_alltoallv_prepare_without_allgather(Tensor experts_ids, "
+        "Tensor? experts_statics, "
+        "Tensor allWorkspace, int max_token_count_per_rank, int ep_rank, int "
+        "ep_size, int expert_count, int "
+        "slot_count, int top_k) -> (Tensor, Tensor, Tensor, Tensor, Tensor, "
+        "Tensor?)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -312,7 +322,8 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "memset_expert_ids(Tensor(a!) experts_ids, Tensor recv_rank_count_cumsum, int max_token_count_per_rank, int "
+        "memset_expert_ids(Tensor(a!) experts_ids, Tensor "
+        "recv_rank_count_cumsum, int max_token_count_per_rank, int "
         "top_k, "
         "int invalid_expert_id, int ep_size) -> ()");
 }

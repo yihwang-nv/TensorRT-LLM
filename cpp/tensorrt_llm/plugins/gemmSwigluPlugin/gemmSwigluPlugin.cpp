@@ -17,7 +17,6 @@
 
 #include "gemmSwigluPlugin.h"
 #include "cutlass_extensions/gemm_configs.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <NvInferRuntimeBase.h>
 #include <numeric>
@@ -65,7 +64,8 @@ void GemmSwigluPluginProfiler::runTactic(
     size_t bpe = getBytePerElement(mType);
 
     // Workspace size required by gemm runner
-    // NB: this function will throw exception when selected tactic exceeds SMEM, which is then
+    // NB: this function will throw exception when selected tactic exceeds SMEM,
+    // which is then
     // caught by gemmPluginProfiler and it will register this tactic as invalid
     size_t wsSizeRunner = mRunner->getWorkspaceSize(m, n, k);
 
@@ -413,7 +413,8 @@ IPluginV2* GemmSwigluPluginCreator::createPlugin(char const* name, PluginFieldCo
     {
         // GemmSwigluPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
-        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false);
         QuantMode quantMode = QuantMode{};
         auto* obj = new GemmSwigluPlugin(quantMode, type, hasBias, scale_d0, scale_d1, scale_output, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
@@ -433,8 +434,10 @@ IPluginV2* GemmSwigluPluginCreator::deserializePlugin(
     // call GemmSwigluPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
-        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
+        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ true);
         auto* obj = new GemmSwigluPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;

@@ -23,9 +23,9 @@
 #include "cutlass/float8.h"
 #include "cutlass/half.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::opened_cutlass_kernels
+namespace opened_cutlass_kernels
 {
 /////////////////////////////////////////////////
 // GemmAllReduce implementation specializations
@@ -206,7 +206,8 @@ std::shared_ptr<PersistentWorkspaceInterface> GemmAllReduceImplRunner<GemmTraits
 {
     auto swapped_problem = swapAB(max_problem);
     std::shared_ptr<PersistentWorkspaceInterface> pworkspace;
-    // Iterate over all launch configs and return workspace with largest allocation size so that it
+    // Iterate over all launch configs and return workspace with largest
+    // allocation size so that it
     // will work for all launch configs.
     for (auto launch_config : getSupportedLaunchConfigs())
     {
@@ -296,6 +297,6 @@ template class GemmAllReduceImplRunner<GemmTypes<cutlass::float_e2m1_t, cutlass:
     cutlass::bfloat16_t, cutlass::float_ue4m3_t, cutlass::float_ue4m3_t, cutlass::layout::RowMajor,
     cutlass::layout::ColumnMajor, cutlass::layout::RowMajor, cutlass::layout::RowMajor>>;
 
-} // namespace kernels::opened_cutlass_kernels
+} // namespace opened_cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

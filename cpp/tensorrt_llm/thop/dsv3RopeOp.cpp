@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +39,8 @@ namespace tk = tensorrt_llm::kernels;
 namespace tc = tensorrt_llm::common;
 namespace tr = tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -126,17 +128,18 @@ void MLARopeGeneration(torch::Tensor fused_q, // [tokens, num_heads, (nope_dim +
     torch::optional<torch::Tensor> out_scale,           // [1] output quant scale
     std::optional<torch::Tensor> block_ids_per_seq, std::vector<std::optional<torch::Tensor>> mla_tensor_params,
     int64_t const predicted_tokens_per_seq, int64_t const layer_idx, int64_t const num_heads,
-    int64_t const num_kv_heads, int64_t const head_size,
-
-    int64_t const tokens_per_block, int64_t const attention_window_size, int64_t const sink_token_length,
-    int64_t const beam_width, int64_t const quant_mode, double const q_scaling, int64_t q_lora_rank,
-    int64_t kv_lora_rank, int64_t qk_nope_head_dim, int64_t qk_rope_head_dim, int64_t v_head_dim)
+    int64_t const num_kv_heads, int64_t const head_size, int64_t const tokens_per_block,
+    int64_t const attention_window_size, int64_t const sink_token_length, int64_t const beam_width,
+    int64_t const quant_mode, double const q_scaling, int64_t q_lora_rank, int64_t kv_lora_rank,
+    int64_t qk_nope_head_dim, int64_t qk_rope_head_dim, int64_t v_head_dim)
 {
     TLLM_CHECK_WITH_INFO(
         head_size == kv_lora_rank + qk_rope_head_dim, "head_size must = kv_lora_rank + qk_rope_head_dim");
     TLLM_CHECK_WITH_INFO(num_kv_heads == 1, "num_kv_heads must = 1");
-    TORCH_CHECK(
-        mla_tensor_params.size() == 1, "Expecting 1 tensor for custom MLA tensor params: helix_position_offsets.");
+    TORCH_CHECK(mla_tensor_params.size() == 1,
+        "Expecting 1 tensor for custom "
+        "MLA tensor params: "
+        "helix_position_offsets.");
 
     auto stream = at::cuda::getCurrentCUDAStream(fused_q.get_device());
     auto const kv_cache_quant_mode = tc::QuantMode(uint32_t(quant_mode));
@@ -201,11 +204,14 @@ void MLARopeGeneration(torch::Tensor fused_q, // [tokens, num_heads, (nope_dim +
     auto const bytes_per_block = block_size * elem_bytes;
     int32_t const kv_factor = 1; // 1 for mla, 2 for mha/gqa
     bool const fp8_context_fmha = kv_cache_quant_mode.hasFp8KvCache();
-    // Commonly, cyclic_attention_window_size, and max_attention_window_size will be the same
+    // Commonly, cyclic_attention_window_size, and max_attention_window_size will
+    // be the same
     // unless each layer has different attention window sizes.
     // the kv_cache capacity.
-    // The cyclic_attention_window_size will determine the cyclic kv cache position of new tokens.
-    // Note that this cyclic_attention_window_size might be smaller than the actual kv cache capactity.
+    // The cyclic_attention_window_size will determine the cyclic kv cache
+    // position of new tokens.
+    // Note that this cyclic_attention_window_size might be smaller than the
+    // actual kv cache capactity.
     int const cyclic_attention_window_size = attention_window_size;
     int const max_cyclic_attention_window_size = cyclic_attention_window_size;
     bool const can_use_one_more_block = beam_width > 1;
@@ -305,7 +311,7 @@ void MLARopeGeneration(torch::Tensor fused_q, // [tokens, num_heads, (nope_dim +
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

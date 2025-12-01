@@ -34,10 +34,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 class XQAKernelList
 {
@@ -66,7 +63,8 @@ public:
             if (kernelMeta.mSM != mSM || kernelMeta.mDataType != mDataType)
                 continue;
 
-            // Cubins for kernels that would take the JIT path are removed from kernelMeta.
+            // Cubins for kernels that would take the JIT path are removed from
+            // kernelMeta.
             if (kernelMeta.mCubin == nullptr)
                 continue;
 
@@ -90,7 +88,8 @@ public:
             funcInfo.mKernelType = getGlobalVar<XQAKernelType>(mDriver, hlib, "kernelType", false)
                                        .value_or(XQAKernelType::kAMPERE_WARP_SPECIALIZED);
 
-            /* Set 46KB threshold here because we have to take static/driver shared memory into consideration. */
+            /* Set 46KB threshold here because we have to take static/driver shared
+             * memory into consideration. */
             if (funcInfo.mSharedMemBytes >= 46 * 1024)
             {
                 CUdevice dev;
@@ -114,12 +113,14 @@ public:
         TLLM_CHECK_WITH_INFO(num_q_heads % num_kv_heads == 0, "numQHeads should be multiple of numKVHeads.");
         unsigned int num_q_heads_over_kv = num_q_heads / num_kv_heads;
         unsigned int beam_width = xqaParams.beam_width;
-        // MultiQueryToken kernels can support any num_q_heads_over_kv that is power of 2.
+        // MultiQueryToken kernels can support any num_q_heads_over_kv that is power
+        // of 2.
         unsigned int kernel_num_q_heads_over_kv = xqaParams.multi_query_tokens ? 0 : num_q_heads_over_kv;
         unsigned int m_tilesize;
         if (xqaParams.multi_query_tokens)
         {
-            // MultiQueryToken kernels can handle either 16/32 for M direction per CTA.
+            // MultiQueryToken kernels can handle either 16/32 for M direction per
+            // CTA.
             m_tilesize = xqaParams.generation_input_length <= 16 ? 16 : 32;
         }
         else
@@ -198,7 +199,8 @@ public:
         decoder_params.rotaryEmbeddingInvFreqCache = xqaParams.rotary_embedding_inv_freq_cache;
         decoder_params.rotaryEmbeddingMaxPositions = xqaParams.rotary_embedding_max_positions;
         // The rotary_embedding_inv_freq_cache for QKVPreprocessing.
-        // Use the xqaParams.rotary_embedding_inv_freq_cache input when the buildDecoderInfoKernel is skipped.
+        // Use the xqaParams.rotary_embedding_inv_freq_cache input when the
+        // buildDecoderInfoKernel is skipped.
         float const* rotary_inv_freq_buf = xqaParams.rotary_embedding_inv_freq_cache;
         if (decoder_params.isBuildDecoderInfoKernelNeeded() || xqaParams.multi_query_tokens)
         {
@@ -208,7 +210,8 @@ public:
         sync_check_cuda_error(stream);
 
         // IDEA: Store rotary_processed Q buffer to output buffer.
-        // NOTE: MHA kernels should read kv cache that has already been appended with new tokens' kv cache.
+        // NOTE: MHA kernels should read kv cache that has already been appended
+        // with new tokens' kv cache.
         void* xqa_q_input_ptr = inputScratch;
         // The preprocessing kernel that applies RoPE and updates kv cache.
         QKVPreprocessingParams<T, KVCacheBuffer> preprocessingParams;
@@ -273,7 +276,8 @@ public:
 
         if (xqaParams.multi_query_tokens)
         {
-            // MultiQueryTokens (generation_input_length > 1) need extra parameters (like qSeqLen, headGrpSize, and
+            // MultiQueryTokens (generation_input_length > 1) need extra parameters
+            // (like qSeqLen, headGrpSize, and
             // mask). Input parameters for MultiQueryTokens kernels.
             unsigned int headGrpSize = num_q_heads_over_kv;
             // Use mTileSize = 16 kernels when qSeqLen <= 16.
@@ -285,7 +289,8 @@ public:
             unsigned int maxQSeqLen = xqaParams.spec_decoding_is_generation_length_variable ? // true for ReDrafter
                 xqaParams.spec_decoding_max_generation_length
                                                                                             : qSeqLen;
-            // TODO: merge SingleQueryToken params and MultiQueryTokens params into one kernelParams.
+            // TODO: merge SingleQueryToken params and MultiQueryTokens params into
+            // one kernelParams.
             void* kernelParams[] = {&maxQSeqLen, &launchParams.num_k_heads, &headGrpSize, &cuQSeqLens,
                 &launchParams.output, &xqa_q_input_ptr, &maskPtr, &launchParams.kvCacheParams, &launchParams.batch_size,
                 &launchParams.kv_scale_quant_orig, &launchParams.scratch};
@@ -494,7 +499,8 @@ bool DecoderXQAImplPrecompiled::shouldUse(XQAParams const& xqaParams, bool forCo
         SUPPORT_RETURN_FALSE("streaming-llm");
     }
 
-    // OPTIMIZE: For the standard generation-phase MHA, there are still extra limitations.
+    // OPTIMIZE: For the standard generation-phase MHA, there are still extra
+    // limitations.
     // NOTE: Medusa mode = Multi_query_tokens > 1.
     int const nbQHeads = xqaParams.num_q_heads;
     int const nbKVHeads = xqaParams.num_kv_heads;
@@ -517,7 +523,8 @@ bool DecoderXQAImplPrecompiled::shouldUse(XQAParams const& xqaParams, bool forCo
         }
         for (int i = 0; i < xqaParams.batch_size; ++i)
         {
-            // Only checks for non-medusa case, because medusa may not accept all tokens in host_past_key_value_lengths.
+            // Only checks for non-medusa case, because medusa may not accept all
+            // tokens in host_past_key_value_lengths.
             // FIXME(perkzz): medusa should check for sliding-window attention.
             if (!xqaParams.multi_query_tokens
                 && xqaParams.host_past_key_value_lengths[i] + 1 > xqaParams.max_attention_window_size)
@@ -560,6 +567,4 @@ void DecoderXQAImplPrecompiled::runWithKVBlockArray(
     runDispatchBuffer<KVBlockArray>(xqa_params, kv_block_array, stream);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

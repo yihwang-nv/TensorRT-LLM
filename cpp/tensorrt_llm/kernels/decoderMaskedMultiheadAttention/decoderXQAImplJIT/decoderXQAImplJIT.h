@@ -24,10 +24,7 @@
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <unordered_set>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 class DecoderXQARunnerResource;
 
@@ -51,12 +48,14 @@ private:
     std::shared_ptr<tensorrt_llm::common::CUDADriverWrapper> mDriver;
     std::shared_ptr<DecoderXQARunnerResource> mResource;
 
-    //! Whether DecoderXQAImplJIT needs to compile 2 sets (tilesize = 16, 32) kernels for spec-dec
+    //! Whether DecoderXQAImplJIT needs to compile 2 sets (tilesize = 16, 32)
+    // kernels for spec-dec
     bool needHMMASpecDec(XQAParams const& xqaParams, bool forConfigurePlugin) const;
 
     //! Whether DecoderXQAImplJIT supports xqaParams.
     bool supportConfig(XQAParams const& xqaParams, bool forConfigurePlugin) const;
-    //! Whether DecoderXQAImplJIT has perf gain over the default (non-XQA-optimized) implementation.
+    //! Whether DecoderXQAImplJIT has perf gain over the default
+    //(non-XQA-optimized) implementation.
     bool mayHavePerfGain(XQAParams const& xqaParams) const;
 
     void prepareForActualXQAParams(XQAParams const& xqaParams);
@@ -75,6 +74,4 @@ private:
     jit::CubinObjKey getCubinObjKeyFromXQAParams(XQAParams const& xqaParams) const;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -22,15 +22,14 @@
 #include <string>
 #include <tuple>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct SparseAttentionParams
 {
-    int32_t* sparse_kv_indices{nullptr};     // [num_kv_heads, num_sparse_kv_indices]
-    int32_t* sparse_attn_indices{nullptr};   // [num_kv_heads, num_sparse_attn_indices]
+    int32_t* sparse_kv_indices{nullptr};     // [num_kv_heads,
+                                             // num_sparse_kv_indices]
+    int32_t* sparse_attn_indices{nullptr};   // [num_kv_heads,
+                                             // num_sparse_attn_indices]
     int32_t* sparse_kv_offsets{nullptr};     // [num_contexts + 1]
     int32_t* sparse_attn_offsets{nullptr};   // [num_generations + 1]
     int32_t sparse_mla_topk{0};              // for DSA attention
@@ -75,13 +74,12 @@ struct PairReduceOp
     }
 };
 
-void invokeGatherKvPageOffsets(int32_t* output_kv_page_offsets, // [num_head_kv, batch_size, 2, max_num_pages_per_seq]
+void invokeGatherKvPageOffsets(int32_t* output_kv_page_offsets, // [num_head_kv, batch_size, 2,
+                                                                // max_num_pages_per_seq]
     int32_t* output_seq_lengths,                                // [num_head_kv, batch_size]
     int32_t const* kv_page_offsets,                             // [batch_size, 2, max_num_pages_per_seq]
     int32_t const* seq_lengths,                                 // [batch_size]
     SparseAttentionParams const sparse_params, int32_t const batch_size, int32_t const num_head_kv,
     int32_t const tokens_per_page, int32_t const max_num_pages_per_seq, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

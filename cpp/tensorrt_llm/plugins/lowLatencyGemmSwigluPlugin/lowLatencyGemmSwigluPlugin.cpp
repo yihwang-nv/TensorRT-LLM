@@ -19,7 +19,6 @@
 #include "lowLatencyGemmSwigluPlugin.h"
 #include "low_latency_gemm_swiglu.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaFp8Utils.h"
 #include "tensorrt_llm/common/logger.h"
 #include <NvInferRuntime.h>
@@ -436,7 +435,8 @@ IPluginV2* LowLatencyGemmSwigluPluginCreator::createPlugin(char const* name, Plu
     {
 
         //
-        // LowLatencyGemmSwigluPluginCreator is unique and shared for an engine generation
+        // LowLatencyGemmSwigluPluginCreator is unique and shared for an engine
+        // generation
         // Create plugin profiler with shared tactics map
         auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/*inference=*/false);
         auto* obj = new LowLatencyGemmSwigluPlugin(type, scale_output, scale_d0, scale_d1, pluginProfiler);

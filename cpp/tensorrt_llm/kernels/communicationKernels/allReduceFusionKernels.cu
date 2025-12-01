@@ -20,9 +20,9 @@
 #include "tensorrt_llm/kernels/quantization.cuh"
 #include <cooperative_groups.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ar_fusion
+namespace ar_fusion
 {
 template <int NRanks>
 struct SyncComm
@@ -133,7 +133,8 @@ public:
         if (threadIdx.x < NRanks)
         {
             m_flag_value = next_flag(m_flag_value);
-            // To avoid the ABA problem, we need to synchronize the correct flag value to all barrier_flags, even if the
+            // To avoid the ABA problem, we need to synchronize the correct flag value
+            // to all barrier_flags, even if the
             // corresponding CTA has not been launched.
             for (int flag_idx = blockIdx.x; flag_idx < kBarrierFlagCount; flag_idx += gridDim.x)
             {
@@ -764,7 +765,10 @@ void allreduce_fusion_op(AllReduceFusionParams const& params)
         else                                                                                                           \
         {                                                                                                              \
             TLLM_CHECK_WITH_INFO(false,                                                                                \
-                "allreduce_fusion_kernel: AllReduceFusionPattern=kARResidualRMSNormFP4Quant can not work with "        \
+                "allreduce_fusion_kernel: "                                                                            \
+                "AllReduceFusionPattern="                                                                              \
+                "kARResidualRMSNormFP4Quant can not work "                                                             \
+                "with "                                                                                                \
                 "DType=float!");                                                                                       \
         }                                                                                                              \
     }                                                                                                                  \
@@ -781,7 +785,10 @@ void allreduce_fusion_op(AllReduceFusionParams const& params)
         else                                                                                                           \
         {                                                                                                              \
             TLLM_CHECK_WITH_INFO(false,                                                                                \
-                "allreduce_fusion_kernel: AllReduceFusionPattern=kARResidualRMSNormOutFP4Quant can not work with "     \
+                "allreduce_fusion_kernel: "                                                                            \
+                "AllReduceFusionPattern="                                                                              \
+                "kARResidualRMSNormOutFP4Quant can not "                                                               \
+                "work with "                                                                                           \
                 "DType=float!");                                                                                       \
         }                                                                                                              \
     }                                                                                                                  \
@@ -821,6 +828,6 @@ void allreduce_fusion_op(AllReduceFusionParams const& params)
     DISPATCH_RANKS(16);
     TLLM_CHECK_WITH_INFO(false, "allreduce_fusion_kernel: unsupported ranks number!");
 }
-}; // namespace kernels::ar_fusion
+}; // namespace ar_fusion
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

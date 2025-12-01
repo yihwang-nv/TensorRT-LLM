@@ -27,8 +27,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
 #ifdef ENABLE_FP8
 
 constexpr int CTA_SIZE = 256;
@@ -466,6 +464,5 @@ DEFINE_INVOKE_QUANTIZE_MATRIX(__nv_bfloat16, float, __nv_fp8_e4m3);
 #endif
 
 #endif // ENABLE_FP8
-} // namespace common
 
 TRTLLM_NAMESPACE_END

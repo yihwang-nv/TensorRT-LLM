@@ -19,10 +19,8 @@
 #include "tensorrt_llm/common/config.h"
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels_oss
 {
 
@@ -32,10 +30,9 @@ template <typename ActivationType, typename WeightType, typename ScaleZeroType, 
 void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const* B,
     ScaleZeroType const* weight_scales, ScaleZeroType const* weight_zero_points, BiasType const* biases,
     float const alpha, OutputType* C, int m, int n, int k, int const group_size,
-    tensorrt_llm::cutlass_extensions::CutlassGemmConfig gemm_config, char* workspace, size_t workspace_bytes,
+    tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig gemm_config, char* workspace, size_t workspace_bytes,
     cudaStream_t stream, int* occupancy = nullptr);
 
 } // namespace cutlass_kernels_oss
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

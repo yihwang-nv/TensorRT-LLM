@@ -25,9 +25,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 template <typename T>
 struct QuantTypeStaticVals;
 
@@ -45,13 +42,12 @@ template <>
 struct QuantTypeStaticVals<__nv_fp8_e4m3>
 {
     static constexpr float MAX_VAL = 448.f;
-    // Ref: https://github.com/pytorch/FBGEMM/blob/main/fbgemm_gpu/experimental/gen_ai/src/quantize/quantize.cu#L720
+    // Ref:
+    // https://github.com/pytorch/FBGEMM/blob/main/fbgemm_gpu/experimental/gen_ai/src/quantize/quantize.cu#L720
     static constexpr float MIN_SCALING_FACTOR = 1.0f / (448.f * 512.f);
     static constexpr float MIN_SCALING_FACTOR_RCP = (448.f * 512.f);
 };
 
 #endif // ENABLE_FP8
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

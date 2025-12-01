@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,15 @@
  */
 
 #include "bindings.h"
+#include "tensorrt_llm/nanobind/common/customCasters.h"
+
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/decoderBuffers.h"
-
 #include "tensorrt_llm/batch_manager/microBatchScheduler.h"
 #include "tensorrt_llm/batch_manager/peftCacheManager.h"
 #include "tensorrt_llm/batch_manager/rnnStateManager.h"
 #include "tensorrt_llm/batch_manager/sequenceSlotManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/nanobind/common/bindTypes.h"
-#include "tensorrt_llm/nanobind/common/customCasters.h"
 #include "tensorrt_llm/runtime/gptDecoderBatched.h"
 #include "tensorrt_llm/runtime/runtimeKernels.h"
 #include "tensorrt_llm/runtime/torch.h"
@@ -49,9 +49,7 @@ namespace tr = tensorrt_llm::runtime;
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::batch_manager
+namespace tensorrt_llm::nanobind::batch_manager
 {
 
 void initBindings(nb::module_& m)
@@ -414,7 +412,8 @@ void initBindings(nb::module_& m)
             }
         },
         nb::arg("requests"), nb::arg("tokens"), nb::arg("beam_idx"),
-        "Add new tokens to multiple LLM requests. The tokens vector should contain tokens for beam beam_idx of all "
+        "Add new tokens to multiple LLM requests. The tokens vector should "
+        "contain tokens for beam beam_idx of all "
         "requests in order.");
 
     m.def(
@@ -494,6 +493,4 @@ void initBindings(nb::module_& m)
         nb::arg("num_context_logits_prefix_sum"), nb::arg("buffer_manager"), "Make decoding batch input.");
 }
 
-} // namespace nanobind::batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::batch_manager

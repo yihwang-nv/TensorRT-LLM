@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 
 #include <NvInferRuntime.h>
 #include <optional>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class WorldConfig
 {
@@ -183,6 +180,4 @@ private:
     std::vector<SizeType32> mDeviceIds;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

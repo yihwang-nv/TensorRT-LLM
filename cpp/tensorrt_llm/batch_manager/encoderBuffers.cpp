@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +17,8 @@
  */
 
 #include "encoderBuffers.h"
-#include "tensorrt_llm/batch_manager/llmRequest.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -29,9 +29,7 @@
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 EncoderBuffers::EncoderBuffers(
@@ -41,8 +39,10 @@ EncoderBuffers::EncoderBuffers(
     init(maxBatchSize, modelConfig, worldConfig, runtime);
 
     // pre-allocate based on max buffer sizes
-    // Note: pre-allocation can be done directly instead of empty-->reshape, but it is ok extract the common reshape()
-    // utility because the buffer shapes can be dynamically set during runtime as well
+    // Note: pre-allocation can be done directly instead of empty-->reshape, but
+    // it is ok extract the common reshape()
+    // utility because the buffer shapes can be dynamically set during runtime
+    // as well
     initBufferSizes(maxBatchSize, modelConfig, worldConfig, runtime);
 }
 
@@ -124,8 +124,8 @@ void EncoderBuffers::updateBufferSizes(RequestVector const& requests, ModelConfi
     {
         encoderInputLen += req->getEncoderInputLen();
         encoderOutputLen += req->getEncoderOutputLen();
-        maxInputLengthInBatch
-            = std::max(maxInputLengthInBatch, req->getEncoderInputLen()); // Decoder input is encoder output
+        maxInputLengthInBatch = std::max(maxInputLengthInBatch,
+            req->getEncoderInputLen()); // Decoder input is encoder output
     }
 
     // update buffer shapes
@@ -140,7 +140,8 @@ void EncoderBuffers::reshape(TllmRuntime const& runtime, ModelConfig const& mode
 
     if (modelConfig.isMultiModal())
     {
-        return; // multimodal models do not need to set position id, etc. or any output tensors
+        return; // multimodal models do not need to set position id, etc. or any
+                // output tensors
     }
 
     inputIds->reshape(ITensor::makeShape({encoderInputLen}));
@@ -207,7 +208,8 @@ void EncoderBuffers::setFromInputs(RequestVector const& requests, ModelConfig co
     {
         if (modelConfig.isMultiModal())
         {
-            auto batchedInputShape = requests.front()->getEncoderInputFeatures()->getShape(); // [1, 3, H, W]
+            auto batchedInputShape = requests.front()->getEncoderInputFeatures()->getShape(); // [1, 3,
+                                                                                              // H, W]
             batchedInputShape.d[0] = encoderInputLen;                                         // [batch_size, 3, H, W]
             inputFeatures->reshape(batchedInputShape);
         }
@@ -227,10 +229,12 @@ void EncoderBuffers::setFromInputs(RequestVector const& requests, ModelConfig co
         SizeType32 const outputLength = llmReq->getEncoderOutputLen();
         if (llmReq->getEncoderInputFeatures())
         {
-            auto const& reqFeatures
-                = llmReq
-                      ->getEncoderInputFeatures(); // whisper: [length, featureDim]; Vision: [batch_size, channel, W, H]
-            TLLM_LOG_DEBUG("EncoderBuffers::setFromInputs - request id = %d, input features length = %d",
+            auto const& reqFeatures = llmReq->getEncoderInputFeatures(); // whisper: [length, featureDim];
+                                                                         // Vision: [batch_size, channel,
+                                                                         // W, H]
+            TLLM_LOG_DEBUG(
+                "EncoderBuffers::setFromInputs - request id = %d, input "
+                "features length = %d",
                 llmReq->mRequestId, inputLength);
             manager.copy(*reqFeatures, *ITensor::slice(inputFeatures, offset, inputLength));
             offset += inputLength;
@@ -378,8 +382,10 @@ void EncoderBuffers::rearrangeOutputs(RequestVector const& requests, ModelConfig
     {
         // copy from internal buffer to request-owned external buffers
         size = req->getEncoderOutputLen();
-        TLLM_LOG_DEBUG("EncoderBuffers::rearrangeOutputs - req: %d, encoderOutput shape = (%d, %d)", req->mClientId,
-            req->getEncoderOutput()->getShape().d[0], req->getEncoderOutput()->getShape().d[1]);
+        TLLM_LOG_DEBUG(
+            "EncoderBuffers::rearrangeOutputs - req: %d, "
+            "encoderOutput shape = (%d, %d)",
+            req->mClientId, req->getEncoderOutput()->getShape().d[0], req->getEncoderOutput()->getShape().d[1]);
         TLLM_LOG_DEBUG("EncoderBuffers::rearrangeOutputs - req: %d, enc output size = %d", req->mClientId, size);
 
         if (worldConfig.isPipelineParallel())
@@ -413,7 +419,9 @@ void EncoderBuffers::updateReqOutputShape(RequestVector const& requests, TllmRun
     {
         if (modelConfig.isMultiModal())
         {
-            auto shape = encoderOutput->getShape(); // [batch_size, prompt_vocab_size, feature_dim]
+            auto shape = encoderOutput->getShape(); // [batch_size,
+                                                    // prompt_vocab_size,
+                                                    // feature_dim]
             shape.d[0] = req->getEncoderOutputLen();
             req->getPromptEmbeddingTableMutable() = manager.emptyTensor(MemoryType::kGPU, encoderOutput->getDataType());
             req->getPromptEmbeddingTableMutable().value()->reshape(shape);
@@ -473,7 +481,8 @@ void EncoderBuffers::setBufferSizes(RequestVector const& contextRequests, Reques
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
-    numRequests = 0; /// total number of requests that need encoder information (context requests +
+    numRequests = 0; /// total number of requests that need encoder information
+                     /// (context requests +
                      /// generation requests * beam width)
     encoderInputLen = 0;
     encoderOutputLen = 0;
@@ -522,7 +531,8 @@ void EncoderBuffers::fill(
         for (auto const& llmReq : requests)
         {
             // 1. only ctx requests should gather the encoder output
-            // 2. only gen requests should tile encoder input lengths info by beam width
+            // 2. only gen requests should tile encoder input lengths info by beam
+            // width
             bool isCtx = llmReq->isContextInitState();
             if (isCtx)
             {
@@ -537,7 +547,9 @@ void EncoderBuffers::fill(
             {
                 auto const reqBeamWidth = llmReq->getBeamWidthByIter();
                 std::fill_n(std::back_inserter(inputLengthsAll), reqBeamWidth,
-                    llmReq->getEncoderOutputLen()); // although encoder output is not needed, gen phase still needs the
+                    llmReq->getEncoderOutputLen()); // although encoder output
+                                                    // is not needed, gen
+                                                    // phase still needs the
                                                     // encoder length info for cross kv cache. Also tile by beam width
             }
         }
@@ -560,6 +572,4 @@ void EncoderBuffers::insertInputTensors(TensorMap& inputMap)
 
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

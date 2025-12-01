@@ -16,14 +16,11 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/speculativeDecodingModule.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class LookaheadModule : public SpeculativeDecodingModule
@@ -53,6 +50,4 @@ private:
     executor::LookaheadDecodingConfig mExecutionConfig;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

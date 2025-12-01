@@ -18,7 +18,6 @@
 
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 
 #include <utility>
@@ -27,25 +26,24 @@
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
 using RequestIdType = tensorrt_llm::batch_manager::LlmRequest::RequestIdType;
 
-/// See tensorrt_llm/_torch/pyexecutor/connector.py for details on the Connector API.
+/// See tensorrt_llm/_torch/pyexecutor/connector.py for details on the Connector
+/// API.
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_connector
+namespace tensorrt_llm::batch_manager::kv_connector
 {
 
-/// @brief The KV connector manager. This is passed into the C++ KV Cache Manager when adding sequences.
+/// @brief The KV connector manager. This is passed into the C++ KV Cache
+/// Manager when adding sequences.
 class KvCacheConnectorManager
 {
 public:
     KvCacheConnectorManager() = default;
     virtual ~KvCacheConnectorManager() = default;
 
-    /// @brief Handle the getNumNewMatchedTokens call inside the C++ KV Cache Manager.
+    /// @brief Handle the getNumNewMatchedTokens call inside the C++ KV Cache
+    /// Manager.
     /// @return The number of tokens that can be loaded from remote KV cache.
     virtual SizeType32 getNumNewMatchedTokens(LlmRequest const& request, SizeType32 numComputedTokens) = 0;
 };
 
-} // namespace batch_manager::kv_connector
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_connector

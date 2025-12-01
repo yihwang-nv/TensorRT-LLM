@@ -98,10 +98,7 @@ __device__ static inline void cp_wait_group()
 #endif
 }
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T, int N>
 struct packed_data_type;
@@ -1222,7 +1219,7 @@ __launch_bounds__(64, 8) __global__
     float reg_result[CHANNELS_PER_THREAD];
     float reg_input[DCONV][CHANNELS_PER_THREAD];
 
-    // load weights
+// load weights
 #pragma unroll
     for (int row = 0; row < DCONV; ++row)
     {
@@ -1251,7 +1248,7 @@ __launch_bounds__(64, 8) __global__
         {
             reg_result[c] = 0.0f;
         }
-        // conv
+// conv
 #pragma unroll
         for (int row = 0; row < DCONV; ++row)
         {
@@ -1261,7 +1258,7 @@ __launch_bounds__(64, 8) __global__
                 reg_result[c] += reg_weight[row][c] * reg_input[row][c];
             }
         }
-        // add bias
+// add bias
 #pragma unroll
         for (int c = 0; c < CHANNELS_PER_THREAD; ++c)
         {
@@ -1318,6 +1315,4 @@ template void invokeMambaConv1dGeneration<half>(MambaConv1dParamsBase& params, c
 template void invokeMambaConv1dGeneration<__nv_bfloat16>(MambaConv1dParamsBase& params, cudaStream_t stream);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

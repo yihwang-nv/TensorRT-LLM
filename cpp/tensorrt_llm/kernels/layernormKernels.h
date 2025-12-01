@@ -23,10 +23,7 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T, typename QuantT>
 void invokeGeneralLayerNorm(T* out, T const* input, T const* gamma, T const* beta, float const eps, int const tokens,
@@ -34,6 +31,4 @@ void invokeGeneralLayerNorm(T* out, T const* input, T const* gamma, T const* bet
     bool use_diff_of_squares = true, float const* clamp_val = nullptr, float const* scale = nullptr,
     float* dynamic_scale = nullptr, float* sum_per_token = nullptr, QuantT* out_quant = nullptr);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

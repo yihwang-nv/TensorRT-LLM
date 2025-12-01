@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "quantizePerTokenPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/quantization.h"
 
 using namespace nvinfer1;
@@ -178,7 +177,8 @@ int QuantizePerTokenPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
     // outputs
     //     quant          [M(*), K]     Quantized activations.
     //     scale_tokens   [M(*), 1]     Per-token scales.
-    //     token_sums     [M(*), 1]     (Optional) Per-token sums of all the channels (before quantization).
+    //     token_sums     [M(*), 1]     (Optional) Per-token sums of all the
+    // channels (before quantization).
 
     int64_t m = 1;
     for (int ii = 0; ii < inputDesc[0].dims.nbDims - 1; ++ii)

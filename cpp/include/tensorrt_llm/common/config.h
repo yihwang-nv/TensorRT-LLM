@@ -26,7 +26,8 @@
  * \def TRTLLM_WRAPPED_NAMESPACE
  * If defined, this value will be used as the name of a namespace that wraps the
  * `tensorrt_llm::` namespace.
- * If THRUST_TRTLLM_WRAPPED_NAMESPACE is set, this will inherit that macro's value.
+ * If THRUST_TRTLLM_WRAPPED_NAMESPACE is set, this will inherit that macro's
+ * value.
  * This macro should not be used with any other TRTLLM namespace macros.
  */
 #ifdef TRTLLM_WRAPPED_NAMESPACE
@@ -43,7 +44,8 @@
  * This macro is inserted prior to all `namespace cub { ... }` blocks. It is
  * derived from TRTLLM_WRAPPED_NAMESPACE, if set, and will be empty otherwise.
  * It may be defined by users, in which case TRTLLM_NAMESPACE_PREFIX,
- * TRTLLM_NAMESPACE_POSTFIX, and TRTLLM_NAMESPACE_QUALIFIER must all be set consistently.
+ * TRTLLM_NAMESPACE_POSTFIX, and TRTLLM_NAMESPACE_QUALIFIER must all be set
+ * consistently.
  */
 #ifndef TRTLLM_NAMESPACE_PREFIX
 #define TRTLLM_NAMESPACE_PREFIX
@@ -54,7 +56,8 @@
  * This macro is inserted following the closing braces of all
  * `namespace tensorrt_llm { ... }` block. It is defined appropriately when
  * TRTLLM_WRAPPED_NAMESPACE is set, and will be empty otherwise. It may be
- * defined by users, in which case TRTLLM_NAMESPACE_PREFIX, TRTLLM_NAMESPACE_POSTFIX, and
+ * defined by users, in which case TRTLLM_NAMESPACE_PREFIX,
+ * TRTLLM_NAMESPACE_POSTFIX, and
  * TRTLLM_NAMESPACE_QUALIFIER must all be set consistently.
  */
 #ifndef TRTLLM_NAMESPACE_POSTFIX
@@ -63,10 +66,12 @@
 
 /**
  * \def TRTLLM_NAMESPACE_QUALIFIER
- * This macro is used to qualify members of tensorrt_llm:: when accessing them from
+ * This macro is used to qualify members of tensorrt_llm:: when accessing them
+ * from
  * outside of their namespace. By default, this is just `::cub`, and will be
  * set appropriately when TRTLLM_WRAPPED_NAMESPACE is defined. This macro may be
- * defined by users, in which case TRTLLM_NAMESPACE_PREFIX, TRTLLM_NAMESPACE_POSTFIX, and
+ * defined by users, in which case TRTLLM_NAMESPACE_PREFIX,
+ * TRTLLM_NAMESPACE_POSTFIX, and
  * TRTLLM_NAMESPACE_QUALIFIER must all be set consistently.
  */
 #ifndef TRTLLM_NAMESPACE_QUALIFIER
@@ -94,19 +99,48 @@
  * This macro is defined by TRTLLM and may not be overridden.
  */
 #define TRTLLM_NAMESPACE_BEGIN                                                                                         \
-    TRTLLM_NAMESPACE_PREFIX                                                                                            \
-    namespace tensorrt_llm                                                                                             \
+    TRTLLM_NAMESPACE_PREFIX namespace tensorrt_llm                                                                     \
     {                                                                                                                  \
-    TRTLLM_ABI_NAMESPACE_BEGIN
+        namespace common                                                                                               \
+        {                                                                                                              \
+        TRTLLM_ABI_NAMESPACE_BEGIN
 
 /**
  * \def TRTLLM_NAMESPACE_END
- * This macro is used to close a `tensorrt_llm::` namespace block, along with any
+ * This macro is used to close a `tensorrt_llm::` namespace block, along with
+ * any
  * enclosing namespaces requested by TRTLLM_WRAPPED_NAMESPACE, etc.
  * This macro is defined by TRTLLM and may not be overridden.
  */
 #define TRTLLM_NAMESPACE_END                                                                                           \
     TRTLLM_ABI_NAMESPACE_END                                                                                           \
+    } /* end namespace common*/                                                                                        \
+    } /* end namespace tensorrt_llm */                                                                                 \
+    TRTLLM_NAMESPACE_POSTFIX
+
+/**
+ * \def TRTLLM_KERNELS_NAMESPACE_BEGIN
+ * This macro is used to open a `tensorrt_llm::` namespace block, along with any
+ * enclosing namespaces requested by TRTLLM_WRAPPED_NAMESPACE, etc.
+ * This macro is defined by TRTLLM and may not be overridden.
+ */
+#define TRTLLM_KERNELS_NAMESPACE_BEGIN                                                                                 \
+    TRTLLM_NAMESPACE_PREFIX namespace tensorrt_llm                                                                     \
+    {                                                                                                                  \
+        namespace kernels                                                                                              \
+        {                                                                                                              \
+        TRTLLM_ABI_NAMESPACE_BEGIN
+
+/**
+ * \def TRTLLM_KERNELS_NAMESPACE_END
+ * This macro is used to close a `tensorrt_llm::` namespace block, along with
+ * any
+ * enclosing namespaces requested by TRTLLM_WRAPPED_NAMESPACE, etc.
+ * This macro is defined by TRTLLM and may not be overridden.
+ */
+#define TRTLLM_KERNELS_NAMESPACE_END                                                                                   \
+    TRTLLM_ABI_NAMESPACE_END                                                                                           \
+    } /* end namespace kernels */                                                                                      \
     } /* end namespace tensorrt_llm */                                                                                 \
     TRTLLM_NAMESPACE_POSTFIX
 

@@ -17,7 +17,6 @@
 
 #include "fp8RowwiseGemmPlugin.h"
 #include "cutlass_extensions/gemm_configs.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <NvInferRuntimeBase.h>
 #include <numeric>
@@ -64,7 +63,8 @@ void Fp8RowwiseGemmPluginProfiler::runTactic(int m, int n, int k, Fp8RowwiseGemm
     size_t bpeOut = getBytePerElement(mType);
 
     // Workspace size required by gemm runner
-    // NB: this function will throw exception when selected tactic exceeds SMEM, which is then
+    // NB: this function will throw exception when selected tactic exceeds SMEM,
+    // which is then
     // caught by gemmPluginProfiler and it will register this tactic as invalid
     size_t wsSizeRunner = mRunner->getWorkspaceSize(m, n, k);
 
@@ -73,7 +73,8 @@ void Fp8RowwiseGemmPluginProfiler::runTactic(int m, int n, int k, Fp8RowwiseGemm
     int8_t* wsBytePointer = reinterpret_cast<int8_t*>(workspace);
     void* aTmp = reinterpret_cast<void*>(nextWorkspacePtr(wsBytePointer, wsByteOffset, m * k * bpeIn));
     void* bTmp = reinterpret_cast<void*>(nextWorkspacePtr(wsBytePointer, wsByteOffset, n * k * bpeIn));
-    // void* cTmp = reinterpret_cast<void*>(nextWorkspacePtr(wsBytePointer, wsByteOffset,  n * bpeOut));
+    // void* cTmp = reinterpret_cast<void*>(nextWorkspacePtr(wsBytePointer,
+    // wsByteOffset,  n * bpeOut));
     void* dTmp = reinterpret_cast<void*>(nextWorkspacePtr(wsBytePointer, wsByteOffset, m * n * bpeOut));
     float* scaleD0Tmp = reinterpret_cast<float*>(nextWorkspacePtr(wsBytePointer, wsByteOffset, m * sizeof(float)));
     float* scaleD1Tmp = reinterpret_cast<float*>(nextWorkspacePtr(wsBytePointer, wsByteOffset, n * sizeof(float)));
@@ -209,7 +210,7 @@ bool Fp8RowwiseGemmPlugin::supportsFormatCombination(
         // Weights stored in checkpoint must have fp8 type
         return inOut[pos].type == nvinfer1::DataType::kFP8 && inOut[pos].format == TensorFormat::kLINEAR;
     case 2:
-        // scales channels
+    // scales channels
     case 3:
         // scales tokens
         return inOut[pos].type == nvinfer1::DataType::kFLOAT && inOut[pos].format == TensorFormat::kLINEAR;
@@ -389,7 +390,8 @@ IPluginV2* Fp8RowwiseGemmPluginCreator::createPlugin(char const* name, PluginFie
     {
         // Fp8RowwiseGemmPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
-        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false);
         QuantMode quantMode = QuantMode{};
         auto* obj = new Fp8RowwiseGemmPlugin(quantMode, type, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
@@ -409,8 +411,10 @@ IPluginV2* Fp8RowwiseGemmPluginCreator::deserializePlugin(
     // call Fp8RowwiseGemmPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
-        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
+        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ true);
         auto* obj = new Fp8RowwiseGemmPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;

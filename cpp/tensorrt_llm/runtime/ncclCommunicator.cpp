@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
-#include "tensorrt_llm/common/logger.h"
-
 #include "tensorrt_llm/runtime/ncclCommunicator.h"
+
+#include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/utils/multiDeviceUtils.h"
 
 #if ENABLE_MULTI_DEVICE
@@ -91,8 +90,10 @@ ncclComm_t NcclCommunicator::createComm(int worldSize, int rank, mpi::MpiComm co
     TLLM_NCCL_CHECK(ncclCommInitRank(&comm, worldSize, id, rank));
     return comm;
 #else
-    // Python runtime requires instantiation of a communicator even though it may never be used to enable
-    // pipeline parallel code-path. To enable this, have an empty communicator with uninitialized state.
+    // Python runtime requires instantiation of a communicator even though it may
+    // never be used to enable
+    // pipeline parallel code-path. To enable this, have an empty communicator
+    // with uninitialized state.
     return nullptr;
 #endif // ENABLE_MULTI_DEVICE
 }

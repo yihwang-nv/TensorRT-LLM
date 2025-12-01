@@ -27,8 +27,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
 // Specialization for packed_as used in this kernel.
 template <>
 struct packed_as<uint, 1>
@@ -47,13 +45,9 @@ struct packed_as<uint, 4>
 {
     using type = uint4;
 };
-} // namespace common
 
 TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,21 +55,22 @@ namespace kernels
 // head_dim: the dimension of each head
 // interleave: interleave=!is_neox.
 template <int head_dim, bool interleave>
-__global__ void fusedQKNormRopeKernel(
-    __nv_bfloat16* qkv,            // Combined QKV tensor [num_tokens, (num_heads_q+num_heads_k+num_heads_v)*head_dim]
-    int const num_heads_q,         // Number of query heads
-    int const num_heads_k,         // Number of key heads
-    int const num_heads_v,         // Number of value heads
-    float const eps,               // Epsilon for RMS normalization
-    __nv_bfloat16 const* q_weight, // RMSNorm weights for query
-    __nv_bfloat16 const* k_weight, // RMSNorm weights for key
-    float const base,              // Base for RoPE computation
-    int const* position_ids,       // Position IDs for RoPE
-    int const num_tokens,          // Number of tokens
+__global__ void fusedQKNormRopeKernel(__nv_bfloat16* qkv, // Combined QKV tensor [num_tokens,
+                                                          // (num_heads_q+num_heads_k+num_heads_v)*head_dim]
+    int const num_heads_q,                                // Number of query heads
+    int const num_heads_k,                                // Number of key heads
+    int const num_heads_v,                                // Number of value heads
+    float const eps,                                      // Epsilon for RMS normalization
+    __nv_bfloat16 const* q_weight,                        // RMSNorm weights for query
+    __nv_bfloat16 const* k_weight,                        // RMSNorm weights for key
+    float const base,                                     // Base for RoPE computation
+    int const* position_ids,                              // Position IDs for RoPE
+    int const num_tokens,                                 // Number of tokens
     // parameters for yarn
-    float factor, // factor in rope_scaling in config.json. When it is not 1.0, it means the model is using yarn.
-    float low,    // threshold for high frequency
-    float high,   // threshold for low frequency
+    float factor,           // factor in rope_scaling in config.json. When it is not 1.0,
+                            // it means the model is using yarn.
+    float low,              // threshold for high frequency
+    float high,             // threshold for low frequency
     float attention_factor, // attention_factor applied on cos and sin
     // stop of parameters for yarn
     bool is_qk_norm // Whether to apply QK norm
@@ -85,7 +80,8 @@ __global__ void fusedQKNormRopeKernel(
     int const warpId = threadIdx.x / 32;
     int const laneId = threadIdx.x % 32;
 
-    // Calculate global warp index to determine which head/token this warp processes
+    // Calculate global warp index to determine which head/token this warp
+    // processes
     int const globalWarpIdx = blockIdx.x * warpsPerBlock + warpId;
 
     // Total number of attention heads (Q and K)
@@ -105,13 +101,16 @@ __global__ void fusedQKNormRopeKernel(
     int const num_heads = num_heads_q + num_heads_k + num_heads_v;
 
     static_assert(head_dim % (32 * 2) == 0,
-        "head_dim must be divisible by 64 (each warp processes one head, and each thread gets even number of "
+        "head_dim must be divisible by 64 "
+        "(each warp processes one head, and "
+        "each thread gets even number of "
         "elements)");
     constexpr int numElemsPerThread = head_dim / 32;
     float elements[numElemsPerThread];
     constexpr int elemSizeBytes = numElemsPerThread * sizeof(__nv_bfloat16);
     static_assert(elemSizeBytes % 4 == 0, "numSizeBytes must be a multiple of 4");
-    constexpr int vecSize = elemSizeBytes / 4; // Use packed_as<uint, vecSize> to perform loading/saving.
+    constexpr int vecSize = elemSizeBytes / 4; // Use packed_as<uint, vecSize> to
+                                               // perform loading/saving.
     using vec_T = typename tensorrt_llm::common::packed_as<uint, vecSize>::type;
 
     int offsetWarp; // Offset for the warp
@@ -333,6 +332,5 @@ void launchFusedQKNormRope(void* qkv, int const num_tokens, int const num_heads_
     default: TLLM_THROW("Unsupported head dimension for fusedQKNormRope: %d", head_dim);
     }
 }
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

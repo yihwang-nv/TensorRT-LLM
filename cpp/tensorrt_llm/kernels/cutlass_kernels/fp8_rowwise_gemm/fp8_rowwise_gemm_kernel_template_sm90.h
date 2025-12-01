@@ -30,7 +30,8 @@
 
 #include "cute/tensor.hpp"
 #include "cutlass/conv/convolution.h"
-// Order matters here, packed_stride.hpp is missing cute and convolution includes
+// Order matters here, packed_stride.hpp is missing cute and convolution
+// includes
 #include "cutlass/util/packed_stride.hpp"
 
 #include "cutlass/epilogue/collective/default_epilogue.hpp"
@@ -50,10 +51,8 @@
 #pragma GCC diagnostic pop
 #endif          // __GNUC__
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 using namespace cute;
@@ -66,25 +65,26 @@ struct DeviceGemmFp8RowwiseSm90
     static_assert(std::is_same_v<ElementType, cutlass::float_e4m3_t>, "ElementType must be FP8(e4m3)");
 
     // A matrix configuration
-    using ElementA = ElementType;                      // Element type for A matrix operand
-    using LayoutA = cutlass::layout::RowMajor;         // Layout type for A matrix operand
-    static constexpr int AlignmentA
-        = 128 / cutlass::sizeof_bits<ElementA>::value; // Memory access granularity/alignment of A
-                                                       // matrix in units of elements (up to 16 bytes)
+    using ElementA = ElementType;                                                  // Element type for A matrix operand
+    using LayoutA = cutlass::layout::RowMajor;                                     // Layout type for A matrix operand
+    static constexpr int AlignmentA = 128 / cutlass::sizeof_bits<ElementA>::value; // Memory access
+                                                                                   // granularity/alignment of A
+    // matrix in units of elements (up to 16 bytes)
 
     // B matrix configuration
-    using ElementB = ElementType;                      // Element type for B matrix operand
-    using LayoutB = cutlass::layout::ColumnMajor;      // Layout type for B matrix operand
-    static constexpr int AlignmentB
-        = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access granularity/alignment of B
-                                                       // matrix in units of elements (up to 16 bytes)
+    using ElementB = ElementType;                                                  // Element type for B matrix operand
+    using LayoutB = cutlass::layout::ColumnMajor;                                  // Layout type for B matrix operand
+    static constexpr int AlignmentB = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access
+                                                                                   // granularity/alignment of B
+    // matrix in units of elements (up to 16 bytes)
 
     // C/D matrix configuration
-    using ElementC = void;                                   // Element type for C matrix operands
-    using LayoutC = cutlass::layout::RowMajor;               // Layout type for C matrix operands
-    static constexpr int AlignmentC
-        = 128 / cutlass::sizeof_bits<OutElementType>::value; // Memory access granularity/alignment of C matrices in
-                                                             // units of elements (up to 16 bytes)
+    using ElementC = void;                     // Element type for C matrix operands
+    using LayoutC = cutlass::layout::RowMajor; // Layout type for C matrix operands
+    static constexpr int AlignmentC = 128 / cutlass::sizeof_bits<OutElementType>::value; // Memory access
+    // granularity/alignment of C
+    // matrices in
+    // units of elements (up to 16 bytes)
 
     // Output matrix configuration
     using ElementOutput = OutElementType;           // Element type for output matrix operands
@@ -95,10 +95,11 @@ struct DeviceGemmFp8RowwiseSm90
     using ElementBias = float;
 
     // Multiply-accumulate blocking/pipelining details
-    using ElementAccumulator = AccumElementType; // Element type for internal accumulation
-    using ElementCompute = float;                // Element type for compute
+    using ElementAccumulator = AccumElementType;          // Element type for internal accumulation
+    using ElementCompute = float;                         // Element type for compute
     using ElementComputeEpilogue = float;
-    using ArchTag = cutlass::arch::Sm90;         // Tag indicating the minimum SM that supports the intended feature
+    using ArchTag = cutlass::arch::Sm90;                  // Tag indicating the minimum SM that
+                                                          // supports the intended feature
     using OperatorClass = cutlass::arch::OpClassTensorOp; // Operator class tag
     using TileShape = CTAShape;                           // Threadblock-level tile size
     using TileScheduler = TileSchedulerType;
@@ -109,8 +110,9 @@ struct DeviceGemmFp8RowwiseSm90
 
     using StageCountType = cutlass::gemm::collective::StageCountAuto;     // Stage count maximized
                                                                           // based on the tile size
-    using KernelSchedule = cutlass::gemm::collective::KernelScheduleAuto; // Kernel to launch based on the default
-                                                                          // setting in the Collective Builder
+    using KernelSchedule = cutlass::gemm::collective::KernelScheduleAuto; // Kernel to launch based
+                                                                          // on the default
+    // setting in the Collective Builder
     // Implement rowwise scaling epilogue.
     using XScale = cutlass::epilogue::fusion::Sm90ColBroadcast<0, TileShape, ElementComputeEpilogue,
         ElementComputeEpilogue, cute::Stride<cute::Int<1>, cute::Int<0>, cute::Int<0>>>;
@@ -136,10 +138,10 @@ struct DeviceGemmFp8RowwiseSm90
 
     using EVTCompute1 = cutlass::epilogue::fusion::Sm90EVT<Compute1, XScale, EVTCompute0>;
 
-    using ComputeBias = cutlass::epilogue::fusion::Sm90Compute<cutlass::plus,
-        ElementOutput, // Final (optional) stage output type.
-        ElementBias,   // Final stage input types.
-        cutlass::FloatRoundStyle::round_to_nearest>;
+    using ComputeBias
+        = cutlass::epilogue::fusion::Sm90Compute<cutlass::plus, ElementOutput, // Final (optional) stage output type.
+            ElementBias,                                                       // Final stage input types.
+            cutlass::FloatRoundStyle::round_to_nearest>;
 
     using EVTComputeBias = cutlass::epilogue::fusion::Sm90EVT<ComputeBias, Bias, EVTCompute1>;
 
@@ -196,6 +198,5 @@ struct DeviceGemmFp8RowwiseSm90
 };
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

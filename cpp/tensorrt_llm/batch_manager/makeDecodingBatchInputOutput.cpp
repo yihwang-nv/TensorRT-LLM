@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 #include "tensorrt_llm/batch_manager/decoderBuffers.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/batch_manager/runtimeBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/decoderState.h"
@@ -27,9 +27,7 @@
 
 namespace tr = tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 using SizeType32 = MakeDecodingBatchInputOutput::SizeType32;
 using TensorPtr = MakeDecodingBatchInputOutput::TensorPtr;
@@ -198,6 +196,4 @@ void MakeDecodingBatchInputOutput::operator()(DecoderInputBuffers& inputBuffers,
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

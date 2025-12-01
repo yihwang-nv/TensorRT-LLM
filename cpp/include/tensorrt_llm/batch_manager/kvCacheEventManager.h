@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 
 #include <atomic>
@@ -27,9 +26,7 @@
 #include <thread>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
@@ -57,10 +54,12 @@ public:
 
     void enqueueUpdatedEvent(executor::KVCacheUpdatedData const& data, SizeType32 windowSize);
 
-    // Get events in mEvents. If there are no events, wait for a maximum of `timeout` milliseconds.
+    // Get events in mEvents. If there are no events, wait for a maximum of
+    // `timeout` milliseconds.
     std::deque<executor::KVCacheEvent> getEvents(std::optional<std::chrono::milliseconds> timeout);
 
-    // Clear the event buffer, and asynchronously move events to the event queue.
+    // Clear the event buffer, and asynchronously move events to the event
+    // queue.
     void flush();
 
     // Worker thread which adds events to mEvents.
@@ -87,14 +86,16 @@ private:
     /// @brief Condition variable for blocking read
     std::condition_variable mEmptyCV;
 
-    /// @brief List of buffers waiting awaiting insertion into mEvents. Consumed by the worker.
+    /// @brief List of buffers waiting awaiting insertion into mEvents. Consumed
+    /// by the worker.
     std::deque<std::deque<executor::KVCacheEvent>> mPendingEvents;
     /// @brief Lock for mPendingEvents
     std::mutex mPendingEventsMutex;
     /// @brief Condition variable to notify worker thread
     std::condition_variable mPendingEmptyCV;
 
-    /// @brief Buffer of events waiting to be added to the eventQueue. Only ever accessed by forward pass thread.
+    /// @brief Buffer of events waiting to be added to the eventQueue. Only ever
+    /// accessed by forward pass thread.
     std::deque<executor::KVCacheEvent> mEventQueue;
 
     /// @brief The maximum size of the deque
@@ -107,13 +108,12 @@ private:
     std::optional<SizeType32> mAttentionDpRank;
     std::optional<SizeType32> mAttentionDpSize;
 
-    /// @brief The period in milliseconds to gather attention DP events across rank
+    /// @brief The period in milliseconds to gather attention DP events across
+    /// rank
     SizeType32 mAttentionDpEventsGatherPeriodMs;
 
     /// @brief MPI communicator for attention DP
     std::unique_ptr<tensorrt_llm::mpi::MpiComm> mMpiComm;
 };
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

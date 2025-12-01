@@ -25,10 +25,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 __global__ static void quantizedKernel(char4* dst, float4 const* src, int64_t const sizeDiv4, float const* scalePtr)
 {
@@ -137,7 +134,8 @@ struct DstVec<T, 8>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Helper function of getting the absMax of all elements in the vector after clamping.
+// Helper function of getting the absMax of all elements in the vector after
+// clamping.
 // Pack two elements in order to use possible hmax2 instructions.
 template <typename T>
 inline __device__ void clampAndAbsMax(T& localMax, uint4& vec, T const clampMin, T const clampMax)
@@ -232,7 +230,8 @@ __global__ void perTokenQuantization(QuantT* dst, T const* src, int64_t const nu
             T2& val2 = reinterpret_cast<T2*>(&vec)[j];
             val2 = cuda_clamp(val2, clampMin2, clampMax2);
             localMax2 = cuda_max(localMax2, cuda_abs(val2));
-            // TODO: template the version that requires sum to avoid dynamic branching.
+            // TODO: template the version that requires sum to avoid dynamic
+            // branching.
             if (sumPtr != nullptr)
             {
                 localSum2.x += cuda_cast<float>(val2.x);
@@ -438,7 +437,8 @@ __device__ uint32_t cvt_warp_fp16_to_fp4(PackedVec<Type>& vec, float SFScaleVal,
     }
 
     constexpr int CVT_NUM_THREADS_PER_SF = SF_VEC_SIZE / CVT_ELTS_PER_THREAD;
-    // Get the absolute maximum among all 16 values (two threads for 16, four threads for 32).
+    // Get the absolute maximum among all 16 values (two threads for 16, four
+    // threads for 32).
     localMax = cuda_max(__shfl_xor_sync(uint32_t(-1), localMax, 1), localMax);
     if constexpr (CVT_NUM_THREADS_PER_SF == 4)
     {
@@ -471,7 +471,8 @@ __device__ uint32_t cvt_warp_fp16_to_fp4(PackedVec<Type>& vec, float SFScaleVal,
         fp8SFVal = tmp.__x;
         SFValue = static_cast<float>(tmp);
         // Get the output scale.
-        // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal)) * reciprocal(SFScaleVal))
+        // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal)) *
+        // reciprocal(SFScaleVal))
         outputScale = vecMax != 0 ? reciprocal_approximate_ftz(SFValue * reciprocal_approximate_ftz(SFScaleVal)) : 0.0f;
     }
 
@@ -529,7 +530,7 @@ __device__ uint64_t cvt_warp_fp8_to_fp4(PackedVec<Type>& vec, float SFScaleVal, 
 
     // Get absolute maximum values among the local 8 values.
     auto localMax = __habs2(vec_half2[0]);
-    // Local maximum value.
+// Local maximum value.
 #pragma unroll
     for (int i = 1; i < CVT_FP8_TO_FP4_ELTS_PER_THREAD / 2; i++)
     {
@@ -569,7 +570,8 @@ __device__ uint64_t cvt_warp_fp8_to_fp4(PackedVec<Type>& vec, float SFScaleVal, 
         SFValueNarrow = static_cast<float>(tmp);
     }
     // Get the output scale.
-    // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal))) * reciprocal(SFScaleVal))
+    // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal))) *
+    // reciprocal(SFScaleVal))
     float outputScale = SFValue != 0 ? SFScaleVal * reciprocal_approximate_ftz(SFValueNarrow) : 0.0f;
 
     if (SFout)
@@ -615,7 +617,8 @@ __device__ uint64_t cvt_warp_fp16_to_mxfp8(PackedVec<Type>& vec, uint8_t* SFout)
     }
 
     constexpr int CVT_NUM_THREADS_PER_SF = SF_VEC_SIZE / CVT_ELTS_PER_THREAD;
-    // Get the absolute maximum among all 16 values (two threads for 16, four threads for 32).
+    // Get the absolute maximum among all 16 values (two threads for 16, four
+    // threads for 32).
     localMax = cuda_max(__shfl_xor_sync(uint32_t(-1), localMax, 1), localMax);
     if constexpr (CVT_NUM_THREADS_PER_SF == 4)
     {
@@ -677,7 +680,8 @@ inline __host__ __device__ int64_t get_sf_out_offset_128x4(
     // --> index [mTileIdx, kTileIdx, outerMIdx, innerMIdx, innerKIdx]
 
     // batched tensor
-    // SF layout [numBTiles, numMTiles, numKTiles, 32 (mTile), 4 (mTile), 4(kTile)]
+    // SF layout [numBTiles, numMTiles, numKTiles, 32 (mTile), 4 (mTile),
+    // 4(kTile)]
     // --> index [bTileIdx, mTileIdx, kTileIdx, outerMIdx, innerMIdx, innerKIdx]
 
     int32_t innerKIdx = (kIdx % 4);
@@ -693,7 +697,8 @@ inline __host__ __device__ int64_t get_sf_out_offset_128x4(
     int32_t kTileIdx = (kIdx / 4);
     int64_t kTileStride = 32 * outerMStride; // 512
 
-    // SF vector size 16 or 32. We round the "numCols" up to a multiple of 64 or 128.
+    // SF vector size 16 or 32. We round the "numCols" up to a multiple of 64 or
+    // 128.
     // It is the same as rounding the "numColVecs" up to a multiple of 4.
     int32_t numKTiles = (numColVecs + 4 - 1) / 4;
     int32_t mTileIdx = mIdx / (32 * 4);
@@ -777,7 +782,8 @@ quantize_with_block_size(
     static_assert(sizeof(PackedVec) == sizeof(Type) * ELTS_PER_THREAD, "Vec size is not matched.");
 
     // Get the global scaling factor, which will be applied to the SF.
-    // Note SFScale is the same as next GEMM's alpha, which is (448.f / (Alpha_A / 6.f)).
+    // Note SFScale is the same as next GEMM's alpha, which is (448.f / (Alpha_A /
+    // 6.f)).
     float const SFScaleVal = SFScale == nullptr ? 1.0f : SFScale[0];
 
     // Is it swizzled layout?
@@ -788,7 +794,8 @@ quantize_with_block_size(
     int numColsForSf = isSfSwizzledLayout ? PadUpFn(numPaddedCols, 4 * SF_VEC_SIZE) : numPaddedCols;
 
     // The number of threads in the column dimension。
-    // Note that numCols/numPaddedCols/numColsForSf are guaranteed to be multiples of ELTS_PER_THREAD.
+    // Note that numCols/numPaddedCols/numColsForSf are guaranteed to be multiples
+    // of ELTS_PER_THREAD.
     int numColThreads = numCols / ELTS_PER_THREAD;
     int numPaddedColThreads = numPaddedCols / ELTS_PER_THREAD;
     int numColThreadsForSf = numColsForSf / ELTS_PER_THREAD;
@@ -867,6 +874,5 @@ quantize_with_block_size(
 
 __global__ void block_scale_interleave_kernel(
     int numbatches, int numRows, int numCols, uint8_t const* SFIn, uint8_t* SFOutput);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

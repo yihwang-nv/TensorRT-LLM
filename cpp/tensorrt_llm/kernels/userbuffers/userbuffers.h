@@ -46,8 +46,8 @@
 #define REG0_COMMBUFFER (REG0_ONESHOT_BUFFER * 2)
 #define REG0_FLAGS (REG0_RECV + MAX_PEERS * MAX_REGIONS * 3)
 
-TRTLLM_NAMESPACE_BEGIN
-
+namespace tensorrt_llm
+{
 namespace runtime::ub
 {
 enum req_type
@@ -92,7 +92,8 @@ struct communicator
     int oneshot_force_enable_threshold;
 
     MPI_Comm comm_world, // clone of MPI_COMM_WORLD
-        comm_inter,      // reduction group communicator (subset of the nodes) along GPU rail
+        comm_inter,      // reduction group communicator (subset of the nodes) along
+                         // GPU rail
         comm_intra;      // full intranode (all ndev GPUS)
 
     int *send_id, *recv_id;
@@ -109,18 +110,21 @@ int create_communicator_grouped2(communicator** comm, tensorrt_llm::runtime::Wor
  */
 
 int register_user_buffer_collective(void** gpubuff, size_t bytes, communicator* comm);
-/*  returns handler and registers buffers. assumed to be collective i.e. you use same groups and dont mix buffers for
-   different operations returns -1 if can't register (too many preregistered regions already) if alloc==true will
-   allocate memory and fill the pointers (required for NVL SHARP and NSO/MNNVL)
+/*  returns handler and registers buffers. assumed to be collective i.e. you
+   use same groups and dont mix buffers for
+   different operations returns -1 if can't register (too many preregistered
+   regions already) if alloc==true will
+   allocate memory and fill the pointers (required for NVL SHARP and
+   NSO/MNNVL)
 */
 
 void destroy_communicator(communicator* comm);
 } // namespace runtime::ub
+} // namespace tensorrt_llm
 
-TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ub
+namespace ub
 {
 using namespace tensorrt_llm::runtime::ub;
 void allreduce2_userbuff_inplace_impl(int const handler, size_t const offset, size_t const elements,
@@ -143,6 +147,6 @@ int allreduce2_userbuff_inplace_rmsnorm_quant_fp4_impl(int const handler, size_t
     size_t const out_offset, int const scale_handler, size_t const scale_offset, size_t const elements,
     int const hidden_size, void* beta, void* gamma, float eps, float* scalefactor, void* residual_in,
     void* residual_out, nvinfer1::DataType dataType, communicator* comm, cudaStream_t stream);
-} // namespace kernels::ub
+} // namespace ub
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

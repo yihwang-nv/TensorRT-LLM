@@ -66,9 +66,9 @@
 #include <mutex>
 #include <sstream>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels_oss
+namespace cutlass_kernels_oss
 {
 using tensorrt_llm::kernels::cutlass_kernels::TmaWarpSpecializedGroupedGemmInput;
 using EpilogueFusion = TmaWarpSpecializedGroupedGemmInput::EpilogueFusion;
@@ -95,9 +95,7 @@ auto getDispatchFunctionForSM100(
                     &kernels::cutlass_kernels_oss::tma_warp_specialized_generic_moe_gemm_kernelLauncher<Arch, T,
                         WeightType, OutputType, cutlass::epilogue::PtrArrayTmaWarpSpecialized, EpilogueTag, FUSION,
                         TileShape, ClusterShape, is_wfp4afp8, decltype(dynamic_cga_t)::value, false,
-                        decltype(swap_ab_t)::value>
-
-                };
+                        decltype(swap_ab_t)::value>};
                 bool const tma_epilogue = epilogue_schedule == cutlass_extensions::EpilogueScheduleType::TMA;
                 return func_map[tma_epilogue];
             }
@@ -106,7 +104,8 @@ auto getDispatchFunctionForSM100(
                 static_assert(FUSION == EpilogueFusion::FINALIZE || Arch::kMinComputeCapability != 103,
                     "SM103 should support both epilogue schedules");
                 TLLM_CHECK_WITH_INFO(epilogue_schedule == cutlass_extensions::EpilogueScheduleType::TMA,
-                    "No Smem epilogue schedule is not supported for block scaled types or finalize fusion");
+                    "No Smem epilogue schedule is not supported for "
+                    "block scaled types or finalize fusion");
                 return &kernels::cutlass_kernels_oss::tma_warp_specialized_generic_moe_gemm_kernelLauncher<Arch, T,
                     WeightType, OutputType, cutlass::epilogue::PtrArrayTmaWarpSpecialized, EpilogueTag, FUSION,
                     TileShape, ClusterShape, is_wfp4afp8, decltype(dynamic_cga_t)::value, false,
@@ -142,25 +141,33 @@ void dispatchMoeGemmFinalDispatchTmaWarpSpecialized(TmaWarpSpecializedGroupedGem
 #ifndef COMPILE_HOPPER_TMA_GROUPED_GEMMS
     else if constexpr (Arch::kMinComputeCapability >= 90 && Arch::kMinComputeCapability < 100)
     {
-        TLLM_THROW("Please recompile with support for hopper by passing 90-real as an arch to build_wheel.py.");
+        TLLM_THROW(
+            "Please recompile with support for hopper by passing 90-real "
+            "as an arch to build_wheel.py.");
     }
 #endif
 #ifndef COMPILE_BLACKWELL_SM103_TMA_GROUPED_GEMMS
     else if constexpr (Arch::kMinComputeCapability == 103)
     {
-        TLLM_THROW("Please recompile with support for blackwell by passing 103-real as an arch to build_wheel.py.");
+        TLLM_THROW(
+            "Please recompile with support for blackwell by passing "
+            "103-real as an arch to build_wheel.py.");
     }
 #endif
 #ifndef COMPILE_BLACKWELL_TMA_GROUPED_GEMMS
     else if constexpr (Arch::kMinComputeCapability >= 100 && Arch::kMinComputeCapability < 120)
     {
-        TLLM_THROW("Please recompile with support for blackwell by passing 100-real as an arch to build_wheel.py.");
+        TLLM_THROW(
+            "Please recompile with support for blackwell by passing "
+            "100-real as an arch to build_wheel.py.");
     }
 #endif
 #ifndef COMPILE_BLACKWELL_SM120_TMA_GROUPED_GEMMS
     else if constexpr (Arch::kMinComputeCapability >= 120)
     {
-        TLLM_THROW("Please recompile with support for blackwell by passing 120-real as an arch to build_wheel.py.");
+        TLLM_THROW(
+            "Please recompile with support for blackwell by passing "
+            "120-real as an arch to build_wheel.py.");
     }
 #endif
     else
@@ -216,7 +223,8 @@ void dispatchMoeGemmFinalDispatchTmaWarpSpecialized(TmaWarpSpecializedGroupedGem
 template <typename Arch, typename CtaShape, typename ClusterShape, typename DataType, typename WeightType>
 constexpr bool are_tile_shapes_supported_sm100()
 {
-    // We use a runtime cluster shape for SM100, so we only support 1x1x1 and 2x1x1 cluster shapes.
+    // We use a runtime cluster shape for SM100, so we only support 1x1x1 and
+    // 2x1x1 cluster shapes.
     if (cute::size<0>(ClusterShape{}) > 2 || cute::size<1>(ClusterShape{}) != 1 || cute::size<2>(ClusterShape{}) != 1)
     {
         return false;
@@ -299,9 +307,11 @@ constexpr bool are_tile_shapes_supported_sm120()
 
     1x2x1 cluster shape is only supported when the N tile is at least 128.
 
-    2x2x1 cluster shape is only supported when both the M and N tiles are at least 128.
+    2x2x1 cluster shape is only supported when both the M and N tiles are at
+   least 128.
 
-    We make the above restrictions are to improve compilation speed in TRT-LLM by pruning kernels
+    We make the above restrictions are to improve compilation speed in TRT-LLM
+   by pruning kernels
     that may not be very useful in practice.
  */
 template <typename Arch, typename CTAShape, typename ClusterShape, typename DataType, typename WeightType>
@@ -351,7 +361,8 @@ void dispatchMoeGemmSelectClusterShapeTmaWarpSpecialized(TmaWarpSpecializedGroup
     int* occupancy, size_t* workspace_size)
 {
     using namespace cute;
-    // This uses the fallback cluster shape for sm100 if a dynamic cluster shape is requested.
+    // This uses the fallback cluster shape for sm100 if a dynamic cluster shape
+    // is requested.
     switch (gemm_config.cluster_shape)
     {
 #define SHAPE_CASE(M, N, K)                                                                                            \
@@ -368,7 +379,8 @@ void dispatchMoeGemmSelectClusterShapeTmaWarpSpecialized(TmaWarpSpecializedGroup
         else                                                                                                           \
         {                                                                                                              \
             TLLM_THROW(                                                                                                \
-                "%s\nUnsupported tile (%d, %d, %d) and cluster (%d, %d, %d) shape combination for arch %d.\nConfig "   \
+                "%s\nUnsupported tile (%d, %d, %d) and cluster (%d, %d, %d) "                                          \
+                "shape combination for arch %d.\nConfig "                                                              \
                 "was %s",                                                                                              \
                 __PRETTY_FUNCTION__, (int) cute::get<0>(TileShape{}), (int) cute::get<1>(TileShape{}),                 \
                 (int) cute::get<2>(TileShape{}), M, N, K, (int) Arch::kMinComputeCapability,                           \
@@ -447,7 +459,8 @@ void dispatchMoeGemmSelectTileShapeTmaWarpSpecialized(TmaWarpSpecializedGroupedG
                 SHAPE_CASE(103, 128, 128, 128)
                 SHAPE_CASE(103, 128, 256, 128)
 
-                DEFAULT_CASE(100) // 100 because we use the same member variable for SM100 and SM103
+                DEFAULT_CASE(100) // 100 because we use the same member variable for
+                                  // SM100 and SM103
             }
         }
         else
@@ -508,12 +521,13 @@ size_t calcMaxWorkspaceSizeTmaWarpSpecialized(int num_experts, cutlass_extension
     size_t count = 0;
     TmaWarpSpecializedGroupedGemmInput input{};
     input.fpX_block_scaling_type = fpX_block_scaling_type;
-    // Most of the values are ignored for WS size calculation. We reuse the function to reduce the template bloat
+    // Most of the values are ignored for WS size calculation. We reuse the
+    // function to reduce the template bloat
     dispatchMoeGemmSelectTileShapeTmaWarpSpecialized<T, WeightType, OutputType, cutlass_extensions::EpilogueOpDefault,
         FUSION>(input, num_experts, gemm_config, multi_processor_count, cudaStream_t{0}, nullptr, &count);
     return count;
 }
 
-} // namespace kernels::cutlass_kernels_oss
+} // namespace cutlass_kernels_oss
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

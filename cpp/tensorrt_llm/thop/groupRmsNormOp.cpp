@@ -28,7 +28,8 @@
 #include <torch/extension.h>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -232,7 +233,7 @@ void groupRMSNormHeuristic(torch::TensorList const& inputs, torch::TensorList co
         }
     }
 
-    // Dispatch based on number of inputs - templates require compile-time constants
+// Dispatch based on number of inputs - templates require compile-time constants
 #define DISPATCH_HEURISTIC_INPUTS(n)                                                                                   \
     {                                                                                                                  \
         tensorrt_llm::kernels::group_rms_norm::GroupRMSParams<n> params;                                               \
@@ -266,7 +267,8 @@ void groupRMSNormHeuristic(torch::TensorList const& inputs, torch::TensorList co
         default: TORCH_CHECK(false, "Unsupported data type");                                                          \
         }                                                                                                              \
                                                                                                                        \
-        /* Use the heuristic launcher that will decide between regular and large batch kernels */                      \
+        /* Use the heuristic launcher that will decide between regular and large                                       \
+         * batch kernels */                                                                                            \
         tensorrt_llm::kernels::group_rms_norm::GroupRMSNormKernelLauncherWithHeuristic<n>(params);                     \
         break;                                                                                                         \
     }
@@ -282,12 +284,13 @@ void groupRMSNormHeuristic(torch::TensorList const& inputs, torch::TensorList co
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 {
     m.impl("group_rms_norm_base", &tensorrt_llm::torch_ext::groupRMSNormBase);
     m.impl("group_rms_norm_large_batch", &tensorrt_llm::torch_ext::groupRMSNormLargeBatch);
-    // Use groupRMSNormHeuristic which automatically selects between regular and large batch kernels
+    // Use groupRMSNormHeuristic which automatically selects between regular and
+    // large batch kernels
     m.impl("group_rms_norm_heuristic", &tensorrt_llm::torch_ext::groupRMSNormHeuristic);
 }

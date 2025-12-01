@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +16,10 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/executor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 KvCacheConfig::KvCacheConfig(bool enableBlockReuse, std::optional<SizeType32> const& maxTokens,
@@ -197,7 +195,6 @@ void KvCacheConfig::setFreeGpuMemoryFraction(FloatType freeGpuMemoryFraction)
 }
 
 void KvCacheConfig::setCrossKvCacheFraction(FloatType crossKvCacheFraction)
-
 {
     TLLM_CHECK(crossKvCacheFraction > 0.F);
     TLLM_CHECK(crossKvCacheFraction < 1.F);
@@ -252,6 +249,4 @@ void KvCacheConfig::fillEmptyFieldsFromRuntimeDefaults(tensorrt_llm::runtime::Ru
     }
 }
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

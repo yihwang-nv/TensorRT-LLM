@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/runtime/worldConfig.h"
 
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/stringUtils.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
-#include "tensorrt_llm/runtime/worldConfig.h"
 
 #include <algorithm>
 #include <numeric>
@@ -111,7 +110,8 @@ WorldConfig WorldConfig::mpi(SizeType32 gpusPerNode, std::optional<SizeType32> t
     if (deviceCount < std::min(mpiSize, gpusPerNode))
     {
         TLLM_LOG_WARNING(
-            "gpusPerNode is %d and mpiSize is %d, but only %d GPUs detected, which is smaller than min(mpiSize, "
+            "gpusPerNode is %d and mpiSize is %d, but only %d GPUs "
+            "detected, which is smaller than min(mpiSize, "
             "gpusPerNode). gpusPerNode will be set to %d",
             gpusPerNode, mpiSize, deviceCount, deviceCount);
         gpusPerNode = deviceCount;
@@ -128,7 +128,8 @@ WorldConfig WorldConfig::mpi(SizeType32 gpusPerNode, std::optional<SizeType32> t
             }
             std::string envStr = oss.str();
             TLLM_LOG_WARNING(
-                "Detect%s, please provide the full device list instead of limiting to device list, "
+                "Detect%s, please provide the full device list instead of limiting "
+                "to device list, "
                 "otherwise allreduce performance may be sub-optimal "
                 "since custom allreduce kernel relies on P2P access to peer devices.",
                 envStr.c_str());

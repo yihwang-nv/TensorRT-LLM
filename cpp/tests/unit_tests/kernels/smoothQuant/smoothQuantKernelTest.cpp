@@ -90,7 +90,8 @@ float compare(void* _pa, void* _pb, int size, float scale)
 #if defined(ENABLE_BF16)
     if constexpr (std::is_same_v<T, __nv_bfloat16>)
     {
-        // bfloat16 has fewer mantissa digits than float16(10 bits for fp16 but only 7 bits for bf16), so the cumulative
+        // bfloat16 has fewer mantissa digits than float16(10 bits for fp16 but
+        // only 7 bits for bf16), so the cumulative
         // error will be larger.
         diff_thres *= 3.f;
     }
@@ -116,7 +117,7 @@ void random_fill(std::vector<T1>& vec, T2 minv, T2 maxv)
 }
 
 template <typename T>
-std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> get_configs(T& runner, int k)
+std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> get_configs(T& runner, int k)
 {
     auto configs = runner.getConfigs();
     return configs;
@@ -272,7 +273,9 @@ bool benchmark_and_verify(int m, int n, int k, tensorrt_llm::common::QuantMode c
     float quant_scale = 1.f / (1 << (WSizeInBits - 1));
     bool pass = compare<T>(h_out1.data(), h_out2.data(), m * n, quant_scale);
     printf(
-        "cuda kernel cost time %.6f, cutlass kernel cost time %.6f, cuda speedup %.3f\n", time1, time2, time2 / time1);
+        "cuda kernel cost time %.6f, cutlass kernel cost time %.6f, cuda "
+        "speedup %.3f\n",
+        time1, time2, time2 / time1);
     return pass;
 }
 

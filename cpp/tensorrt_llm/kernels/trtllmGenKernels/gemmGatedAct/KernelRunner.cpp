@@ -23,10 +23,8 @@
 #include "trtllmGen_gatedAct_export/GemmOptions.h"
 #include "trtllmGen_gatedAct_export/trtllm/gen/DtypeDecl.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 using namespace gemmGatedAct::gemmGatedAct;
 static GemmGatedActInterface::ModuleCache globalTrtllmGenGemmGatedActModuleCache;
 
@@ -43,7 +41,8 @@ TrtllmGenGemmGatedActRunner::TrtllmGenGemmGatedActRunner(TrtllmGenGemmGatedActRu
     {
         auto const options = configs[i].mOptions;
 
-        // When we include low-latency kernels we can set transposeMmaOutput via constructor
+        // When we include low-latency kernels we can set transposeMmaOutput via
+        // constructor
         if (options.mDtypeA == mOptions.eltType && options.mDtypeC == mOptions.outputType
             && options.mUseDeepSeekFp8 == mOptions.deepSeekFp8
             && options.mTransposeMmaOutput == mOptions.transposeMmaOutput)
@@ -104,7 +103,8 @@ void TrtllmGenGemmGatedActRunner::run(int32_t m, int32_t n, int32_t k, void cons
     int32_t multiProcessorCount;
     cudaDeviceGetAttribute(&multiProcessorCount, cudaDevAttrMultiProcessorCount, device);
 
-    // FIXME once we start using all-reduce in the epilogue of the gemm this can be moved elsewhere
+    // FIXME once we start using all-reduce in the epilogue of the gemm this can
+    // be moved elsewhere
     gemm.runInitBeforeWorldSync(config, gemmData, static_cast<void*>(stream));
 
     auto const err = gemm.run(config, workspace, gemmData, static_cast<void*>(stream), multiProcessorCount,
@@ -144,6 +144,4 @@ void TrtllmGenGemmGatedActRunner::selectGemmConfig(int32_t m, int32_t n, int32_t
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

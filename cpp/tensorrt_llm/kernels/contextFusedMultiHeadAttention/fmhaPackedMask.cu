@@ -25,14 +25,12 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// A stateful callback functor that maintains the running sum between consecutive scans.
+// A stateful callback functor that maintains the running sum between
+// consecutive scans.
 struct BlockPrefixCallbackOp
 {
     // Running prefix
@@ -44,7 +42,8 @@ struct BlockPrefixCallbackOp
     {
     }
 
-    // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+    // Thread-0 is responsible for returning a value for seeding the block-wide
+    // scan.
     __device__ int operator()(int blockAggregate)
     {
         int oldPrefix = mRunningTotal;
@@ -60,21 +59,25 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void buildCuMaskRows(
     int batchSize, int const* qSeqLens, int* cuQSeqLens, int* cuMaskRows)
 {
 
-    // The implementation of the parallel scan in the thread block (see CUB for details).
+    // The implementation of the parallel scan in the thread block (see CUB for
+    // details).
     using BlockScan = cub::BlockScan<int, THREADS_PER_BLOCK>;
 
     // Allocate storage in shared memory to do the scan.
     __shared__ typename BlockScan::TempStorage tempStorage;
     __shared__ typename BlockScan::TempStorage tempStorageForMask;
 
-    // This prefixOp operator keeps a running sum for when we need multiple iterations of the loop.
+    // This prefixOp operator keeps a running sum for when we need multiple
+    // iterations of the loop.
     BlockPrefixCallbackOp prefixOp(0);
     BlockPrefixCallbackOp prefixOpForMask(0);
 
     // Iterate over the sequences in the batch.
     //
-    // The loop index does not depend on the thread index to make sure all the threads enter the
-    // loop as we have __syncthreads in it (and we need all threads to participate to avoid
+    // The loop index does not depend on the thread index to make sure all the
+    // threads enter the
+    // loop as we have __syncthreads in it (and we need all threads to participate
+    // to avoid
     // deadlocks).
     // Only the last block computes the full sequence offsets.
     bool const storeOffsets = blockIdx.x == (batchSize - 1);
@@ -111,7 +114,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void buildCuMaskRows(
             cuMaskRows[batchIdx] = maskRowOffset;
         }
 
-        // Make sure the shared memory can be reused for the next iteration of the loop.
+        // Make sure the shared memory can be reused for the next iteration of the
+        // loop.
         __syncthreads();
     }
 }
@@ -122,10 +126,14 @@ template <typename MaskInputDataType, ContextAttentionMaskType MaskType>
 __global__ void packFlashAttentionMask(PackedMaskParams<MaskInputDataType> params)
 {
 
-    // Each core MMA_N = 8, and each thread holds 32bits as one packed mask (2 rows, 16 cols).
-    // All packed mask units of one warp group are coalesced, and then repeated along the
-    // col dimension, which means there will be 128 (num of threads) * 32 bits (one packed mask)
-    // stride for each 16 cols. This is designed to have coalesced memory access for each
+    // Each core MMA_N = 8, and each thread holds 32bits as one packed mask (2
+    // rows, 16 cols).
+    // All packed mask units of one warp group are coalesced, and then repeated
+    // along the
+    // col dimension, which means there will be 128 (num of threads) * 32 bits
+    // (one packed mask)
+    // stride for each 16 cols. This is designed to have coalesced memory access
+    // for each
     // warp.
     // Layout:
     //  0 ~ 15 cols: t0, t1, t2, t3, ...., t127, t0,...,t127,....
@@ -286,6 +294,4 @@ template void invokeBuildPackedMask(PackedMaskParams<__nv_bfloat16> const&, cuda
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

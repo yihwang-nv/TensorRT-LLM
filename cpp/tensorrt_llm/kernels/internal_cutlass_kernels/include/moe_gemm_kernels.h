@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +39,7 @@
 #include <cuda_fp4.h>
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 // Note update moe.py to match
 enum class ActivationType
 {
@@ -90,15 +91,22 @@ struct TmaWarpSpecializedGroupedGemmInput
 
     // Layout for A and B is transposed and then swapped in the implementation
     // This uses B^T * A^T = (A * B)^T to get a better layout for the GEMM
-    using LayoutA = TransposeLayoutTag<cutlass::layout::RowMajor>;    // Layout type for A matrix operand
-    using LayoutB = TransposeLayoutTag<cutlass::layout::ColumnMajor>; // Layout type for B matrix operand
-    using LayoutC = TransposeLayoutTag<cutlass::layout::RowMajor>;    // Layout type for C matrix operand
-    using LayoutD = TransposeLayoutTag<cutlass::layout::RowMajor>;    // Layout type for D matrix operand
+    using LayoutA = TransposeLayoutTag<cutlass::layout::RowMajor>;    // Layout type
+                                                                      // for A matrix
+                                                                      // operand
+    using LayoutB = TransposeLayoutTag<cutlass::layout::ColumnMajor>; // Layout type for B
+                                                                      // matrix operand
+    using LayoutC = TransposeLayoutTag<cutlass::layout::RowMajor>;    // Layout type
+                                                                      // for C matrix
+                                                                      // operand
+    using LayoutD = TransposeLayoutTag<cutlass::layout::RowMajor>;    // Layout type
+                                                                      // for D matrix
+                                                                      // operand
 
     constexpr static int NVFP4BlockScaleVectorSize = 16;
     constexpr static int MXFPXBlockScaleVectorSize = 32;
 
-    // TODO SM100 instead of SM1xx in public cutlass
+// TODO SM100 instead of SM1xx in public cutlass
 #ifdef USING_INTERNAL_CUTLASS
     using NVFP4BlockScaledConfig = cutlass::detail::Sm1xxBlockScaledConfig<NVFP4BlockScaleVectorSize>;
     using MXFPXBlockScaledConfig = cutlass::detail::Sm1xxBlockScaledConfig<MXFPXBlockScaleVectorSize>;
@@ -110,10 +118,10 @@ struct TmaWarpSpecializedGroupedGemmInput
     constexpr static int MinNumRowsAlignmentMXFPX = 128;
 #endif
 
-    using StrideA
-        = std::remove_pointer_t<cutlass::detail::TagToStrideB_t<LayoutA*>>; // Use B because they will be swapped
-    using StrideB
-        = std::remove_pointer_t<cutlass::detail::TagToStrideA_t<LayoutB*>>; // Use A because they will be swapped
+    using StrideA = std::remove_pointer_t<cutlass::detail::TagToStrideB_t<LayoutA*>>; // Use B because they will
+                                                                                      // be swapped
+    using StrideB = std::remove_pointer_t<cutlass::detail::TagToStrideA_t<LayoutB*>>; // Use A because they will
+                                                                                      // be swapped
     using StrideC = std::remove_pointer_t<cutlass::detail::TagToStrideC_t<LayoutC*>>;
     using StrideD = std::remove_pointer_t<cutlass::detail::TagToStrideC_t<LayoutD*>>;
 
@@ -314,4 +322,4 @@ private:
     size_t calcMaxWorkspaceSize(int num_experts) const;
 };
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

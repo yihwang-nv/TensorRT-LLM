@@ -62,15 +62,13 @@
 
 #include "moe_gemm_tma_ws_mixed_input_launcher.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels_oss
 {
 using namespace tensorrt_llm::kernels::cutlass_kernels;
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
 using namespace cute;
 
@@ -88,19 +86,22 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
 
     // A matrix configuration
     using ElementA = typename TllmToCutlassTypeAdapter<T>::type;
-    using LayoutA = cutlass::layout::RowMajor;         // Layout type for A matrix operand
-    constexpr int AlignmentA
-        = 128 / cutlass::sizeof_bits<ElementA>::value; // Alignment of A matrix in units of elements (up to 16 bytes)
+    using LayoutA = cutlass::layout::RowMajor;                              // Layout type for A matrix operand
+    constexpr int AlignmentA = 128 / cutlass::sizeof_bits<ElementA>::value; // Alignment of A matrix in
+                                                                            // units of elements (up to
+                                                                            // 16 bytes)
 
     // B matrix configuration
     using ElementB_ = typename TllmToCutlassTypeAdapter<WeightType>::type;
     using ElementB = std::conditional_t<std::is_same_v<WeightType, cutlass::uint4b_t>, cutlass::int4b_t, ElementB_>;
-    using LayoutB = cutlass::layout::ColumnMajor;      // Layout type for B matrix operand
-    constexpr int AlignmentB
-        = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access granularity/alignment of B matrix in units of
-                                                       // elements (up to 16 bytes)
+    using LayoutB = cutlass::layout::ColumnMajor;                           // Layout type for B matrix operand
+    constexpr int AlignmentB = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access
+                                                                            // granularity/alignment of B
+                                                                            // matrix in units of
+                                                                            // elements (up to 16 bytes)
 
-    // This example manually swaps and transposes, so keep transpose of input layouts
+    // This example manually swaps and transposes, so keep transpose of input
+    // layouts
     using LayoutA_Transpose = typename cutlass::layout::LayoutTranspose<LayoutA>::type;
     using LayoutB_Transpose = typename cutlass::layout::LayoutTranspose<LayoutB>::type;
 
@@ -120,10 +121,11 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
 
     // C/D matrix configuration
     using ElementC = typename TllmToCutlassTypeAdapter<GemmOutputType>::type;
-    using LayoutC = cutlass::layout::RowMajor;         // Layout type for C and D matrix operands
-    constexpr int AlignmentC
-        = 128 / cutlass::sizeof_bits<ElementC>::value; // Memory access granularity/alignment of C matrix in units of
-                                                       // elements (up to 16 bytes)
+    using LayoutC = cutlass::layout::RowMajor;                              // Layout type for C and D matrix operands
+    constexpr int AlignmentC = 128 / cutlass::sizeof_bits<ElementC>::value; // Memory access
+                                                                            // granularity/alignment of C
+                                                                            // matrix in units of
+                                                                            // elements (up to 16 bytes)
 
     // D matrix configuration
     using ElementD = ElementC;
@@ -131,11 +133,13 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
     constexpr int AlignmentD = 128 / cutlass::sizeof_bits<ElementD>::value;
 
     // Core kernel configurations
-    using ElementAccumulator = float;    // Element type for internal accumulation
-    using ArchTag = cutlass::arch::Sm90; // Tag indicating the minimum SM that supports the intended feature
+    using ElementAccumulator = float;                                 // Element type for internal accumulation
+    using ArchTag = cutlass::arch::Sm90;                              // Tag indicating the minimum SM that
+                                                                      // supports the intended feature
     using OperatorClass = cutlass::arch::OpClassTensorOp;             // Operator class tag
     using TileShape = CTAShape;                                       // Threadblock-level tile size
-    using StageCountType = cutlass::gemm::collective::StageCountAuto; // Stage count maximized based on the tile size
+    using StageCountType = cutlass::gemm::collective::StageCountAuto; // Stage count maximized based
+                                                                      // on the tile size
     using KernelSchedule
         = std::conditional_t<std::is_same_v<MainloopScheduleType, cutlass::gemm::KernelTmaWarpSpecializedPingpong>,
             cutlass::gemm::KernelPtrArrayTmaWarpSpecializedPingpong,
@@ -143,7 +147,8 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
     using EpilogueSchedule
         = std::conditional_t<std::is_same_v<KernelSchedule, cutlass::gemm::KernelPtrArrayTmaWarpSpecializedPingpong>,
             cutlass::epilogue::PtrArrayTmaWarpSpecializedPingpong,
-            cutlass::epilogue::PtrArrayTmaWarpSpecializedCooperative>; // Epilogue to launch
+            cutlass::epilogue::PtrArrayTmaWarpSpecializedCooperative>; // Epilogue to
+                                                                       // launch
 
     using CollectiveEpilogue = typename cutlass::epilogue::collective::CollectiveBuilder<cutlass::arch::Sm90,
         cutlass::arch::OpClassTensorOp, TileShape, ClusterShape, cutlass::epilogue::collective::EpilogueTileAuto,
@@ -151,9 +156,12 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
         AlignmentC, ElementD, typename cutlass::layout::LayoutTranspose<LayoutD>::type*, AlignmentD,
         EpilogueSchedule>::CollectiveOp;
 
-    // =========================================================== MIXED INPUT WITH SCALES
-    // =========================================================================== The Scale information must get paired
-    // with the operand that will be scaled. In this example, B is scaled so we make a tuple of B's information and the
+    // =========================================================== MIXED INPUT
+    // WITH SCALES
+    // ===========================================================================
+    // The Scale information must get paired
+    // with the operand that will be scaled. In this example, B is scaled so we
+    // make a tuple of B's information and the
     // scale information.
     using CollectiveMainloop = typename cutlass::gemm::collective::CollectiveBuilderMixedInput<ArchTag, OperatorClass,
         cute::tuple<ElementB, ElementScalePacked>, LayoutB_Transpose*, AlignmentB, ElementA, LayoutA_Transpose*,
@@ -211,7 +219,9 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
 
     if (gemm.get_workspace_size(arguments) > hopper_inputs.gemm_workspace_size)
     {
-        TLLM_LOG_ERROR("[Mixed dtype WS grouped GEMM] given workspace size insufficient, %d < %d.",
+        TLLM_LOG_ERROR(
+            "[Mixed dtype WS grouped GEMM] given workspace size "
+            "insufficient, %d < %d.",
             gemm.get_workspace_size(arguments), hopper_inputs.gemm_workspace_size);
     }
 
@@ -246,6 +256,5 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(GroupedGemmInput<T, WeightType, 
 }
 
 } // namespace cutlass_kernels_oss
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

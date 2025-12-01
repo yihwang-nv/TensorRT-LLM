@@ -21,12 +21,7 @@
 #include <cuda_fp16.h>
 #include <cuda_fp8.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // Helper functions to convert float2 to half, bfloat16, and e4m3.
 
@@ -170,6 +165,4 @@ inline __device__ void convertToFloatAndAccumulate<__nv_bfloat16, 8>(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

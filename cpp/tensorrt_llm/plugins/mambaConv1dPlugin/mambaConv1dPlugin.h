@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,31 +18,35 @@
 
 #ifndef TRT_MAMBA_CONV1D_PLUGIN_H
 #define TRT_MAMBA_CONV1D_PLUGIN_H
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/mambaConv1dKernels.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 // batch_size = num_ctx_requests or num_gen_requests
-// num_ctx_requests = number of context requests (single sequence per request).
-// num_gen_requests = number of generation requests (single sequences per request).
+// num_ctx_requests = number of context requests (single sequence per
+// request).
+// num_gen_requests = number of generation requests (single sequences per
+// request).
 // can not support beam search
 
 // inputs
-//     0.  input_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-//     1.  conv_state [batch_size, dconv - 1, dim] or host [1] containing only pointer for paged_state
+//     0.  input_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
+//     1.  conv_state [batch_size, dconv - 1, dim] or host [1] containing only
+// pointer for paged_state
 //     2.  weight [1, dconv, dim]
 //     3.  bias [dim]
-//     4.  host_request_types [batch_size] int32. 0: context; 1: generation; 2: none.
+//     4.  host_request_types [batch_size] int32. 0: context; 1: generation;
+// 2: none.
 //     5.  last_token_ids [batch_size] int32
-//     6.  host_context_lengths [batch_size] int32, optional for remove_input_padding
+//     6.  host_context_lengths [batch_size] int32, optional for
+// remove_input_padding
 //     7.  state_slot_mapping [batch_size] int32, optional
 // outputs
-//     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     1. conv_state [batch_size, dconv - 1, dim]
 
 class MambaConv1dPlugin : public BasePlugin
@@ -130,7 +135,8 @@ private:
 
     IndexType getSlotMappingIdx() const
     {
-        // if not remove input padding, host_context_length is not used, so the index is 6
+        // if not remove input padding, host_context_length is not used, so the
+        // index is 6
         return mRemovePadding ? 7 : 6;
     };
 
@@ -174,7 +180,6 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
+} // namespace tensorrt_llm::plugins
 
-TRTLLM_NAMESPACE_END
 #endif // TRT_MAMBA_CONV1D_PLUGIN_H

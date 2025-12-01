@@ -23,7 +23,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -44,7 +45,9 @@ void indexer_k_cache_scatter_op(th::Tensor const& k_fp8_bytes, th::Tensor const&
 
     // Enforce k_cache is 4D tensor
     TORCH_CHECK(k_cache.dim() == 4,
-        "k_cache must be a 4D Tensor [num_blocks, block_size, 1, per_token_size], got %d dimensions",
+        "k_cache must be a 4D Tensor [num_blocks, "
+        "block_size, 1, per_token_size], got %d "
+        "dimensions",
         static_cast<int>(k_cache.dim()));
 
     // Validate tensor dtypes
@@ -60,7 +63,8 @@ void indexer_k_cache_scatter_op(th::Tensor const& k_fp8_bytes, th::Tensor const&
     TORCH_CHECK(slot_mapping_fp8.size(0) == num_tokens, "slot_mapping_fp8 length must equal num_tokens");
     TORCH_CHECK(slot_mapping_scale.size(0) == num_tokens, "slot_mapping_scale length must equal num_tokens");
 
-    // Validate tensors are contiguous (except k_cache which may be non-contiguous)
+    // Validate tensors are contiguous (except k_cache which may be
+    // non-contiguous)
     TORCH_CHECK(k_fp8_bytes.is_contiguous(), "k_fp8_bytes must be contiguous");
     TORCH_CHECK(k_scale_bytes.is_contiguous(), "k_scale_bytes must be contiguous");
     // k_cache can be non-contiguous - we handle this via strides
@@ -95,12 +99,13 @@ void indexer_k_cache_scatter_op(th::Tensor const& k_fp8_bytes, th::Tensor const&
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "indexer_k_cache_scatter_op(Tensor k_fp8_bytes, Tensor k_scale_bytes, Tensor(a!) k_cache, "
+        "indexer_k_cache_scatter_op(Tensor k_fp8_bytes, Tensor k_scale_bytes, "
+        "Tensor(a!) k_cache, "
         "Tensor slot_mapping_fp8, Tensor slot_mapping_scale) -> ()");
 }
 

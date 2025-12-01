@@ -21,7 +21,8 @@
 #include <mutex>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -47,29 +48,34 @@ public:
     //! @param cp_size Compute parallel size.
     //! @param rank The rank of the current GPU.
     //! @param gpus_per_node The number of GPUs per node.
-    //! @param buffer_size The size of the buffer to allocate. All buffers allocated by this manager will have this
+    //! @param buffer_size The size of the buffer to allocate. All buffers
+    // allocated by this manager will have this
     //! size.
     //! @param use_nccl_symmetric Whether to use NCCL symmetric communication.
     void initialize(int64_t tp_size, int64_t pp_size, int64_t cp_size, int64_t rank, int64_t gpus_per_node,
         int64_t buffer_size, bool use_nccl_symmetric);
 
-    //! @brief Create a UB tensor from the given shape, strides and data type. The function will choose available UB
+    //! @brief Create a UB tensor from the given shape, strides and data type.
+    // The function will choose available UB
     //! buffer or create a new one if no available buffer is found.
     //! @param buffer_size The size of the buffer to allocate.
     //! @return A unique_ptr to the buffer and the UBBuffer object.
-    //! @note Do not manually call release_buffer with the buffer address in tensorrt_llm::runtime::ub::UBBuffer
+    //! @note Do not manually call release_buffer with the buffer address in
+    // tensorrt_llm::runtime::ub::UBBuffer
     std::pair<UBBufferPtr, tensorrt_llm::runtime::ub::UBBuffer> allocate_userbuffers(int64_t buffer_size);
 
     //! @brief Search the buffer from the list of buffers.
     //! @param addr The address of the buffer to search for.
-    //! @return The buffer and whether it is assigned to a tensor. If not found, the UBBuffer is invalid.
+    //! @return The buffer and whether it is assigned to a tensor. If not found,
+    // the UBBuffer is invalid.
     tensorrt_llm::runtime::ub::UBBuffer search_buffer(void* addr);
 
     //! @brief Get the communicator.
     //! @return The communicator.
     tensorrt_llm::runtime::ub::communicator* comm();
 
-    //! @brief Release the buffer. It does not deallocate the buffer, but just release it to the pool.
+    //! @brief Release the buffer. It does not deallocate the buffer, but just
+    // release it to the pool.
     //! @param addr The address of the buffer to release.
     void release_buffer(void* addr);
 
@@ -84,4 +90,4 @@ void initialize_userbuffers_manager(int64_t tp_size, int64_t pp_size, int64_t cp
 
 } // namespace runtime::ub
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

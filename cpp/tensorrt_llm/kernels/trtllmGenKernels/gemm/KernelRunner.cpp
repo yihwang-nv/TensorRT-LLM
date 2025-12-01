@@ -28,10 +28,7 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/envUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace tg = gemm::trtllm::gen;
 using namespace gemm::gemm;
@@ -68,7 +65,8 @@ TrtllmGenGemmRunner::TrtllmGenGemmRunner(TrtllmGenGemmRunnerOptions const& optio
     {
         auto const options = configs[i].mOptions;
 
-        // When we include low-latency kernels we can set transposeMmaOutput via constructor
+        // When we include low-latency kernels we can set transposeMmaOutput via
+        // constructor
         if (options.mDtypeA == mOptions.eltTypeA && options.mDtypeC == mOptions.outputType
             && options.mUseDeepSeekFp8 == mOptions.deepSeekFp8
             && options.mTransposeMmaOutput == mOptions.transposeMmaOutput
@@ -135,7 +133,8 @@ void TrtllmGenGemmRunner::run(int32_t m, int32_t n, int32_t k, void const* a, fl
     int32_t multiProcessorCount;
     cudaDeviceGetAttribute(&multiProcessorCount, cudaDevAttrMultiProcessorCount, device);
 
-    // FIXME once we start using all-reduce in the epilogue of the gemm this can be moved elsewhere
+    // FIXME once we start using all-reduce in the epilogue of the gemm this can
+    // be moved elsewhere
     gemm.runInitBeforeWorldSync(config, gemmData, static_cast<void*>(stream));
 
     auto const err = gemm.run(config, workspace, gemmData, static_cast<void*>(stream), multiProcessorCount,
@@ -147,8 +146,8 @@ void TrtllmGenGemmRunner::run(int32_t m, int32_t n, int32_t k, void const* a, fl
 void TrtllmGenGemmRunner::run(int32_t m, int32_t n, int32_t k, void const* a, void const* b, void* c, float* cScale,
     void* workspace, CUstream stream, int device)
 {
-    run(m, n, k, a, /*aScale*/ nullptr, b, /*bScale*/ nullptr, c, cScale, /*cScalePtr*/ nullptr, workspace, stream,
-        device);
+    run(m, n, k, a, /*aScale*/ nullptr, b, /*bScale*/ nullptr, c, cScale,
+        /*cScalePtr*/ nullptr, workspace, stream, device);
 }
 
 void TrtllmGenGemmRunner::selectGemmConfig(int32_t m, int32_t n, int32_t k)
@@ -171,8 +170,10 @@ void TrtllmGenGemmRunner::selectGemmConfig(int32_t m, int32_t n, int32_t k)
             auto const& optionsA = configs[idx0].mOptions;
             auto const& optionsB = configs[idx1].mOptions;
 
-            // Choose the tileN that is closest to the problem N. Also if one tileN is larger and the other is smaller,
-            // prefer the larger one. This is the batch size dimension for low latency (transposeMmaOutput) case;
+            // Choose the tileN that is closest to the problem N. Also if one tileN is
+            // larger and the other is smaller,
+            // prefer the larger one. This is the batch size dimension for low latency
+            // (transposeMmaOutput) case;
             if (optionsA.mTileN != optionsB.mTileN)
             {
                 auto const N = gemmData.mProblemDimensions.mN;
@@ -202,7 +203,8 @@ void TrtllmGenGemmRunner::selectGemmConfig(int32_t m, int32_t n, int32_t k)
             }
 
             // Sort by tileM sizes
-            // This is the batch size dimension for throughput (non-transposeMmaOutput) case;
+            // This is the batch size dimension for throughput (non-transposeMmaOutput)
+            // case;
             if (optionsA.mTileM != optionsB.mTileM)
             {
                 return optionsA.mTileM > optionsB.mTileM;
@@ -231,6 +233,4 @@ void TrtllmGenGemmRunner::selectGemmConfig(int32_t m, int32_t n, int32_t k)
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

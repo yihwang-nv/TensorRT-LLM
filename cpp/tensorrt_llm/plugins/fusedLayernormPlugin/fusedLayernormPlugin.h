@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/fusedLayernormKernels/layernorm_param.h"
 #include "tensorrt_llm/kernels/fusedLayernormKernels/ws_layernorm.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
@@ -25,9 +25,7 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class FusedLayernormPlugin : public BasePlugin
@@ -98,6 +96,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

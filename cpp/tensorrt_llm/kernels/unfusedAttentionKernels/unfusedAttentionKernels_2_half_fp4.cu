@@ -18,16 +18,11 @@
 #include "tensorrt_llm/common/config.h"
 #include "unfusedAttentionKernels_2_template.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 #ifdef ENABLE_FP4
 INSTANTIATE_ATTENTION_INPUT_PROCESSING(half, __nv_fp4_e2m1, KVBlockArray);
 INSTANTIATE_ATTENTION_INPUT_PROCESSING(half, __nv_fp4_e2m1, KVLinearBuffer);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

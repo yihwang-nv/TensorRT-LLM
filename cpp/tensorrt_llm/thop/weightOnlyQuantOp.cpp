@@ -24,7 +24,8 @@
 #define TORCH_IS_AT_LEAST_v190
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -43,7 +44,8 @@ void check_quant_type_allowed(torch::ScalarType quant_type)
 
 QuantType get_ft_quant_type(torch::ScalarType quant_type, torch::ScalarType activation_type = torch::kFloat16)
 {
-    // Actually we need FP8 here, but current torch version does not support FP8. That's why INT8 is employed here
+    // Actually we need FP8 here, but current torch version does not support FP8.
+    // That's why INT8 is employed here
     if (activation_type == torch::kFloat8_e4m3fn)
     {
         return QuantType::W4_AFP8;
@@ -64,7 +66,8 @@ QuantType get_ft_quant_type(torch::ScalarType quant_type, torch::ScalarType acti
     }
 }
 
-// Permutes the rows of B for Turing and Ampere. Throws an error for other architectures.
+// Permutes the rows of B for Turing and Ampere. Throws an error for other
+// architectures.
 Tensor permute_B_rows_for_mixed_gemm(Tensor quantized_tensor, torch::ScalarType quant_type, const int64_t arch_version)
 {
     auto _st = quantized_tensor.scalar_type();
@@ -121,7 +124,8 @@ Tensor subbyte_transpose(Tensor quantized_tensor, torch::ScalarType quant_type)
     return transposed_tensor;
 }
 
-// NOTE: TODO this API must change to take in the quant type. We must know the intended activation type since
+// NOTE: TODO this API must change to take in the quant type. We must know the
+// intended activation type since
 //       W4A8 and W4A16 have different layouts.
 Tensor preprocess_weights_for_mixed_gemm(
     Tensor row_major_quantized_weight, torch::ScalarType quant_type, torch::ScalarType activation_type)
@@ -201,7 +205,8 @@ std::vector<Tensor> symmetric_quantize_helper(
     int8_t* unprocessed_quantized_weight_ptr = get_ptr<int8_t>(unprocessed_quantized_weight);
     int8_t* processed_quantized_weight_ptr = get_ptr<int8_t>(processed_quantized_weight);
 
-    // TODO This should be removed if Grouped GEMM is updated to not need interleaved input
+    // TODO This should be removed if Grouped GEMM is updated to not need
+    // interleaved input
     bool force_interleave = weight.dim() == 3;
 
     if (weight.scalar_type() == at::ScalarType::Float)
@@ -242,9 +247,11 @@ std::vector<Tensor> symmetric_quantize_last_axis_of_batched_matrix(Tensor weight
     return symmetric_quantize_helper(weight, quant_type, false);
 }
 
-// Same as symmetric_quantize_last_axis_of_batched_matrix but returns a tuple of:
+// Same as symmetric_quantize_last_axis_of_batched_matrix but returns a tuple
+// of:
 // (unprocessed_quantized_weights, preprocessed_quantized_weights, scales)
-// Exposed mainly for testing, so that the unprocessed weights can be passed to torch functions.
+// Exposed mainly for testing, so that the unprocessed weights can be passed to
+// torch functions.
 std::vector<Tensor> _symmetric_quantize_last_axis_of_batched_matrix(Tensor weight, torch::ScalarType quant_type)
 {
     return symmetric_quantize_helper(weight, quant_type, true);
@@ -403,7 +410,7 @@ Tensor mxfp4_dequantize_unswizzled(Tensor weight, Tensor scale, int64_t group_si
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 // Utility methods that may be useful for preprocessing weights in torch.
 static auto symmetric_quantize_last_axis_of_batched_matrix

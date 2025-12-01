@@ -37,10 +37,7 @@
 #include "chunkstate.h"
 #include "statepassing.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 __device__ float toFloat(float f)
 {
@@ -628,6 +625,4 @@ INSTANTIATE_SELECTIVE_SCAN_UPDATE_DATA_TYPE(__nv_bfloat16, float);
 #endif
 #undef INSTANTIATE_SELECTIVE_SCAN_UPDATE_DATA_TYPE
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

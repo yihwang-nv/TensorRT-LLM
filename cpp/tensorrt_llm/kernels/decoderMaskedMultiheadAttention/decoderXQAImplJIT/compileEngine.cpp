@@ -45,10 +45,8 @@ void CHECK_TLLM_XQA_JIT_ERROR_(tllmXqaJitStatus result, char const* const func, 
 
 } // anonymous namespace
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace jit
 {
 
@@ -74,9 +72,12 @@ CubinObj CompileEngine::compile() const
     }
     else
     {
-        // Make it explicit that Ampere-style kernel doesn't apply RoPE in the kernel.
-        // For kROPE_M, set ropeStyle to TLLM_XQA_JIT_ROPE_NONE to let XQA kernel not apply RoPE.
-        // At runtime, a separate kernel (see invokeQKVPreprocessing) will be launched to apply RoPE.
+        // Make it explicit that Ampere-style kernel doesn't apply RoPE in the
+        // kernel.
+        // For kROPE_M, set ropeStyle to TLLM_XQA_JIT_ROPE_NONE to let XQA kernel
+        // not apply RoPE.
+        // At runtime, a separate kernel (see invokeQKVPreprocessing) will be
+        // launched to apply RoPE.
         ropeStyle = tllmXqaJitRopeStyle::TLLM_XQA_JIT_ROPE_NONE;
     }
     if (applyRoPEInXqaKernel)
@@ -101,7 +102,8 @@ CubinObj CompileEngine::compile() const
         /*kernel_type=*/mXqaParams.isMLA() ? TLLM_XQA_JIT_MLA
                                            : (useQGMMAKernel ? TLLM_XQA_JIT_QGMMA : TLLM_XQA_JIT_HMMA),
         /*fp8_output=*/mXqaParams.is_fp8_output,
-        // If applyRoPEInXqaKernel, no scratch is needed for storing intermediate RoPE result. Use input KV instead of
+        // If applyRoPEInXqaKernel, no scratch is needed for storing intermediate
+        // RoPE result. Use input KV instead of
         // scratch in this case.
         /*use_input_kv=*/applyRoPEInXqaKernel,
         /*rope_style=*/ropeStyle,
@@ -133,6 +135,5 @@ CompileEngine::CompileEngine(int SM, XQAParams const& xqaParams)
 }
 
 } // namespace jit
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

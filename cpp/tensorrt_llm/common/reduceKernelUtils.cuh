@@ -33,9 +33,6 @@ namespace cg = cooperative_groups;
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 template <int VPT>
 struct BytesToType;
 
@@ -88,7 +85,10 @@ __inline__ __device__ T warpReduceSum(T val)
 
 #pragma unroll
     for (int mask = 16; mask > 0; mask >>= 1)
-        val = add<T>(val, __shfl_xor_sync(FINAL_MASK, val, mask, 32)); //__shfl_sync bf16 return float when sm < 80
+        val = add<T>(val, __shfl_xor_sync(FINAL_MASK, val, mask, 32)); //__shfl_sync
+    // bf16 return
+    // float when
+    // sm < 80
     return val;
 }
 
@@ -326,7 +326,8 @@ template <typename T, int MAX_K>
 struct TopK
 {
     int p[MAX_K]; // index, being -1 at the tail if the array is not full
-    T u[MAX_K];   // value in descend order, being -MAX_T_VAL if the element is invalid
+    T u[MAX_K];   // value in descend order, being -MAX_T_VAL if the element is
+                  // invalid
 
     __device__ __forceinline__ void insert(T const elem, int const elem_id)
     {
@@ -337,7 +338,8 @@ struct TopK
         // Condition of updating the array
         // 1. array is not full
         // 2. elem is greater than the smallest (last) element in the array
-        // 3. elem is equal to the smallest (last) element in the array but its elem_id is smaller
+        // 3. elem is equal to the smallest (last) element in the array but its
+        // elem_id is smaller
         bool const need_update
             = (p[MAX_K - 1] == -1 || elem > u[MAX_K - 1] || elem == u[MAX_K - 1] && elem_id < p[MAX_K - 1]);
         if (!need_update)
@@ -422,7 +424,5 @@ __device__ __forceinline__ half clamp_inf_for_half(float const input)
     // clamp inf values to enable fp16 training
     return input > 0.0f ? (half) min(input, HALF_FLT_MAX - 1000) : (half) max(input, -HALF_FLT_MAX + 1000);
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

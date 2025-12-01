@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/lookaheadModule.h"
@@ -27,9 +26,7 @@
 #include <NvInferRuntime.h>
 #include <array>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class ModelConfig
@@ -65,7 +62,8 @@ public:
     {
         kATTENTION,
         kRECURRENT,
-        // NOTE: Linear and noop are attention alternatives introduced in Nemotron-NAS. They do not use the KV cache.
+        // NOTE: Linear and noop are attention alternatives introduced in
+        // Nemotron-NAS. They do not use the KV cache.
         kLINEAR,
         kNOOP,
     };
@@ -147,8 +145,9 @@ public:
         , mNumLanguages(0)
     {
         TLLM_CHECK_WITH_INFO(mNbLayers >= mNbAttentionLayers + mNbRnnLayers,
-            "Number of layers (%d) expected to be >= number of attention (%d) + number of rnn layers (%d)", mNbLayers,
-            mNbAttentionLayers, mNbRnnLayers);
+            "Number of layers (%d) expected to be >= number of "
+            "attention (%d) + number of rnn layers (%d)",
+            mNbLayers, mNbAttentionLayers, mNbRnnLayers);
         setNbKvHeads(mNbHeads);
     }
 
@@ -210,7 +209,8 @@ public:
         if (mLayerTypes.empty())
         {
             // this assumption might be wrong in a few cases, for example:
-            // layer types: [attention, recurrent, recurrent], pp=2 ==> first rank has 1 attention layer, not 0
+            // layer types: [attention, recurrent, recurrent], pp=2 ==> first rank
+            // has 1 attention layer, not 0
             TLLM_LOG_DEBUG("Assuming uniform distribution of attention layers between ranks");
             return mNbAttentionLayers / pipelineParallelism;
         }
@@ -224,7 +224,8 @@ public:
         if (mLayerTypes.empty())
         {
             // this assumption might be wrong in a few cases, for example:
-            // layer types: [attention, attention, recurrent], pp=2 ==> second rank has 1 rnn layer, not 0
+            // layer types: [attention, attention, recurrent], pp=2 ==> second rank
+            // has 1 rnn layer, not 0
             TLLM_LOG_DEBUG("Assuming uniform distribution of recurrent layers between ranks");
             return mNbRnnLayers / pipelineParallelism;
         }
@@ -698,7 +699,9 @@ public:
 #ifdef ENABLE_FP4
             return nvinfer1::DataType::kFP4;
 #else
-            throw std::runtime_error("Model has FP4 KV cache, but TRT-LLM was not compiled with FP4 enabled.");
+            throw std::runtime_error(
+                "Model has FP4 KV cache, but TRT-LLM was not "
+                "compiled with FP4 enabled.");
 #endif
         }
         else
@@ -838,7 +841,9 @@ public:
     {
         auto const numElems = static_cast<SizeType32>(headsPerLayer.size());
         TLLM_CHECK_WITH_INFO(numElems == mNbAttentionLayers,
-            "Length of head_per_layer (%d) must match number of attention layers (%d)", numElems, mNbAttentionLayers);
+            "Length of head_per_layer (%d) must match number of "
+            "attention layers (%d)",
+            numElems, mNbAttentionLayers);
         mNumKvHeadsPerAttentionLayer = headsPerLayer;
     }
 
@@ -846,7 +851,9 @@ public:
     {
         auto const numElems = static_cast<SizeType32>(headsPerLayer.size());
         TLLM_CHECK_WITH_INFO(numElems == mNbAttentionLayers,
-            "Length of head_per_layer (%d) must match number of attention layers (%d)", numElems, mNbAttentionLayers);
+            "Length of head_per_layer (%d) must match number of "
+            "attention layers (%d)",
+            numElems, mNbAttentionLayers);
         mNumKvHeadsPerCrossAttentionLayer = headsPerLayer;
     }
 
@@ -928,7 +935,8 @@ private:
 
     std::optional<RnnConfig> mRnnConfig;
 
-    // Whether kv_cache is enabled. In kv_cache is disabled, it is only intended for context phase only now.
+    // Whether kv_cache is enabled. In kv_cache is disabled, it is only intended
+    // for context phase only now.
     KVCacheType mKVCacheType = KVCacheType::kCONTINUOUS;
 
     // Configs related to encoder / enc-dec models
@@ -956,6 +964,4 @@ private:
     std::optional<SizeType32> mNumLanguages;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

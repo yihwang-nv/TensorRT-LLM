@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "debugUtils.h"
-#include "tensorrt_llm/common/config.h"
 
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/utils/numpyUtils.h"
@@ -26,9 +26,7 @@
 
 namespace fs = std::filesystem;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::utils
+namespace tensorrt_llm::batch_manager::utils
 {
 using executor::IterationType;
 using runtime::ITensor;
@@ -172,7 +170,8 @@ template <typename T>
 void writeBinArray(std::string const& filename, T const* tensor, const int64_t size, cudaStream_t stream)
 {
     // write the tensor into a binary file. Can load from python by using
-    // np.fromfile(filename, dtype=np_type), where np_type is np.float16 when T is half, and so on.
+    // np.fromfile(filename, dtype=np_type), where np_type is np.float16 when T
+    // is half, and so on.
     TLLM_LOG_ERROR("%s start, size: %ld", __PRETTY_FUNCTION__, size);
     std::ofstream outfile(filename, std::ios::binary);
     TLLM_CHECK_WITH_INFO(
@@ -195,6 +194,4 @@ template void writeBinArray(
     std::string const& filename, __nv_bfloat16 const* tensor, const int64_t size, cudaStream_t stream);
 #endif
 
-} // namespace batch_manager::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::utils

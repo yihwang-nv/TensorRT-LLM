@@ -33,10 +33,7 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tmaDescriptor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -75,10 +72,12 @@ private:
     // Set the tma descriptors.
     void setTmaDescriptors(MHARunnerParams runnerParams);
 
-    // Check if it is a valid sequence length (only used by non-flash-attention kernels).
+    // Check if it is a valid sequence length (only used by non-flash-attention
+    // kernels).
     bool isValidS(int s) const;
 
-    // Get the kernel sequence that support the max sequence length (only used by non-flash-attention kernels).
+    // Get the kernel sequence that support the max sequence length (only used by
+    // non-flash-attention kernels).
     int getSFromMaxSeqLen(int const max_seq_len) const;
 
 private:
@@ -102,6 +101,4 @@ private:
     FusedMultiHeadAttentionXMMAKernelV2 const* xmmaKernel;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

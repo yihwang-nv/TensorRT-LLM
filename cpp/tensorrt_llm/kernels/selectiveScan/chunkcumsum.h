@@ -26,10 +26,7 @@
 #include "CudaType.h"
 #include "Poly.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 typedef void (*ChunkCumsumKernelFunc)(int B_, int L_, int H_, int P_, int G_, int N_,
     //  const void *g_mxY_,  // Tp_   B*L*H*P
@@ -196,7 +193,8 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 #pragma unroll
                 for (int i = 0; i < 8; i++)
                 {
-                    // Set dc to zero out of seq length, a must for chunkstate & chunkscan.
+                    // Set dc to zero out of seq length, a must for chunkstate &
+                    // chunkscan.
                     s_mxdc[get((thread(iStep) * cn<8> + Rn<UNROLL, 8>{i}) % cn<tileH_> * Q
                         + (thread(iStep) * cn<8> + Rn<UNROLL, 8>{i}) / cn<tileH_>)]
                         = 0.f;
@@ -361,7 +359,5 @@ static inline ChunkCumsumKernelFunc getChunkCumsumKernel(int B_, int L_, int H_,
     return nullptr;
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 // vim: ts=2 sw=2 sts=2 et sta

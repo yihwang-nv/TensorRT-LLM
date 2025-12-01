@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "hostfunc.h"
-#include "tensorrt_llm/common/config.h"
 
 #include "tensorrt_llm/common/logger.h"
 
@@ -28,9 +28,7 @@
 
 namespace nb = nanobind;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::runtime
+namespace tensorrt_llm::nanobind::runtime
 {
 
 struct HostFuncUserData
@@ -91,8 +89,10 @@ std::optional<uintptr_t> launchHostFunc(
     }
 
     // Release the ownership of the user data.
-    // If freeUserData is true, the user data will be freed by cudaHostFuncTrampoline.
-    // If freeUserData is false, the user data should be freed by freeHostFuncUserData.
+    // If freeUserData is true, the user data will be freed by
+    // cudaHostFuncTrampoline.
+    // If freeUserData is false, the user data should be freed by
+    // freeHostFuncUserData.
     auto userDataPtr = reinterpret_cast<uintptr_t>(hostFuncUserData.release());
     return freeUserData ? std::nullopt : std::make_optional(userDataPtr);
 }
@@ -115,6 +115,4 @@ void initHostFuncBindings(nb::module_& m)
         nb::call_guard<nb::gil_scoped_release>());
     m.def("free_hostfunc_user_data", &freeHostFuncUserData, "Free the user data for the Python host function");
 }
-} // namespace nanobind::runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::runtime

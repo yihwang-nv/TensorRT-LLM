@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,53 +15,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tensorrt_llm/common/config.h"
-#include "tensorrt_llm/common/stringUtils.h"
-
 #include "tensorrt_llm/plugins/api/tllmPlugin.h"
-#include "tensorrt_llm/plugins/bertAttentionPlugin/bertAttentionPlugin.h"
 
-#include "tensorrt_llm/plugins/cpSplitPlugin/cpSplitPlugin.h"
-#include "tensorrt_llm/plugins/cudaStreamPlugin/cudaStreamPlugin.h"
-#include "tensorrt_llm/plugins/cumsumLastDimPlugin/cumsumLastDimPlugin.h"
+#include "tensorrt_llm/common/stringUtils.h"
+#include "tensorrt_llm/runtime/tllmLogger.h"
+
+#include "tensorrt_llm/plugins/bertAttentionPlugin/bertAttentionPlugin.h"
 #include "tensorrt_llm/plugins/doraPlugin/doraPlugin.h"
-#include "tensorrt_llm/plugins/eaglePlugin/eagleDecodeDraftTokensPlugin.h"
-#include "tensorrt_llm/plugins/eaglePlugin/eaglePrepareDrafterInputsPlugin.h"
-#include "tensorrt_llm/plugins/eaglePlugin/eagleSampleAndAcceptDraftTokensPlugin.h"
-#include "tensorrt_llm/plugins/fp4GemmPlugin/fp4GemmPlugin.h"
 #include "tensorrt_llm/plugins/fp8RowwiseGemmPlugin/fp8RowwiseGemmPlugin.h"
 #include "tensorrt_llm/plugins/fusedLayernormPlugin/fusedLayernormPlugin.h"
-#include "tensorrt_llm/plugins/gemmAllReducePlugin/gemmAllReducePlugin.h"
 #include "tensorrt_llm/plugins/gemmPlugin/gemmPlugin.h"
 #include "tensorrt_llm/plugins/gemmSwigluPlugin/gemmSwigluPlugin.h"
 #include "tensorrt_llm/plugins/gptAttentionPlugin/gptAttentionPlugin.h"
 #include "tensorrt_llm/plugins/identityPlugin/identityPlugin.h"
-#if ENABLE_MULTI_DEVICE
 #include "tensorrt_llm/plugins/layernormQuantizationPlugin/layernormQuantizationPlugin.h"
 #include "tensorrt_llm/plugins/lookupPlugin/lookupPlugin.h"
 #include "tensorrt_llm/plugins/loraPlugin/loraPlugin.h"
-#include "tensorrt_llm/plugins/lowLatencyGemmPlugin/lowLatencyGemmPlugin.h"
-#include "tensorrt_llm/plugins/lowLatencyGemmSwigluPlugin/lowLatencyGemmSwigluPlugin.h"
 #include "tensorrt_llm/plugins/lruPlugin/lruPlugin.h"
 #include "tensorrt_llm/plugins/mambaConv1dPlugin/mambaConv1dPlugin.h"
-#endif // ENABLE_MULTI_DEVICE
 #include "tensorrt_llm/plugins/mixtureOfExperts/mixtureOfExpertsPlugin.h"
+#include "tensorrt_llm/plugins/quantizeToFP4Plugin/quantizeToFP4Plugin.h"
+#if ENABLE_MULTI_DEVICE
+#include "tensorrt_llm/plugins/cpSplitPlugin/cpSplitPlugin.h"
+#include "tensorrt_llm/plugins/gemmAllReducePlugin/gemmAllReducePlugin.h"
 #include "tensorrt_llm/plugins/ncclPlugin/allgatherPlugin.h"
 #include "tensorrt_llm/plugins/ncclPlugin/allreducePlugin.h"
 #include "tensorrt_llm/plugins/ncclPlugin/recvPlugin.h"
 #include "tensorrt_llm/plugins/ncclPlugin/reduceScatterPlugin.h"
 #include "tensorrt_llm/plugins/ncclPlugin/sendPlugin.h"
+#endif // ENABLE_MULTI_DEVICE
+#include "tensorrt_llm/plugins/cudaStreamPlugin/cudaStreamPlugin.h"
+#include "tensorrt_llm/plugins/cumsumLastDimPlugin/cumsumLastDimPlugin.h"
+#include "tensorrt_llm/plugins/eaglePlugin/eagleDecodeDraftTokensPlugin.h"
+#include "tensorrt_llm/plugins/eaglePlugin/eaglePrepareDrafterInputsPlugin.h"
+#include "tensorrt_llm/plugins/eaglePlugin/eagleSampleAndAcceptDraftTokensPlugin.h"
+#include "tensorrt_llm/plugins/fp4GemmPlugin/fp4GemmPlugin.h"
+#include "tensorrt_llm/plugins/lowLatencyGemmPlugin/lowLatencyGemmPlugin.h"
+#include "tensorrt_llm/plugins/lowLatencyGemmSwigluPlugin/lowLatencyGemmSwigluPlugin.h"
 #include "tensorrt_llm/plugins/qserveGemmPlugin/qserveGemmPlugin.h"
 #include "tensorrt_llm/plugins/quantizePerTokenPlugin/quantizePerTokenPlugin.h"
 #include "tensorrt_llm/plugins/quantizeTensorPlugin/quantizeTensorPlugin.h"
-#include "tensorrt_llm/plugins/quantizeToFP4Plugin/quantizeToFP4Plugin.h"
 #include "tensorrt_llm/plugins/rmsnormQuantizationPlugin/rmsnormQuantizationPlugin.h"
 #include "tensorrt_llm/plugins/selectiveScanPlugin/selectiveScanPlugin.h"
 #include "tensorrt_llm/plugins/smoothQuantGemmPlugin/smoothQuantGemmPlugin.h"
 #include "tensorrt_llm/plugins/topkLastDimPlugin/topkLastDimPlugin.h"
 #include "tensorrt_llm/plugins/weightOnlyGroupwiseQuantMatmulPlugin/weightOnlyGroupwiseQuantMatmulPlugin.h"
 #include "tensorrt_llm/plugins/weightOnlyQuantMatmulPlugin/weightOnlyQuantMatmulPlugin.h"
-#include "tensorrt_llm/runtime/tllmLogger.h"
 
 #include <array>
 #include <cstdlib>
@@ -100,7 +100,7 @@ GlobalLoggerFinder gGlobalLoggerFinder{};
 #if !defined(_MSC_VER)
 [[maybe_unused]] __attribute__((constructor))
 #endif
-void initOnLoad()
+    void initOnLoad()
 {
     auto constexpr kLoadPlugins = "TRT_LLM_LOAD_PLUGINS";
     auto const loadPlugins = std::getenv(kLoadPlugins);
@@ -114,12 +114,10 @@ bool pluginsInitialized = false;
 
 } // namespace
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins::api
+namespace tensorrt_llm::plugins::api
 {
 
-LoggerManager& LoggerManager::getInstance() noexcept
+LoggerManager& tensorrt_llm::plugins::api::LoggerManager::getInstance() noexcept
 {
     static LoggerManager instance;
     return instance;
@@ -148,9 +146,8 @@ nvinfer1::ILogger* LoggerManager::defaultLogger() noexcept
 {
     return gLogger;
 }
-} // namespace plugins::api
+} // namespace tensorrt_llm::plugins::api
 
-TRTLLM_NAMESPACE_END
 // New Plugin APIs
 
 extern "C"

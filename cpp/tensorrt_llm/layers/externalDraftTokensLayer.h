@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/layers/decodingParams.h"
@@ -24,9 +23,7 @@
 
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 //! \brief Top class for sampling layers.
@@ -110,6 +107,4 @@ private:
         std::shared_ptr<runtime::DecodingLayerWorkspace> const& workspace);
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

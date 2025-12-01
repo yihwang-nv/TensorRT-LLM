@@ -20,10 +20,8 @@
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/common.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/details.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 template <bool isGroupwise, typename Details>
@@ -112,6 +110,5 @@ inline bool is_supported(int arch, KernelType kernel_type)
 #undef SUPPORT
 }
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

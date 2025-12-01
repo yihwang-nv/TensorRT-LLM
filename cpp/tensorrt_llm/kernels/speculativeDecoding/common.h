@@ -24,29 +24,38 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 
-//! \brief Linearly packs accepted paths in memory according to the accceptedLengths and bestPathIds
+//! \brief Linearly packs accepted paths in memory according to the
+// accceptedLengths and bestPathIds
 //!
-//! \param acceptedLengthsCumSum input buffer [maxBatchSize + 1], exclusive sum of accepted lengths
+//! \param acceptedLengthsCumSum input buffer [maxBatchSize + 1], exclusive sum
+// of accepted lengths
 //! (indexed linearly in memory).
-//! \param pathsOffsets input buffer [maxBatchSize * maxDraftLen], slices of accepted paths packed in memory
-//! \param acceptedLengths input buffer [maxBatchSize], length of the data accepted tokens
-//! \param bestPathIds input buffer [maxBatchSize], indices of the selected paths
-//! \param paths input buffer [engineBatchSize, numPaths, maxPathLen] if isPathsLinearBatchIdx else [maxBatchSize,
-//! numPaths, maxPathLen], paths to restore sequences from outputIds and targetIds. Should be filled with -1 for
+//! \param pathsOffsets input buffer [maxBatchSize * maxDraftLen], slices of
+// accepted paths packed in memory
+//! \param acceptedLengths input buffer [maxBatchSize], length of the data
+// accepted tokens
+//! \param bestPathIds input buffer [maxBatchSize], indices of the selected
+// paths
+//! \param paths input buffer [engineBatchSize, numPaths, maxPathLen] if
+// isPathsLinearBatchIdx else [maxBatchSize,
+//! numPaths, maxPathLen], paths to restore sequences from outputIds and
+// targetIds. Should be filled with -1 for
 //! everything that is not path.
-//! \param batchSlots input buffer [engineBatchSize], address map from local index to
+//! \param batchSlots input buffer [engineBatchSize], address map from local
+// index to
 //! global index [0, batchSize] -> [0, maxBatchSize].
 //! \param batchSize the number of sequences to be decoded
 //! \param engineBatchSize number of sequences processed in the engine.
 //! Includes chunked context reqs that are not in the last chunk.
 //! \param numPaths maximum number of tokens per step
 //! configured in the system
-//! \param maxPathLen maximum sequence length of the sequence containing draft tokens
+//! \param maxPathLen maximum sequence length of the sequence containing draft
+// tokens
 //! \param isPathsSeqSlotIdx access paths using batch slot or seq slot
 //! \param stream stream
 void invokePackAcceptedPaths(runtime::SizeType32* acceptedLengthsCumSum, runtime::SizeType32* pathsOffsets,
@@ -62,7 +71,8 @@ struct AcceptDraftTokensByIdsWithPathsParams
     runtime::TokenIdType* outputIds{nullptr};
     //! input buffer [maxBatchSize, maxDecodingTokens], draft tokens
     runtime::TokenIdType const* draftIds{nullptr};
-    //! input buffer [maxBatchSize, maxDecodingTokens], tokens predicted from the target medusa head
+    //! input buffer [maxBatchSize, maxDecodingTokens], tokens predicted from the
+    // target medusa head
     runtime::TokenIdType const* targetIds{nullptr};
     //! input/output buffer [maxBatchSize], optional.
     //! Length of the data in outputIds without draft tokens.
@@ -77,16 +87,19 @@ struct AcceptDraftTokensByIdsWithPathsParams
     //! If nullptr, batchIdx is used.
     runtime::SizeType32 const* batchSlots{nullptr};
     //! input buffer [maxBatchSize, maxDecodingTokens, maxDraftPathLen+1],
-    //! paths to restore sequences from outputIds and targetIds. Should be filled with -1 for everything that is not
+    //! paths to restore sequences from outputIds and targetIds. Should be filled
+    // with -1 for everything that is not
     //! path.
     runtime::SizeType32 const* paths{nullptr};
     //! input buffer [maxBatchSize], optional. EOS ids per request.
     //! No EOS checks if nullptr.
     runtime::TokenIdType const* endIds{nullptr};
-    //! input buffer [maxDraftPathLen, maxBatchSize, maxDecodingTokens, vocabSize], optional.
+    //! input buffer [maxDraftPathLen, maxBatchSize, maxDecodingTokens,
+    // vocabSize], optional.
     //! Pointer to the logits from medusa heads.
     T const** medusaLogits{nullptr};
-    //! output buffer [batchSize, maxDraftPathLen], optional. Contains pointers to the
+    //! output buffer [batchSize, maxDraftPathLen], optional. Contains pointers to
+    // the
     //! respective rows of the medusaLogits for the next after the accepted token
     T const** logitsPtrs{nullptr};
     //! current tokens to compute per step will be updated to
@@ -131,8 +144,10 @@ struct AcceptDraftTokensByIdsWithPathsParams
     }
 };
 
-//! \brief verifies draft medusa tokens given target tokens. Modifies outputIds tensor accordingly filling it with
-//! accepted tokens. Fills logitsPtrs tensor with the pointers to the respective medusa logits tensor according
+//! \brief verifies draft medusa tokens given target tokens. Modifies outputIds
+// tensor accordingly filling it with
+//! accepted tokens. Fills logitsPtrs tensor with the pointers to the respective
+// medusa logits tensor according
 //! to the next after the last accepted token.
 template <typename T>
 void acceptDraftTokensByIdsWithPaths(AcceptDraftTokensByIdsWithPathsParams<T> const&);
@@ -159,7 +174,8 @@ struct TypicalAcceptanceSampling
 
     runtime::TokenIdType* outputIds{nullptr};
 
-    //! Workspace for typical acceptance. Get the workspace size in bytes with getTypicalAcceptanceWorkspaceSize
+    //! Workspace for typical acceptance. Get the workspace size in bytes with
+    // getTypicalAcceptanceWorkspaceSize
     int8_t* workspace{nullptr};
 
     //! [batchSize * maxDecodingTokens], optional.
@@ -208,6 +224,6 @@ template <typename T>
 size_t getTypicalAcceptanceWorkspaceSize(
     runtime::SizeType32 batchSize, runtime::SizeType32 maxDecodingTokens, runtime::SizeType32 vocabSizePadded);
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

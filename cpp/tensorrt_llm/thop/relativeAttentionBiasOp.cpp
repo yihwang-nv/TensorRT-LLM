@@ -21,7 +21,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -39,9 +40,10 @@ void handleInvokeRelativeAttentionBias(th::Tensor& relative_attention_bias, th::
         (max_seq_len + 1), num_bucket, is_bidirectional, max_distance, stream);
 }
 
-void buildRelativeAttentionBias(
-    th::Tensor& relative_attention_bias,       // sizeof(T) * num_head * (max_seq_len + 1) * (max_seq_len + 1)
-    th::Tensor& relative_attention_bias_table, // sizeof(T) * num_head * num_bucket
+void buildRelativeAttentionBias(th::Tensor& relative_attention_bias, // sizeof(T) * num_head * (max_seq_len
+                                                                     // + 1) * (max_seq_len + 1)
+    th::Tensor& relative_attention_bias_table,                       // sizeof(T) * num_head *
+                                                                     // num_bucket
     int64_t const num_head, int64_t const max_seq_len, int64_t const num_bucket, bool const is_bidirectional,
     int64_t const max_distance)
 {
@@ -70,7 +72,7 @@ void buildRelativeAttentionBias(
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto relative_attention_bias = torch::RegisterOperators(
     "tensorrt_llm::relative_attention_bias", &tensorrt_llm::torch_ext::buildRelativeAttentionBias);

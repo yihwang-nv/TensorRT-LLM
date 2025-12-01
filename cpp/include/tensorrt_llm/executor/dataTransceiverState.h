@@ -18,7 +18,6 @@
 
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
@@ -27,9 +26,7 @@
 #include <variant>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 class Serialization;
@@ -38,7 +35,8 @@ namespace kv_cache
 {
 
 // Describe the data structure for cache layout, which can be used to infer
-// cache layouts and location associations between different processes, in order
+// cache layouts and location associations between different processes, in
+// order
 // to determine suitable senders and receivers.
 class CacheState final
 {
@@ -131,7 +129,8 @@ public:
         bool mEnableAttentionDP;
         SizeType32 mDPrank;
         SizeType32 mDPsize;
-        // number of attention layers per pipeline parallelism rank, the size of the vector is equal to the pipeline
+        // number of attention layers per pipeline parallelism rank, the size of
+        // the vector is equal to the pipeline
         // parallelism size.
         std::vector<SizeType32> mAttentionLayerNumPerPP;
 
@@ -150,7 +149,6 @@ public:
         AttentionConfig(AttentionType attentionType, int kvFactor)
             : mAttentionType(attentionType)
             , mKvFactor(kvFactor)
-
         {
         }
 
@@ -472,6 +470,4 @@ private:
     std::optional<kv_cache::CommState> mCommState;
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

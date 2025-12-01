@@ -31,10 +31,7 @@
 #include <cstdint>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct XQAKernelLoadHashKey
 {
@@ -158,7 +155,8 @@ struct XQAKernelFullHasher
     }
 };
 
-// NOTE: we use int32_t sequence lengths as gpt attention plugins use int32_t for that.
+// NOTE: we use int32_t sequence lengths as gpt attention plugins use int32_t
+// for that.
 // XQA kernels assume all length should use uint32_t.
 // NOTE: Linear KV cache and paged KV cache uses the same structure.
 
@@ -206,9 +204,11 @@ struct KVCache<KVLinearBuffer>
 
 struct BeamSearchParams
 {
-    int32_t const* indices;    // cacheIndir with shape: [batchSize][beamWidth][capacity]
+    int32_t const* indices;    // cacheIndir with shape:
+                               // [batchSize][beamWidth][capacity]
     int32_t capacity;
-    int32_t const* ctxLenList; // shape: [batchSize][beamWidth]. Should be [batchSize] but we have to match trt-llm API.
+    int32_t const* ctxLenList; // shape: [batchSize][beamWidth]. Should be
+                               // [batchSize] but we have to match trt-llm API.
 };
 
 // XQA kernels assume all integer values should use uint32_t.
@@ -238,7 +238,8 @@ struct XQALaunchParam
     int32_t* sparse_seq_lengths = nullptr;
 };
 
-// Setup launch params and ioScratch. ioScratch is for RoPE and output type conversion.
+// Setup launch params and ioScratch. ioScratch is for RoPE and output type
+// conversion.
 template <typename KVCacheBuffer>
 void buildXQALaunchParams(XQALaunchParam<KVCacheBuffer>& launchParams, void*& inputScratch, bool hasOutputScratch,
     XQAParams const& params, KVCacheBuffer kv_cache_buffer)
@@ -369,10 +370,12 @@ inline int computeMultiBlockCount(XQAParams const& xqaParams, int batch_size, in
     int32_t const maxNbSubSeq = getXqaMaxNumSubSeq(xqaParams.isMLA());
 
     multi_block_count = history_length / kMinHistoryTokensPerBlock;
-    // avoid using too many blocks for one sequence, otherwise the final reduction may dominate.
+    // avoid using too many blocks for one sequence, otherwise the final reduction
+    // may dominate.
     multi_block_count = std::min(multi_block_count, static_cast<int>(std::round(std::sqrt(multi_block_count * 8.F))));
     multi_block_count = std::max(multi_block_count, 1);
-    // adjust to kTargetWaveFactor, as already initialized using kMinHistoryTokensPerBlock, only need to decrease.
+    // adjust to kTargetWaveFactor, as already initialized using
+    // kMinHistoryTokensPerBlock, only need to decrease.
     double wave_count = (double) batch_size * num_kv_heads * multi_block_count / (double) multiprocessor_count;
     double adj_factor = wave_count / (double) kTargetWaveFactor;
     if (adj_factor > 1.0)
@@ -382,7 +385,8 @@ inline int computeMultiBlockCount(XQAParams const& xqaParams, int batch_size, in
     multi_block_count = std::max(multi_block_count, 1);
 
     // Add limitation due to reserved workspace size.
-    // When batch_size is large, multi-block is useless anyway. So large workspace is not useful and we can set a hard
+    // When batch_size is large, multi-block is useless anyway. So large workspace
+    // is not useful and we can set a hard
     // limit for workspace size (computed from maxNbSubSeq).
     multi_block_count = std::max(std::min(multi_block_count, maxNbSubSeq / batch_size), 1);
 
@@ -416,7 +420,8 @@ inline int computeMultiBlockCountSpecDecGMMA(
         return multi_block_count;
     }
 
-    // gridDim = dim3{specDecBlocks, multi_block, nbKVHeads * xqaParams.batch_size}
+    // gridDim = dim3{specDecBlocks, multi_block, nbKVHeads *
+    // xqaParams.batch_size}
     int single_block_count = specDecBlocks * num_kv_heads * batch_size;
     double wave_count = (double) single_block_count / (double) multiprocessor_count;
 
@@ -441,7 +446,8 @@ inline int computeMultiBlockCountSpecDecGMMA(
         multi_block_count = std::min(multi_block_count, 64);
         multi_block_count = std::max(multi_block_count, 1);
 
-        // tune only when original CTA is too small, multi_block_count is too big, and history length < 2^16
+        // tune only when original CTA is too small, multi_block_count is too big,
+        // and history length < 2^16
         // For Hopper, most cases there are 114, 132, 144 SMs. For H20 about 78.
         // single_block_count = [1..8]
         // multi_block_count = [16,32,64,128]
@@ -450,13 +456,15 @@ inline int computeMultiBlockCountSpecDecGMMA(
         {
             if (history_length < 2048)
             {
-                // for history length < 2048 and low CTA, scaling is not effective, so we set a hard limit to
+                // for history length < 2048 and low CTA, scaling is not effective, so
+                // we set a hard limit to
                 // multi_block_count = 4
                 multi_block_count = std::min(multi_block_count, 4);
             }
             else if (history_length < 65536)
             {
-                // at single_block == 8, multi_block_count can only be 16. (SM / 8 ~= 16)
+                // at single_block == 8, multi_block_count can only be 16. (SM / 8 ~=
+                // 16)
                 // tune only 2048 <= kvlen < 8192
                 if (single_block_count == 8 && history_length <= 8192)
                 {
@@ -477,11 +485,10 @@ inline int computeMultiBlockCountSpecDecGMMA(
             }
         }
         TLLM_CHECK_WITH_INFO((multi_block_count * single_block_count) <= multiprocessor_count,
-            "The adjusted MultiBlock exceed number of SMs, adding additional wave may result to perf drop.");
+            "The adjusted MultiBlock exceed number of SMs, adding "
+            "additional wave may result to perf drop.");
     }
     return multi_block_count;
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

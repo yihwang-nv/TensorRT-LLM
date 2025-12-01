@@ -21,21 +21,22 @@
 #include "tensorrt_llm/runtime/common.h"
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <typename T>
 struct TopPSamplingKernelParams
 {
-    //! input buffer [batchSize, vocabSizePadded], required. Probabilities of each token in the vocab.
+    //! input buffer [batchSize, vocabSizePadded], required. Probabilities of each
+    // token in the vocab.
     T const* probs{nullptr};
 
-    //! output buffer [maxBatchSize][maxSeqLen]. Contains pointers to rows with output tokens per request.
+    //! output buffer [maxBatchSize][maxSeqLen]. Contains pointers to rows with
+    // output tokens per request.
     //! If nullptr, outputIds must be provided.
     runtime::TokenIdType** outputIdsPtrs{nullptr};
 
-    //! output buffer [maxBatchSize, maxSeqLen], optional. Tensor to store output tokens.
+    //! output buffer [maxBatchSize, maxSeqLen], optional. Tensor to store output
+    // tokens.
     //! Not used if outputIdsPtrs != nullptr
     runtime::TokenIdType* outputIds{nullptr};
 
@@ -43,11 +44,13 @@ struct TopPSamplingKernelParams
     //! Function does not take ownership of the buffer.
     void* workspace{nullptr};
 
-    //! input buffer [maxBatchSize], required. P for topP sampling per request. Supported P is in range (0.0; 1.0].
+    //! input buffer [maxBatchSize], required. P for topP sampling per request.
+    // Supported P is in range (0.0; 1.0].
     //! If nullptr maxTopP is used for all requests.
     float const* topPs{nullptr};
 
-    //! input/output buffer [maxBatchSize], required. Current sequence length of the request up to, but excluding endId
+    //! input/output buffer [maxBatchSize], required. Current sequence length of
+    // the request up to, but excluding endId
     //! token.
     runtime::SizeType32* sequenceLength{nullptr};
     //! input buffer [maxBatchSize], optional. EOS token ids per request
@@ -57,28 +60,37 @@ struct TopPSamplingKernelParams
 
     //! input buffer [maxBatchSize], optional. Exit early if true.
     FinishedState const* finishedInput{nullptr};
-    //! output buffer [maxBatchSize], optional. Set flag if sequence has finished (if finished || outputId == endId).
+    //! output buffer [maxBatchSize], optional. Set flag if sequence has finished
+    //(if finished || outputId == endId).
     FinishedState* finishedOutput{nullptr};
-    //! input buffer [maxBatchSize], optional. Flags whether to skip decoding per request
+    //! input buffer [maxBatchSize], optional. Flags whether to skip decoding per
+    // request
     bool const* skipDecode{nullptr};
 
-    //! input/output buffer [maxBatchSize], optional. Cumulative log probability of selected tokens. Ignored if nullptr.
+    //! input/output buffer [maxBatchSize], optional. Cumulative log probability
+    // of selected tokens. Ignored if nullptr.
     float* cumLogProbs{nullptr};
-    //! output buffer [maxBatchSize], optional. Log probs is the probability induced by the TopP sampling.
+    //! output buffer [maxBatchSize], optional. Log probs is the probability
+    // induced by the TopP sampling.
     //! I.e., log_prob = log P(i | i is in vocab).
     float* outputLogProbs{nullptr};
-    //! input buffer [maxBatchSize], optional. Curand states properly initialized using
-    //! invokeCurandInitialize per request. Either curandState or randomVals should be specified.
+    //! input buffer [maxBatchSize], optional. Curand states properly initialized
+    // using
+    //! invokeCurandInitialize per request. Either curandState or randomVals
+    // should be specified.
     curandState_t* curandState{nullptr};
-    //! input buffer [maxBatchSize], optional. Precomputed random values per request.
+    //! input buffer [maxBatchSize], optional. Precomputed random values per
+    // request.
     //! Either curandState or randomVals should be specified.
     float const* randomVals{nullptr};
 
-    //! The appropriate block configuration calculated based on the number of multiprocessors, occupancy,
+    //! The appropriate block configuration calculated based on the number of
+    // multiprocessors, occupancy,
     //! batchSize and vocabSizePadded. Required for AirTopP
     runtime::SizeType32 blockNum{-1};
     //! bool, optional. Default value is false.
-    //! When isDeterministic==true, the result is reproducible. Required for AirTopP
+    //! When isDeterministic==true, the result is reproducible. Required for
+    // AirTopP
     bool isDeterministic{true};
 
     runtime::SizeType32 batchSize{-1};
@@ -92,10 +104,13 @@ struct TopPSamplingKernelParams
     bool const* returnAllSelectedTokensPerSlot{nullptr};
 
     //! output buffer [maxBatchSize], optional.
-    //! Store the multinomial sampled target token id in TopK/TopP sampled tokens when returnAllSelectedTokens==True.
-    //! Only return when skipOutputIdCurrentStep != nullptr && skipOutputIdCurrentStep == False
+    //! Store the multinomial sampled target token id in TopK/TopP sampled tokens
+    // when returnAllSelectedTokens==True.
+    //! Only return when skipOutputIdCurrentStep != nullptr &&
+    // skipOutputIdCurrentStep == False
     runtime::TokenIdType* outputIdCurrentStep{nullptr};
-    //! input buffer [maxBatchSize]. Determine if multinomial sampling is required when returnAllSelectedTokens==True.
+    //! input buffer [maxBatchSize]. Determine if multinomial sampling is required
+    // when returnAllSelectedTokens==True.
     bool const* skipOutputIdCurrentStep{nullptr};
 
     void checkParams() const
@@ -128,14 +143,17 @@ struct TopPSamplingKernelParams
 template <typename T>
 [[nodiscard]] size_t getTopPWorkspaceSize(runtime::SizeType32 batchSize, runtime::SizeType32 vocabSizePadded);
 
-//! \brief Returns workspace size in bytes needed for initialization of sampling TopP
+//! \brief Returns workspace size in bytes needed for initialization of sampling
+// TopP
 //! \param batchSize batch size
 [[nodiscard]] std::vector<size_t> getTopPInitWorkspaceSizes(runtime::SizeType32 batchSize);
 
 // clang-format off
-//! \brief Given probs, performs Top P sampling. Fills sampled tokens to outputIds.
+//! \brief Given probs, performs Top P sampling. Fills sampled tokens to
+// outputIds.
 //! Updates sequenceLength, finished state, cumLogProbs inplace.
-//! Sampling per request can be controlled using skipDecode and topPs parameters.
+//! Sampling per request can be controlled using skipDecode and topPs
+// parameters.
 // clang-format on
 template <typename T>
 void invokeBatchTopPSampling(TopPSamplingKernelParams<T> const& params, cudaStream_t stream);
@@ -152,7 +170,8 @@ void invokeBatchTopPSampling(TopPSamplingKernelParams<T> const& params, cudaStre
 //! \param topPMin
 //! \param topPResetIds
 //! \param sequenceLengths
-//! \param batchSlots input buffer[batchSize], optional. Indices of rows of data in memory pool
+//! \param batchSlots input buffer[batchSize], optional. Indices of rows of data
+// in memory pool
 //! \param localBatchSize
 void invokeComputeToppDecay(float* runtimeTopP, float const* runtimeInitialTopP, runtime::TokenIdType const** outputIds,
     float const* topPDecay, float const* topPMin, runtime::TokenIdType const* topPResetIds,
@@ -160,16 +179,20 @@ void invokeComputeToppDecay(float* runtimeTopP, float const* runtimeInitialTopP,
     runtime::SizeType32 localBatchSize, cudaStream_t stream);
 
 //! \brief Given probs, performs top P sampling.
-//! Note different from invokeTopPSampling() and invokeBatchTopPSampling() there two functions invokeAirTopPSampling
+//! Note different from invokeTopPSampling() and invokeBatchTopPSampling() there
+// two functions invokeAirTopPSampling
 //! and invokeBatchAirTopPSampling is non-deterministic.
-//! Fills sampled tokens to outputIds. Computes sequenceLength, finished state, cumLogProbs inplace.
-//! Sampling per request can be controlled using skipDecode and topPs parameters.
+//! Fills sampled tokens to outputIds. Computes sequenceLength, finished state,
+// cumLogProbs inplace.
+//! Sampling per request can be controlled using skipDecode and topPs
+// parameters.
 //! Function sets workspaceSize  and exits early if workspace is nullptr.
 //! When isDeterministic==true, the result is reproducible.
 template <typename T>
 void invokeBatchAirTopPSampling(TopPSamplingKernelParams<T> const& params, cudaStream_t stream);
 
-//! \brief  Calculate the number of blocks based on the number of multiprocessors, batchSize and vocabSize.
+//! \brief  Calculate the number of blocks based on the number of
+// multiprocessors, batchSize and vocabSize.
 //! \tparam T the data type of value
 //! \param batchSize
 //! \param len the number of candidates for each case
@@ -179,7 +202,8 @@ void invokeBatchAirTopPSampling(TopPSamplingKernelParams<T> const& params, cudaS
 template <typename T>
 uint32_t calcAirTopPBlockNum(int batchSize, int len, int smCnt, bool isDeterministic = false);
 
-//! \brief Returns workspace size in bytes needed for sampling Air TopP computation
+//! \brief Returns workspace size in bytes needed for sampling Air TopP
+// computation
 //! \param batchSize batch size
 //! \param vocabSizePadded size of padded vocab
 //! \param isDeterministic bool, optional. Default value is false.
@@ -191,6 +215,4 @@ void invokeSetTopPRuntimeArgs(runtime::SizeType32 batchSize, ScatterDecodingPara
     ScatterDecodingParamEntry<float> topP, bool* skipDecodePtr, float* initialTopPPtr,
     runtime::SizeType32 const* batchSlotsPtr, bool onDevice, cudaStream_t stream = nullptr);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

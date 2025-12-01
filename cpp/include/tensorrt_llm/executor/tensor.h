@@ -16,11 +16,10 @@
 
 #pragma once
 
+#include "tensorrt_llm/executor/types.h"
+
 #include "tensorrt_llm/common/arrayView.h"
 #include "tensorrt_llm/common/assert.h"
-
-#include "tensorrt_llm/common/config.h"
-#include "tensorrt_llm/executor/types.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -29,15 +28,13 @@
 #include <type_traits>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class ITensor;
 class CudaStream;
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 class Tensor;
@@ -50,7 +47,8 @@ using DimType64 = int64_t;
 
 } // namespace detail
 
-// A thin wrapper around span that supports constructions with an initializer list.
+// A thin wrapper around span that supports constructions with an initializer
+// list.
 class Shape : public tensorrt_llm::common::ArrayView<detail::DimType64 const>
 {
 public:
@@ -90,7 +88,8 @@ public:
 
     [[nodiscard]] Tensor copyToCpu(Tensor::CudaStreamPtr stream = nullptr) const;
 
-    //! Allocate a cpu tensor in pinned memory with the given shape and data type.
+    //! Allocate a cpu tensor in pinned memory with the given shape and data
+    // type.
     //!
     //! \param shape The shape of the tensor.
     //! \param dataType The data type of the tensor.
@@ -104,7 +103,8 @@ public:
 
     [[nodiscard]] Tensor copyToPinned(Tensor::CudaStreamPtr stream = nullptr) const;
 
-    //! Allocate a cpu tensor in pooled pinned memory with the given shape and data type.
+    //! Allocate a cpu tensor in pooled pinned memory with the given shape and
+    // data type.
     //!
     //! \param shape The shape of the tensor.
     //! \param dataType The data type of the tensor.
@@ -118,7 +118,8 @@ public:
 
     [[nodiscard]] Tensor copyToPooledPinned(Tensor::CudaStreamPtr stream = nullptr) const;
 
-    //! Allocate a tensor in managed memory (UVM) with the given shape and data type.
+    //! Allocate a tensor in managed memory (UVM) with the given shape and data
+    // type.
     //!
     //! \param shape The shape of the tensor.
     //! \param dataType The data type of the tensor.
@@ -132,10 +133,12 @@ public:
 
     [[nodiscard]] Tensor copyToManaged(Tensor::CudaStreamPtr stream = nullptr) const;
 
-    //! Allocate a gpu tensor with the given shape and data type on a particular cuda stream.
+    //! Allocate a gpu tensor with the given shape and data type on a particular
+    // cuda stream.
     //!
     //! \param shape The shape of the tensor.
-    //! \param stream Specifies the CUDA stream on which to allocate the tensor for GPU memory.
+    //! \param stream Specifies the CUDA stream on which to allocate the tensor
+    // for GPU memory.
     //! \param dataType The data type of the tensor.
     static Tensor gpu(DataType dataType, CudaStreamPtr stream, Shape shape = {});
 
@@ -151,14 +154,16 @@ public:
     //!
     //! \param shape The shape of the tensor.
     //! \param dataType The data type of the tensor.
-    //! \param stream Specifies the CUDA stream on which to allocate the tensor for GPU memory.
+    //! \param stream Specifies the CUDA stream on which to allocate the tensor
+    // for GPU memory.
     static Tensor of(DataType dataType, void* data, Shape shape);
 
     //! Wrap a data pointer into a tensor without taking ownership.
     //!
     //! \param shape The shape of the tensor.
     //! \param dataType The data type of the tensor.
-    //! \param stream Specifies the CUDA stream on which to allocate the tensor for GPU memory.
+    //! \param stream Specifies the CUDA stream on which to allocate the tensor
+    // for GPU memory.
     template <typename T>
     static Tensor of(T* data, Shape shape)
     {
@@ -169,7 +174,8 @@ public:
     //!
     //! \param shape The shape of the tensor.
     //! \param dataType The data type of the tensor.
-    //! \param stream Specifies the CUDA stream on which to allocate the tensor for GPU memory.
+    //! \param stream Specifies the CUDA stream on which to allocate the tensor
+    // for GPU memory.
     template <typename T>
     static Tensor of(T& data)
     {
@@ -275,6 +281,4 @@ private:
     friend class Serialization;
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

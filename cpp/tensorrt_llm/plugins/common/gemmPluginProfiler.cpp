@@ -15,24 +15,22 @@
  */
 
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cublasMMWrapper.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fp8_rowwise_gemm/fp8_rowwise_gemm.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/fpA_intB_gemm.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fused_gated_gemm/fused_gated_gemm.h"
-#include "tensorrt_llm/kernels/cutlass_kernels/include/allreduce_gemm_runner.h"
-#include "tensorrt_llm/kernels/cutlass_kernels/include/fp4_gemm.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/int8_gemm/int8_gemm.h"
 #include "tensorrt_llm/plugins/gemmAllReducePlugin/gemmAllReducePlugin.h"
-
 #include "tensorrt_llm/plugins/lowLatencyGemmPlugin/lowLatencyGemmPlugin.h"
-#if defined(USING_OSS_CUTLASS_FP4_GEMM)
 #include "tensorrt_llm/plugins/lowLatencyGemmSwigluPlugin/lowLatencyGemmSwigluPlugin.h"
+#include "tensorrt_llm/plugins/mixtureOfExperts/mixtureOfExpertsPlugin.h"
+#if defined(USING_OSS_CUTLASS_FP4_GEMM)
+#include "tensorrt_llm/kernels/cutlass_kernels/include/fp4_gemm.h"
 #else
 #include "fp4_gemm.h"
 #endif
 #if defined(USING_OSS_CUTLASS_ALLREDUCE_GEMM)
-#include "tensorrt_llm/plugins/mixtureOfExperts/mixtureOfExpertsPlugin.h"
+#include "tensorrt_llm/kernels/cutlass_kernels/include/allreduce_gemm_runner.h"
 using GemmAllReduceImplInterface = tensorrt_llm::kernels::opened_cutlass_kernels::GemmAllReduceImplInterface;
 #else
 #include "allreduce_gemm_runner.h"
@@ -41,9 +39,7 @@ using GemmAllReduceImplInterface = tensorrt_llm::kernels::cutlass_kernels::GemmA
 
 #include <cstddef>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 template <typename Config, typename RunnerPtr, typename GemmIdType, typename GemmIdHashType>
@@ -57,7 +53,8 @@ GemmPluginProfiler<Config, RunnerPtr, GemmIdType, GemmIdHashType>::GemmPluginPro
     if (mSkip)
     {
         TLLM_LOG_DEBUG(
-            "SKIP_GEMM_PLUGIN_PROFILINGS is set. Skipping GEMM plugin profilings. It could result in runtime error "
+            "SKIP_GEMM_PLUGIN_PROFILINGS is set. Skipping GEMM plugin "
+            "profilings. It could result in runtime error "
             "if default tactic is not defined.");
     }
 }
@@ -81,7 +78,8 @@ template <typename Config, typename RunnerPtr, typename GemmIdType, typename Gem
 void GemmPluginProfiler<Config, RunnerPtr, GemmIdType, GemmIdHashType>::deserialize(
     char const*& data, GemmDims& dims, GemmIdType const& gemmId)
 {
-    // NOTE: this mutex is not needed since each thread owns its private map, but will put here for
+    // NOTE: this mutex is not needed since each thread owns its private map,
+    // but will put here for
     // consistency
     writer_lock lock(mMNKProfileMap->mutex);
 
@@ -110,9 +108,9 @@ size_t GemmPluginProfiler<Config, RunnerPtr, GemmIdType, GemmIdHashType>::getSer
     GemmIdType const& gemmId) const
 {
     reader_lock lock(mMNKProfileMap->mutex);
-    return sizeof(int) +                                 // size of the tactics map
-        mMNKProfileMap->getMProfileMap(gemmId)->size()
-        * sizeof(std::pair<int, std::optional<Config>>); // size of the tactics map
+    return sizeof(int) + // size of the tactics map
+        mMNKProfileMap->getMProfileMap(gemmId)->size() * sizeof(std::pair<int, std::optional<Config>>); // size of the
+                                                                                                        // tactics map
 }
 
 template <typename Config, typename RunnerPtr, typename GemmIdType, typename GemmIdHashType>
@@ -172,7 +170,8 @@ void GemmPluginProfiler<Config, RunnerPtr, GemmIdType, GemmIdHashType>::profileT
             initTmpData(m, n, k, mWorkspaceTmp, mTmpWorkspaceSizeInBytes, mStream);
             auto tactics = this->getTactics(m, n, k);
 
-            // Profile different tactics for particular m and insert best config to the map
+            // Profile different tactics for particular m and insert best config to
+            // the map
             mProfileMap->insert({m, this->profileTacticsForProblem(m, n, k, tactics)});
         }
     };
@@ -291,7 +290,7 @@ std::optional<Config> GemmPluginProfiler<Config, RunnerPtr, GemmIdType, GemmIdHa
         {
             std::ostringstream msg;
             msg << "Cannot profile configuration " << ii;
-            if constexpr (std::is_same_v<Config, tensorrt_llm::cutlass_extensions::CutlassGemmConfig>)
+            if constexpr (std::is_same_v<Config, tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig>)
             {
                 msg << ": " << candidateConfig.toString();
             }
@@ -364,34 +363,35 @@ float GemmPluginProfiler<Config, RunnerPtr, GemmIdType, GemmIdHashType>::profile
     return elapsed / runs;
 }
 
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
     std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassInt8GemmRunnerInterface>, GemmIdCore,
     GemmIdCoreHash>;
 
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
     std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFpAIntBGemmRunnerInterface>, GemmIdCore,
     GemmIdCoreHash>;
 
 template class GemmPluginProfiler<cublasLtMatmulHeuristicResult_t,
     std::shared_ptr<tensorrt_llm::common::CublasMMWrapper>, GemmIdCublas, GemmIdCublasHash>;
 
-// TODO I dont like the dependency on the MOE plugin here, but MOE needs the full context to run profiles
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig, MixtureOfExpertsPlugin*,
+// TODO I dont like the dependency on the MOE plugin here, but MOE needs the
+// full context to run profiles
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig, MixtureOfExpertsPlugin*,
     GemmIDMoe, GemmIDMoeHash>;
 
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
     std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFusedGatedGemmRunnerInterface>, GemmIdCore,
     GemmIdCoreHash>;
 
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
     std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFp8RowwiseGemmRunnerInterface>, GemmIdCore,
     GemmIdCoreHash>;
 
 #if defined(USING_OSS_CUTLASS_FP4_GEMM)
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
     std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFp4GemmRunnerInterface>, GemmIdCore, GemmIdCoreHash>;
 #else
-template class GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+template class GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
     std::shared_ptr<tensorrt_llm::kernels::internal_cutlass_kernels::CutlassFp4GemmRunnerInterface>, GemmIdCore,
     GemmIdCoreHash>;
 #endif
@@ -405,6 +405,4 @@ template class GemmPluginProfiler<LowLatencyGemmSwigluPluginProfiler::Config, Lo
 template class GemmPluginProfiler<GemmAllReduceImplInterface::LaunchConfig, std::shared_ptr<GemmAllReduceImplInterface>,
     GemmIdCore, GemmIdCoreHash>;
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

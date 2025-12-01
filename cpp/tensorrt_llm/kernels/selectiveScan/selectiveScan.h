@@ -1,5 +1,6 @@
 /*
- * Adapted from https://github.com/state-spaces/mamba/blob/main/csrc/selective_scan/selective_scan.h
+ * Adapted from
+ *https://github.com/state-spaces/mamba/blob/main/csrc/selective_scan/selective_scan.h
  * Copyright (c) 2023, Tri Dao.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +17,10 @@
  *
  * Not a contribution
  * Changes made by NVIDIA CORPORATION & AFFILIATES or otherwise documented as
- * NVIDIA-proprietary are not a contribution and subject to the following terms and conditions:
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * NVIDIA-proprietary are not a contribution and subject to the following terms
+ *and conditions:
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: LicenseRef-NvidiaProprietary
  *
  * NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
@@ -35,10 +38,7 @@
 #include "tensorrt_llm/common/cudaDriverWrapper.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct SSMParamsBase
 {
@@ -80,6 +80,5 @@ void invokeChunkScan(SSMParamsBase& params, cudaStream_t stream, tensorrt_llm::c
 
 template <typename input_t, typename weight_t>
 void invokeSelectiveScanUpdate(SSMParamsBase& params, cudaStream_t stream);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

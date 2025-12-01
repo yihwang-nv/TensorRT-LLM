@@ -38,10 +38,8 @@
 #pragma GCC diagnostic pop
 #endif // #ifndef _WIN32
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 using namespace cute;
@@ -125,7 +123,9 @@ size_t genericFp4GemmKernelLauncher(void* D, void const* A, void const* B, void 
         cudaStream_t stream, int* occupancy)                                                                           \
     {                                                                                                                  \
         throw std::runtime_error(                                                                                      \
-            "[TensorRT LLM Error][FP4 gemm Runner] TensorRT LLM is not compiled with support for this Architecture."); \
+            "[TensorRT LLM Error][FP4 gemm Runner] TensorRT "                                                          \
+            "LLM is not compiled with support for this "                                                               \
+            "Architecture.");                                                                                          \
     }
 
 #else
@@ -135,7 +135,8 @@ size_t genericFp4GemmKernelLauncher(void* D, void const* A, void const* B, void 
     {                                                                                                                  \
         using OutElementType = TllmToCutlassTypeAdapter<T>::type;                                                      \
         using CTAShape = cute::Shape<cute::Int<CTA_M_>, cute::Int<CTA_N_>, cute::Int<CTA_K_>>;                         \
-        /*using ClusterShape = cute::Shape<cute::Int<CGA_M_>, cute::Int<CGA_N_>, cute::Int<CGA_K_>>;*/                 \
+        /*using ClusterShape = cute::Shape<cute::Int<CGA_M_>, cute::Int<CGA_N_>,                                       \
+         * cute::Int<CGA_K_>>;*/                                                                                       \
         using ClusterShape = cute::Shape<int, int, _1>;                                                                \
         using ElementType = cutlass::float_e2m1_t;                                                                     \
         using Arch = cutlass::arch::ARCH_;                                                                             \
@@ -178,8 +179,7 @@ size_t genericFp4GemmKernelLauncher(void* D, void const* A, void const* B, void 
         struct Sm10xOnly : Base                                                                                        \
         {                                                                                                              \
             using typename Base::Params;                                                                               \
-            CUTLASS_DEVICE                                                                                             \
-            void operator()(Params const& params, char* smem_buf)                                                      \
+            CUTLASS_DEVICE void operator()(Params const& params, char* smem_buf)                                       \
             {                                                                                                          \
                 if constexpr (tensorrt_llm::kernels::arch::is_major_v<10>)                                             \
                 {                                                                                                      \
@@ -328,6 +328,5 @@ size_t genericFp4GemmKernelLauncher(void* D, void const* A, void const* B, void 
 #endif
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

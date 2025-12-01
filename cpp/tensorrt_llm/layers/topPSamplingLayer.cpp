@@ -16,7 +16,6 @@
  */
 
 #include "topPSamplingLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/memoryUtils.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
@@ -33,9 +32,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -126,7 +123,8 @@ void TopPSamplingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Ten
     auto const paramsSize
         = expandMatchElements(batchSize, runtimeTopK, runtimeTopP, decayVec, topPMinVec, topPResetIdsVec);
     TLLM_CHECK_WITH_INFO(paramsSize != 0,
-        fmtstr("TopPSamplingLayer got parameter with unexpected size, want 1 or batchSize(%d), got"
+        fmtstr("TopPSamplingLayer got parameter with "
+               "unexpected size, want 1 or batchSize(%d), got"
                "runtimeTopK.size() = %zu, "
                "runtimeTopP.size() = %zu, "
                "topPDecay.size() = %zu, "
@@ -156,14 +154,17 @@ void TopPSamplingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Ten
         if (topPMin <= 0.f || topPMin > 1.0f)
         {
             TLLM_LOG_WARNING(
-                "TopP min (%f) is out of range ([0.0, 1.0f]). Change to default (%f).", topPMin, defaultTopPMin);
+                "TopP min (%f) is out of range ([0.0, 1.0f]). Change "
+                "to default (%f).",
+                topPMin, defaultTopPMin);
             topPMin = defaultTopPMin;
         }
     }
 
     // Update parameters on both device and host, so we can
     // determine whether we can skip launch kernel by examine mSkipDecodeHost
-    // without consulting device memory, or we'll have to do an expensive synchronization.
+    // without consulting device memory, or we'll have to do an expensive
+    // synchronization.
     SizeType32* topKsPtr = nullptr;
     float* topPsPtr = nullptr;
     float* topPDecayPtr = nullptr;
@@ -311,6 +312,4 @@ size_t TopPSamplingLayer<T>::getWorkspaceSize() const noexcept
 template class TopPSamplingLayer<float>;
 template class TopPSamplingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

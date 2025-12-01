@@ -23,10 +23,8 @@
 
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -65,7 +63,8 @@ template <typename ComputeType, typename WeightType>
 void symmetric_quantize(int8_t* processed_quantized_weight, ComputeType* scale_ptr, WeightType const* input_weight_ptr,
     std::vector<size_t> const& shape, QuantType quant_type, bool force_interleave);
 
-// This is exposed so that we can write tests that use the processed weights for CUTLASS but the unprocessed weight
+// This is exposed so that we can write tests that use the processed weights for
+// CUTLASS but the unprocessed weight
 // to implement a simple reference implementation.
 template <typename ComputeType, typename WeightType>
 void symmetric_quantize(int8_t* processed_quantized_weight, int8_t* unprocessed_quantized_weight,
@@ -73,6 +72,5 @@ void symmetric_quantize(int8_t* processed_quantized_weight, int8_t* unprocessed_
     bool force_interleave);
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

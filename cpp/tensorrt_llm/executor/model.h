@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,16 +20,13 @@
 
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/logitsPostProcessor.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
 #include <nlohmann/json.hpp>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 class Model
@@ -40,7 +38,8 @@ public:
 
     virtual ~Model() = default;
 
-    /// @brief Function that marks a request Id as complete and cleans up associated state
+    /// @brief Function that marks a request Id as complete and cleans up
+    /// associated state
     virtual void terminateRequest(LlmRequestPtr const& llmRequest, bool pause) = 0;
 
     void terminateRequest(LlmRequestPtr const& llmRequest)
@@ -48,21 +47,24 @@ public:
         terminateRequest(llmRequest, false);
     }
 
-    /// @brief Terminate request in the next forwardSync call that includes the request.
+    /// @brief Terminate request in the next forwardSync call that includes the
+    /// request.
     virtual void terminateRequestSync(LlmRequestPtr const& llmRequest, FinishReason finishReason) = 0;
 
     /// @brief Function that synchronizes the decoder
     virtual void forwardSync() = 0;
 
     /// @brief Function that tries to advance the active requests
-    ///        Depending on resources available, it's possible that not all requests will get advanced
+    ///        Depending on resources available, it's possible that not all
+    /// requests will get advanced
     /// @param activeRequests The list of request to try to advance
     virtual void forwardAsync(batch_manager::RequestList const& activeRequests) = 0;
 
     /// @brief Override the runtime batch size for the model
     virtual void setRuntimeBatchSize(SizeType32 runtimeBatchSize)
     {
-        // By default, we ignore the runtimeBatchSize unless the model actively supports it
+        // By default, we ignore the runtimeBatchSize unless the model actively
+        // supports it
     }
 
     /// @brief Get the runtime batch size for the model
@@ -74,7 +76,8 @@ public:
     /// @brieft Override the runtime max num tokens for the model
     virtual void setRuntimeMaxNumTokens(SizeType32 runtimeMaxNumTokens)
     {
-        // By default, we ignore the runtimeMaxNumTokens unless the model actively supports it
+        // By default, we ignore the runtimeMaxNumTokens unless the model actively
+        // supports it
     }
 
     virtual void updatePeftCache(LlmRequestPtr const& llmRequest) = 0;
@@ -101,11 +104,13 @@ public:
     [[nodiscard]] virtual nvinfer1::DataType getTensorDataType(std::string const& name) const = 0;
     [[nodiscard]] virtual nvinfer1::Dims getTensorShape(std::string const& name) const = 0;
 
-    /// @brief Function that provides per iteration stats specific to a certain model
+    /// @brief Function that provides per iteration stats specific to a certain
+    /// model
     /// @param stats The json object to write stats to
     virtual void getCurrentIterationStats(IterationStats& stats) const = 0;
 
-    /// @brief Function that provides per request stats specific to a certain model
+    /// @brief Function that provides per request stats specific to a certain
+    /// model
     /// @param stats The request stats to be updated
     virtual void getCurrentRequestStats(RequestStatsPerIteration& stats) const = 0;
 
@@ -125,12 +130,12 @@ public:
     [[nodiscard]] virtual std::shared_ptr<tensorrt_llm::batch_manager::kv_cache_manager::BaseKVCacheManager const>
     getKVCacheManager() const = 0;
 
-    //! \brief Get the batch size that can fill the kv cache to the maximum capacity give the sequence length
+    //! \brief Get the batch size that can fill the kv cache to the maximum
+    // capacity give the sequence length
     //! \param seqLen The sequence length
-    //! \return The batch size that can fill the kv cache to the maximum capacity. If unsuporrted, return 0.
+    //! \return The batch size that can fill the kv cache to the maximum
+    // capacity. If unsuporrted, return 0.
     [[nodiscard]] virtual SizeType32 getMaxCapacityBatchSize(SizeType32 inputLength, SizeType32 outputLength) const = 0;
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

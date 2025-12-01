@@ -19,10 +19,8 @@
 #include "tensorrt_llm/kernels/multiHeadAttentionCommon.h"
 #include <list>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace jit
 {
 
@@ -205,6 +203,5 @@ bool supportConfigMLA(XQAParams const& xqaParams, int SM, bool forConfigurePlugi
 }
 
 } // namespace jit
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

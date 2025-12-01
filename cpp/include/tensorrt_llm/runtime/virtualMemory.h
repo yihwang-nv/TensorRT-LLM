@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
@@ -31,9 +30,7 @@
 
 class VirtualMemoryManagerTest;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 /**
@@ -44,7 +41,8 @@ class CUDAVirtualMemoryChunk
 {
 public:
     /**
-     * CUDAVirtualMemoryChunk::Creator is the interface to obtain a CUmemGenericAllocationHandle,
+     * CUDAVirtualMemoryChunk::Creator is the interface to obtain a
+     * CUmemGenericAllocationHandle,
      * either by creating one locally, or importing one from remote.
      */
     struct Creator
@@ -58,7 +56,8 @@ public:
 
         // Note: create() shall not leak resources when throwing exceptions.
         // release() will only, and will always be called if create() success.
-        // release() will be called with destructing=true when the CUDAVirtualMemoryChunk
+        // release() will be called with destructing=true when the
+        // CUDAVirtualMemoryChunk
         // is being destructed.
         virtual CUmemGenericAllocationHandle create() = 0;
         virtual void release(CUmemGenericAllocationHandle handle, bool destructing) = 0;
@@ -67,7 +66,8 @@ public:
     using CreatorPtr = std::unique_ptr<Creator>;
 
     /**
-     * CUDAVirtualMemoryChunk::Configurator is the interface to configure a CUmemGenericAllocationHandle:
+     * CUDAVirtualMemoryChunk::Configurator is the interface to configure a
+     * CUmemGenericAllocationHandle:
      * - Map into virtual address
      * - Bind to multicast object
      * - Backup and restore memory content
@@ -83,7 +83,8 @@ public:
 
         // Note: setup() shall not leak resources when throwing exceptions.
         // teardown() will only, and will always be called if setup() success.
-        // teardown() will be called with destructing=true when the CUDAVirtualMemoryChunk
+        // teardown() will be called with destructing=true when the
+        // CUDAVirtualMemoryChunk
         // is being destructed.
         virtual void setup(CUmemGenericAllocationHandle handle) = 0;
         virtual void teardown(CUmemGenericAllocationHandle handle, bool destructing) = 0;
@@ -95,8 +96,10 @@ public:
     enum Status
     {
         INVALID,      // This is a default constructed invalid CUDAVirtualMemoryChunk.
-        RELEASED,     // The memory represented by this CUDAVirtualMemoryChunk is not allocated.
-        MATERIALIZED, // The memory represented by this CUDAVirtualMemoryChunk is allocated.
+        RELEASED,     // The memory represented by this CUDAVirtualMemoryChunk is not
+                      // allocated.
+        MATERIALIZED, // The memory represented by this CUDAVirtualMemoryChunk is
+                      // allocated.
         ERRORED,      // Error happened during materialize() or release().
                       // This CUDAVirtualMemoryChunk cannot be used anymore.
     };
@@ -125,7 +128,8 @@ public:
      * Materialize this CUDAVirtualMemoryChunk.
      * Shall be called only when status() == RELEASED.
      *
-     * Calls creator.create(), and then configurator.setup() for each configurator in order.
+     * Calls creator.create(), and then configurator.setup() for each
+     *configurator in order.
      *
      * Stop at the first thrown exception and propagates it.
      */
@@ -133,13 +137,16 @@ public:
 
     /**
      * Release this CUDAVirtualMemoryChunk.
-     * Shall be called only when status() == MATERIALIZED, or materialize() throws.
+     * Shall be called only when status() == MATERIALIZED, or materialize()
+     *throws.
      * Will be called automatically by destructor if necessary.
      *
-     * Calls configurator.teardown() for each configurator that setup() succeed in materialize() in reversed order,
+     * Calls configurator.teardown() for each configurator that setup() succeed
+     *in materialize() in reversed order,
      * and then creator.release().
      *
-     * Never stops early upon exception. The last thrown exception will be propagated, and others logged.
+     * Never stops early upon exception. The last thrown exception will be
+     *propagated, and others logged.
      */
     void release()
     {
@@ -155,12 +162,14 @@ public:
         mConfigurators = std::move(other.mConfigurators);
         mHandle = other.mHandle;
         mState = other.mState;
-        new (&other) CUDAVirtualMemoryChunk; // Put other into default constructed state
+        new (&other) CUDAVirtualMemoryChunk; // Put other into default constructed
+                                             // state
     }
 
     CUDAVirtualMemoryChunk& operator=(CUDAVirtualMemoryChunk&& other)
     {
-        this->~CUDAVirtualMemoryChunk(); // May throw if current virtual memory need release
+        this->~CUDAVirtualMemoryChunk(); // May throw if current virtual memory
+                                         // need release
         new (this) CUDAVirtualMemoryChunk(std::move(other));
         return *this;
     }
@@ -175,8 +184,10 @@ public:
 
     virtual ~CUDAVirtualMemoryChunk()
     {
-        // Calling release() is necessary if materialize() succeed or threw an exception.
-        // If release() is already called by the user, whether succeed or threw an exception,
+        // Calling release() is necessary if materialize() succeed or threw an
+        // exception.
+        // If release() is already called by the user, whether succeed or threw an
+        // exception,
         // we shouldn't call release() again.
         if (mHandle != 0 && mState != INVALID_STATE)
         {
@@ -241,7 +252,8 @@ struct LocalCreator : CUDAVirtualMemoryChunk::Creator
 };
 
 /**
- * UnicastConfigurator maps the allocation handle into the specified unicast address range.
+ * UnicastConfigurator maps the allocation handle into the specified unicast
+ * address range.
  */
 struct UnicastConfigurator : CUDAVirtualMemoryChunk::Configurator
 {
@@ -269,7 +281,8 @@ struct UnicastConfigurator : CUDAVirtualMemoryChunk::Configurator
 };
 
 /**
- * MulticastConfigurator binds the allocation handle to the given multicast object and offset.
+ * MulticastConfigurator binds the allocation handle to the given multicast
+ * object and offset.
  */
 struct MulticastConfigurator : CUDAVirtualMemoryChunk::Configurator
 {
@@ -324,7 +337,8 @@ struct MemsetConfigurator : CUDAVirtualMemoryChunk::Configurator
 };
 
 /**
- * OffloadConfigurator offload the content of the allocation to the backup storage when teardown,
+ * OffloadConfigurator offload the content of the allocation to the backup
+ * storage when teardown,
  * and restore the content on the following setup.
  */
 struct OffloadConfigurator : CUDAVirtualMemoryChunk::Configurator
@@ -355,18 +369,24 @@ class CudaVirtualMemoryManager
 public:
     /**
      * Add memory to be managed by this manager.
-     * @param handle  Unique handle provided to reference this memory in `remove`.
-     * @param tag     Tag the memory, so this memory can be targeted in `releaseWithTag` and `materializeWithTag`.
+     * @param handle  Unique handle provided to reference this memory in
+     *`remove`.
+     * @param tag     Tag the memory, so this memory can be targeted in
+     *`releaseWithTag` and `materializeWithTag`.
      * @param memory  The CUDAVirtualMemory object.
      *
-     * The memory and internal state will remain valid if any exception is thrown.
+     * The memory and internal state will remain valid if any exception is
+     *thrown.
      */
     void add(uintptr_t handle, std::string tag, CUDAVirtualMemoryChunk&& memory);
 
     /**
-     * Creates and adds memory to be managed by this manager. The created memory is automatically materialized.
-     * @param handle         Unique handle provided to reference this memory in `remove`.
-     * @param tag            Tag the memory, so this memory can be targeted in `releaseWithTag` and
+     * Creates and adds memory to be managed by this manager. The created memory
+     *is automatically materialized.
+     * @param handle         Unique handle provided to reference this memory in
+     *`remove`.
+     * @param tag            Tag the memory, so this memory can be targeted in
+     *`releaseWithTag` and
      * `materializeWithTag`.
      * @param creator        The creator for the memory.
      * @param configurators  The configurators for the memory.
@@ -386,7 +406,8 @@ public:
     /**
      * Remove the memory from the manager.
      * @param handle The handle provided to `add`.
-     * @return The CUDAVirtualMemory object. If the handle is unknown, an empty CUDAVirtualMemory will be returned.
+     * @return The CUDAVirtualMemory object. If the handle is unknown, an empty
+     * CUDAVirtualMemory will be returned.
      */
     CUDAVirtualMemoryChunk remove(uintptr_t handle) noexcept;
 
@@ -395,11 +416,15 @@ public:
      * @param tag the tag to select target memories.
      * @return Number of objects selected.
      *
-     * This function will always call `CUDAVirtualMemoryChunk::release` on all selected objects.
-     * The last exception thrown by `CUDAVirtualMemoryChunk::release` will be rethrown, and others will be logged.
+     * This function will always call `CUDAVirtualMemoryChunk::release` on all
+     *selected objects.
+     * The last exception thrown by `CUDAVirtualMemoryChunk::release` will be
+     *rethrown, and others will be logged.
      *
-     * If any CUDAVirtualMemoryChunk threw an exception during `release`, it will be removed from the manager.
-     * Call `retrieveBadHandles` to retrieve handles of all CUDAVirtualMemoryChunk that got removed due to exception.
+     * If any CUDAVirtualMemoryChunk threw an exception during `release`, it
+     *will be removed from the manager.
+     * Call `retrieveBadHandles` to retrieve handles of all
+     *CUDAVirtualMemoryChunk that got removed due to exception.
      */
     size_t releaseWithTag(std::string const& tag);
 
@@ -408,21 +433,30 @@ public:
      * @param tag the tag to select target memories.
      * @return Number of objects selected.
      *
-     * This function will stop at the first `CUDAVirtualMemoryChunk::materialize` that throws exception,
-     * and attempt to roll back previous successful `materialize` by calling `release`.
-     * The exception thrown by `CUDAVirtualMemoryChunk::materialize` will be rethrown,
+     * This function will stop at the first
+     *`CUDAVirtualMemoryChunk::materialize` that throws exception,
+     * and attempt to roll back previous successful `materialize` by calling
+     *`release`.
+     * The exception thrown by `CUDAVirtualMemoryChunk::materialize` will be
+     *rethrown,
      * and any exception thrown by `release` will be logged.
      *
-     * If any CUDAVirtualMemoryChunk threw an exception during `materialize` or `release`, it will be removed from the
-     * manager. Successfully roll backed CUDAVirtualMemoryChunk will not be removed.
-     * Call `retrieveBadHandles` to retrieve handles of all CUDAVirtualMemoryChunk that got removed due to exception.
+     * If any CUDAVirtualMemoryChunk threw an exception during `materialize` or
+     *`release`, it will be removed from the
+     * manager. Successfully roll backed CUDAVirtualMemoryChunk will not be
+     *removed.
+     * Call `retrieveBadHandles` to retrieve handles of all
+     *CUDAVirtualMemoryChunk that got removed due to exception.
      */
     size_t materializeWithTag(std::string const& tag);
 
     /**
-     * Retrieve handles of all CUDAVirtualMemoryChunk that got removed due to exception and reset the list.
-     * The returned list may not include all removed CUDAVirtualMemoryChunk handles if OOM happened.
-     * This method is only for diagnostic purpose, and should not be called concurrently with other methods.
+     * Retrieve handles of all CUDAVirtualMemoryChunk that got removed due to
+     * exception and reset the list.
+     * The returned list may not include all removed CUDAVirtualMemoryChunk
+     * handles if OOM happened.
+     * This method is only for diagnostic purpose, and should not be called
+     * concurrently with other methods.
      * @return The handle list.
      */
     std::vector<uintptr_t> retrieveBadHandles() noexcept;
@@ -432,7 +466,8 @@ private:
     void addBadHandle(uintptr_t handle) noexcept;
 
     struct Entry;
-    // Unordered map invalidates iterator upon rehash, so we can only use the ordered map.
+    // Unordered map invalidates iterator upon rehash, so we can only use the
+    // ordered map.
     using PointerMemoryMap = std::map<uintptr_t, Entry>;
     using TagEntryMap = std::multimap<std::string, PointerMemoryMap::iterator>;
 
@@ -458,10 +493,13 @@ class CudaVirtualMemoryAllocator
 public:
     enum RestoreMode
     {
-        NONE,   // The memory is not backed. Upon rematerialize, memory has uninitialized content.
+        NONE,   // The memory is not backed. Upon rematerialize, memory has
+                // uninitialized content.
         MEMSET, // The memory is memset to zero upon rematerialize.
-        CPU,    // The memory is backed by normal CPU memory. The content is restored upon rematerialize.
-        PINNED  // The memory is backed by pinned CPU memory. The content is restored upon rematerialize.
+        CPU,    // The memory is backed by normal CPU memory. The content is restored
+                // upon rematerialize.
+        PINNED  // The memory is backed by pinned CPU memory. The content is
+                // restored upon rematerialize.
     };
 
     class Configuration
@@ -484,7 +522,8 @@ public:
          * @param tag        The tag for allocated memories
          * @param mode       Backed storage mode
          * @param backStream The CUDA stream used for restoring memory content
-         *                   Note: Virtual Address Allocation is not async. The stream is not used in allocation.
+         *                   Note: Virtual Address Allocation is not async. The
+         * stream is not used in allocation.
          */
         Configuration(CudaVirtualMemoryManager& manager, std::string tag, RestoreMode mode, CudaStreamPtr backStream)
             : mManager(manager)
@@ -500,7 +539,8 @@ public:
             return (n + mPageSize - 1) & ~(mPageSize - 1);
         }
 
-        // Background configuration, used to indicate no virtual memory allocator is explicitly configured by the user.
+        // Background configuration, used to indicate no virtual memory allocator
+        // is explicitly configured by the user.
         static Configuration backgroundConfiguration;
 
     private:
@@ -530,9 +570,9 @@ private:
     std::shared_ptr<Configuration> mConfig;
 };
 
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 CudaVirtualMemoryManager& getVirtualMemoryManager();
 CudaVirtualMemoryAllocator getVirtualMemoryAllocator();
@@ -540,6 +580,4 @@ void setVirtualMemoryAllocator(
     std::string const& tag, CudaVirtualMemoryAllocator::RestoreMode mode, std::shared_ptr<CudaStream> backStream);
 void clearVirtualMemoryAllocator();
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +16,12 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/types.h"
 
 #include <optional>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 LoraConfig::LoraConfig(IdType taskId, std::optional<Tensor> weights, std::optional<Tensor> config)
     : mTaskId(taskId)
@@ -44,8 +42,10 @@ LoraConfig::LoraConfig(IdType taskId, std::optional<Tensor> weights, std::option
     if (mWeights.has_value())
     {
         SizeType32 constexpr expectedWeightsDims = 2;
-        TLLM_CHECK_WITH_INFO(
-            mConfig.has_value(), "Request for LoRA inference with lora weights must also have lora config");
+        TLLM_CHECK_WITH_INFO(mConfig.has_value(),
+            "Request for LoRA inference "
+            "with lora weights must also "
+            "have lora config");
 
         TLLM_CHECK_WITH_INFO(
             mWeights.value().getShape().size() == expectedWeightsDims, "Expected weights tensor to have 2 dimensions");
@@ -55,7 +55,8 @@ LoraConfig::LoraConfig(IdType taskId, std::optional<Tensor> weights, std::option
             "Expected lora weights to be in CPU memory");
 
         TLLM_CHECK_WITH_INFO(mConfig.value().getShape()[0] == mWeights.value().getShape()[0],
-            "Expected dim 0 of lora weights and lora config to have the same size");
+            "Expected dim 0 of lora weights and lora config to "
+            "have the same size");
     }
 }
 
@@ -74,6 +75,4 @@ std::optional<Tensor> LoraConfig::getConfig() const
     return mConfig;
 }
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

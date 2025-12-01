@@ -50,12 +50,10 @@
 #include <sstream>
 
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 template <typename T, typename arch, typename ThreadblockShape, typename WarpShape, int Stages>
@@ -119,14 +117,15 @@ void genericInt8GemmKernelLauncher(int8_t const* A, int8_t const* B, tk::QuantMo
 
     if (occupancy != nullptr)
     {
-        *occupancy = tensorrt_llm::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel>();
+        *occupancy = tensorrt_llm::kernels::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel>();
         return;
     }
 
     using Gemm = cutlass::gemm::device::GemmUniversalBaseCompat<GemmKernel>;
 
-    typename EpilogueOp::Params linearScalingParams; // TODO: right now it's unused (scaling is done in
-                                                     // visitor, no activation needed)
+    typename EpilogueOp::Params linearScalingParams; // TODO: right now it's
+                                                     // unused (scaling is done in
+    // visitor, no activation needed)
     typename Gemm::Arguments args{cutlass::gemm::GemmUniversalMode::kBatched, {m, n, k}, 1,
         {reinterpret_cast<ElementInput*>(const_cast<ElementInput*>(A)), k},
         {reinterpret_cast<ElementInput*>(const_cast<ElementInput*>(B)), k}, quantOption,
@@ -140,8 +139,10 @@ void genericInt8GemmKernelLauncher(int8_t const* A, int8_t const* B, tk::QuantMo
     if (gemm.get_workspace_size(args) > workspaceBytes)
     {
         TLLM_LOG_WARNING(
-            "Requested split-k but workspace size insufficient. Falling back to non-split-k implementation.");
-        // If requested split-k factor will require more workspace bytes, revert to standard gemm.
+            "Requested split-k but workspace size insufficient. "
+            "Falling back to non-split-k implementation.");
+        // If requested split-k factor will require more workspace bytes, revert to
+        // standard gemm.
         args.batch_count = 1;
     }
 
@@ -288,16 +289,23 @@ void dispatchGemmToCutlass(int8_t const* A, int8_t const* B, tk::QuantMode quant
             quantOption, alphaCol, alphaRow, C, m, n, k, gemmConfig, workspace, workspaceBytes, stream, occupancy);
         break;
     case tkc::CutlassTileConfig::Undefined:
-        throw std::runtime_error("[TensorRT LLM Error][int8][dispatch_gemm_to_cutlass] gemm config undefined.");
+        throw std::runtime_error(
+            "[TensorRT LLM "
+            "Error][int8][dispatch_gemm_to_cutlass] gemm "
+            "config undefined.");
         break;
     case tkc::CutlassTileConfig::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][int8][dispatch_gemm_to_cutlass] gemm config should have already been set by "
+            "[TensorRT LLM "
+            "Error][int8][dispatch_gemm_to_cutlass] gemm "
+            "config should have already been set by "
             "heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][int8][dispatch_gemm_to_cutlass] Config is invalid for int8 GEMM.");
+            "[TensorRT LLM "
+            "Error][int8][dispatch_gemm_to_cutlass] Config is "
+            "invalid for int8 GEMM.");
         break;
     }
 }
@@ -342,7 +350,9 @@ void CutlassInt8GemmRunner<T>::dispatchToArch(int8_t const* A, int8_t const* B, 
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassInt8GemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS int8 GEMM");
+            "[TensorRT LLM Error][CutlassInt8GemmRunner][GEMM "
+            "Dispatch] Arch unsupported for CUTLASS int8 "
+            "GEMM");
     }
 }
 
@@ -364,7 +374,9 @@ std::vector<tkc::CutlassGemmConfig> CutlassInt8GemmRunner<T>::getConfigs() const
     if (mSm <= 70)
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassInt8GemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS int8 GEMM");
+            "[TensorRT LLM Error][CutlassInt8GemmRunner][GEMM "
+            "Dispatch] Arch unsupported for CUTLASS int8 "
+            "GEMM");
     }
 
     std::vector<tkc::CutlassGemmConfig> candidateConfigs = get_candidate_configs(mSm, SPLIT_K_LIMIT, config_type_param);
@@ -375,14 +387,15 @@ template <typename T>
 size_t CutlassInt8GemmRunner<T>::getWorkspaceSize(int const m, int const n, int const k)
 {
     TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
-    // These are the min tile sizes for each config, which would launch the maximum number of blocks
+    // These are the min tile sizes for each config, which would launch the
+    // maximum number of blocks
     int const maxGridM = cutlass::ceil_div(m, MIN_M_TILE);
     int const maxGridN = cutlass::ceil_div(m, MIN_N_TILE);
-    // We need 4 bytes per block in the worst case. We launch SPLIT_K_LIMIT in z dim.
+    // We need 4 bytes per block in the worst case. We launch SPLIT_K_LIMIT in z
+    // dim.
     return static_cast<size_t>(maxGridM * maxGridN * SPLIT_K_LIMIT * 4);
 }
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

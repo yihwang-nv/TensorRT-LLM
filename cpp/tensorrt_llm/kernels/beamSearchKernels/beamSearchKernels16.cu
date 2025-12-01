@@ -17,13 +17,10 @@
 #include "beamSearchKernelsTemplate.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 // Skip V1 kernels if beam_width > kMaxBeamWidthForV1
 INSTANTIATE_BEAM_SEARCH(float, 16, true);
 INSTANTIATE_BEAM_SEARCH(half, 16, true);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

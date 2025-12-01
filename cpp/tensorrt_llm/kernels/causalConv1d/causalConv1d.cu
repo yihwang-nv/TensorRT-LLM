@@ -1,7 +1,9 @@
 
 /*
- * Adapted from https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/causal_conv1d_fwd.cu
- * and https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/causal_conv1d_update.cu
+ * Adapted from
+ *https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/causal_conv1d_fwd.cu
+ * and
+ *https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/causal_conv1d_update.cu
  * Copyright (c) 2024, Tri Dao.
  *
  * Copyright (c) 2022-2025, NVIDIA CORPORATION.  All rights reserved.
@@ -25,9 +27,9 @@
 
 #include "tensorrt_llm/kernels/causalConv1d/causalConv1d.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::causal_conv1d
+namespace causal_conv1d
 {
 
 template <int kNThreads_, int kWidth_, bool kIsVecLoad_, typename input_t_, typename weight_t_>
@@ -104,7 +106,8 @@ __global__ __launch_bounds__(Ktraits::kNThreads) void causal_conv1d_fwd_kernel(C
                                                              : reinterpret_cast<input_t*>(params.conv_states_ptr)
             + cache_index * params.conv_states_batch_stride + channel_id * params.conv_states_c_stride;
 
-    // Thread 0 will load the last elements of the previous chunk, so we initialize those to 0.
+    // Thread 0 will load the last elements of the previous chunk, so we
+    // initialize those to 0.
     if (tidx == 0)
     {
         input_t initial_state[kNElts] = {0};
@@ -154,7 +157,8 @@ __global__ __launch_bounds__(Ktraits::kNThreads) void causal_conv1d_fwd_kernel(C
         __syncthreads();
         reinterpret_cast<vec_t*>(x_vals_load)[0] = smem_exchange[tidx > 0 ? tidx - 1 : kNThreads - 1];
         __syncthreads();
-        // Now thread kNThreads - 1 can write the last elements of the current chunk.
+        // Now thread kNThreads - 1 can write the last elements of the current
+        // chunk.
         if (tidx == kNThreads - 1)
         {
             smem_exchange[tidx] = reinterpret_cast<vec_t*>(x_vals_load)[1];
@@ -210,13 +214,15 @@ __global__ __launch_bounds__(Ktraits::kNThreads) void causal_conv1d_fwd_kernel(C
         // in case the final state is separated between the last "smem_exchange" and
         // and the one before it (chunk = n_chunks - 1 and chunk = n_chunks - 2),
         // (which occurs when `final_state_position` is a non-positive index)
-        // we load the correct data from smem_exchange from both chunks, the last chunk iteration and the one before it
+        // we load the correct data from smem_exchange from both chunks, the last
+        // chunk iteration and the one before it
         if (conv_states != nullptr && final_state_position < 0 && seqlen > kWidth)
         {
             input_t vals_load[kNElts] = {0};
             if ((chunk == n_chunks - 2) && (tidx == kNThreads - 1))
             {
-                // chunk = n_chunks - 2, a segment of the final state sits in the last index
+                // chunk = n_chunks - 2, a segment of the final state sits in the last
+                // index
                 reinterpret_cast<vec_t*>(vals_load)[0] = smem_exchange[kNThreads - 1];
 #pragma unroll
                 for (int w = 0; w < -final_state_position; ++w)
@@ -226,7 +232,8 @@ __global__ __launch_bounds__(Ktraits::kNThreads) void causal_conv1d_fwd_kernel(C
             }
             if ((chunk == n_chunks - 1) && tidx == 0)
             {
-                // chunk = n_chunks - 1, the second segment of the final state first positions
+                // chunk = n_chunks - 1, the second segment of the final state first
+                // positions
                 reinterpret_cast<vec_t*>(vals_load)[0] = smem_exchange[0];
                 for (int w = -final_state_position; w < kWidth - 1; ++w)
                 {
@@ -277,9 +284,11 @@ __global__ __launch_bounds__(Ktraits::kNThreads) void causal_conv1d_fwd_kernel(C
             int const offset = ((seqlen - (kWidth - 1)) % (kNElts));
             if ((offset + kWidth - 2) >= kNElts && (last_thread + 1 < kNThreads))
             {
-                // In case last_thread == kNThreads - 1, accessing last_thread + 1 will result in a
+                // In case last_thread == kNThreads - 1, accessing last_thread + 1 will
+                // result in a
                 // illegal access error on H100.
-                // Therefore, we access last_thread + 1, only if the final state data sits there
+                // Therefore, we access last_thread + 1, only if the final state data
+                // sits there
                 reinterpret_cast<vec_t*>(x_vals_load)[1] = smem_exchange[last_thread + 1];
             }
             reinterpret_cast<vec_t*>(x_vals_load)[0] = smem_exchange[last_thread];
@@ -364,11 +373,14 @@ __global__ __launch_bounds__(Ktraits::kNThreads) void causal_conv1d_update_kerne
     input_t* x
         = reinterpret_cast<input_t*>(params.x_ptr) + batch_id * params.x_batch_stride + channel_id * params.x_c_stride;
 
-    // If params.conv_state_batch_indices is set, then the conv state is gathered from the conv state tensor
-    // along the batch axis. Otherwise, the conv state coordinate is the same as the batch id.
+    // If params.conv_state_batch_indices is set, then the conv state is gathered
+    // from the conv state tensor
+    // along the batch axis. Otherwise, the conv state coordinate is the same as
+    // the batch id.
     int const conv_state_batch_coord
         = params.conv_state_indices_ptr == nullptr ? batch_id : params.conv_state_indices_ptr[batch_id];
-    // conv_state_batch_coord == params.pad_slot_id is defined as padding so we exit early
+    // conv_state_batch_coord == params.pad_slot_id is defined as padding so we
+    // exit early
     if (conv_state_batch_coord == params.pad_slot_id)
     {
         return;
@@ -493,6 +505,6 @@ template void causal_conv1d_update_cuda<float, float>(ConvParamsBase& params, cu
 template void causal_conv1d_update_cuda<half, half>(ConvParamsBase& params, cudaStream_t stream);
 template void causal_conv1d_update_cuda<nv_bfloat16, nv_bfloat16>(ConvParamsBase& params, cudaStream_t stream);
 
-} // namespace kernels::causal_conv1d
+} // namespace causal_conv1d
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

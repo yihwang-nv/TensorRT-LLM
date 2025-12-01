@@ -16,11 +16,7 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
-
-TRTLLM_NAMESPACE_BEGIN
-
-namespace mpi
+namespace tensorrt_llm::mpi
 {
 
 enum class MpiTag : int
@@ -78,6 +74,4 @@ enum class MpiTag : int
     kKvCacheEvent = 1027
 };
 
-} // namespace mpi
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::mpi

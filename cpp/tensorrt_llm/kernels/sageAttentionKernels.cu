@@ -25,10 +25,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template void sage_quant<72, 80, 64, 64, 256, __nv_bfloat16, __nv_fp8_e4m3, float>(
     // host var
@@ -610,6 +607,4 @@ void unpadding(
             cu_seqlens, stride_padded_output, stride_output);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

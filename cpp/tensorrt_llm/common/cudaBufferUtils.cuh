@@ -31,8 +31,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
 static __host__ __device__ int hash(int val)
 {
     val ^= val >> 1;
@@ -334,7 +332,8 @@ public:
         return _phase;
     }
 
-    /* Indicate consumption of data at specified pointer.  The producer is now free to overwrite it */
+    /* Indicate consumption of data at specified pointer.  The producer is now
+     * free to overwrite it */
     __device__ void complete(int ptr)
     {
         if (CGA_SIZE > 1)
@@ -347,7 +346,8 @@ public:
         }
     }
 
-    /* Simplification of complete and advance for cases where they don't need to be reordered/separated for performance
+    /* Simplification of complete and advance for cases where they don't need to
+     * be reordered/separated for performance
      */
     __device__ void pop()
     {
@@ -672,7 +672,5 @@ struct MultiProducerCircularBuffer : public CircularBuffer<DEPTH, CTAS_PER_CGA>
         return Writer(&this->_barriers);
     }
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

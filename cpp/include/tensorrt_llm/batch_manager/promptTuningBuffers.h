@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,16 +19,13 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/promptTuningParams.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class PromptTuningBuffers
@@ -59,9 +57,12 @@ public:
      * -----------------------------------------------
      *
      * Overview:
-     * The chunk ptable (prompt tuning table) system uses a ping-pong buffer mechanism to efficiently
-     * manage large embedding tables when operating in context Prefill mode. This allows
-     * for processing of large embedding tables by loading them in chunks from CPU to GPU memory,
+     * The chunk ptable (prompt tuning table) system uses a ping-pong buffer
+     *mechanism to efficiently
+     * manage large embedding tables when operating in context Prefill mode.
+     *This allows
+     * for processing of large embedding tables by loading them in chunks from
+     *CPU to GPU memory,
      * enabling support for tables that exceed available GPU memory.
      *
      * Key Components:
@@ -72,11 +73,13 @@ public:
      *    - Managed through mChunkPtableCurrentIndex (toggles between 0 and 1)
      * 2. Start Positions Tracking (mChunkPtableBufferStartPositions):
      *    - Mainly used for multi-batch processing
-     *    - Maintains the starting position of each batch's data within each buffer
+     *    - Maintains the starting position of each batch's data within each
+     *buffer
      *    - Maintained separately for each ping-pong buffer
      *
      * Memory Optimization:
-     * - Only two GPU buffers are maintained regardless of total embedding table size
+     * - Only two GPU buffers are maintained regardless of total embedding table
+     *size
      * - Each buffer size is limited to contextChunkSize * hiddenSize
      * - Efficient memory usage through chunk-based processing
      */
@@ -106,6 +109,4 @@ public:
     void clearBufferStartPositions(size_t index);
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

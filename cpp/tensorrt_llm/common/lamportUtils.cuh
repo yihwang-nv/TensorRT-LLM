@@ -32,9 +32,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 constexpr uint16_t kNEGZERO_FP16 = 0x8000U;
 
 template <typename T>
@@ -148,7 +145,8 @@ struct LamportBufferLayout
 // Dirty Index
 // bytes_per_buffer
 // Dirty num_stages
-// Dirty bytes_to_clear = {stage0, stage1, stage2, stage3}  # We fix this to 4 stages
+// Dirty bytes_to_clear = {stage0, stage1, stage2, stage3}  # We fix this to 4
+// stages
 // offset_access_ptr
 
 namespace cg = cooperative_groups;
@@ -173,15 +171,19 @@ public:
         *reinterpret_cast<uint4*>(&mBytesToClear) = reinterpret_cast<uint4*>(bufferFlags)[1];
     }
 
-    // Return the base pointer of the lamport buffer indexed by mCurrentIndex and the stageIdx
+    // Return the base pointer of the lamport buffer indexed by mCurrentIndex and
+    // the stageIdx
     [[nodiscard]] __device__ void* getCurLamportBuf(void* bufferBasePtr, int stageIdx = 0) const
     {
         return mCurBufferLayout.getStagePtr(bufferBasePtr, mCurrentIndex, stageIdx);
     }
 
-    // Fill the dirty lamport buffer with the init value; Use stageIdx to select the stage to clear, -1 to clear all
-    // FIXME: Current kernel may use less stages than the dirty numStages; How to guarantee the correctness?
-    // CAUTION: This function requires all threads in the grid to participate and ASSUME 1D thread block layout!
+    // Fill the dirty lamport buffer with the init value; Use stageIdx to select
+    // the stage to clear, -1 to clear all
+    // FIXME: Current kernel may use less stages than the dirty numStages; How to
+    // guarantee the correctness?
+    // CAUTION: This function requires all threads in the grid to participate and
+    // ASSUME 1D thread block layout!
     __device__ void clearDirtyLamportBuf(void* bufferBasePtr, int stageIdx = -1)
     {
         // Rasterize the threads to 1D for flexible clearing
@@ -235,7 +237,8 @@ public:
         int targetCount{0};
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
         cg::grid_group grid = cg::this_grid();
-        // Use the first thread instead of the last thread as the last thread may exit early
+        // Use the first thread instead of the last thread as the last thread may
+        // exit early
         isLastCtaT0 = grid.thread_rank() == 0;
         targetCount = grid.num_clusters();
 #else
@@ -271,7 +274,8 @@ private:
         uint32_t bytesToClear, uint8_t dirtyIndex, uint8_t stageIdx)
     {
         // Round up to the float4 boundary
-        // For the same reason that the divUp is shadowed, we have to define it again here.
+        // For the same reason that the divUp is shadowed, we have to define it
+        // again here.
         uint32_t clearBoundary = (bytesToClear + sizeof(PackedType) - 1) / sizeof(PackedType);
         for (uint32_t packedIdx = globalTid; packedIdx < clearBoundary; packedIdx += numThreads)
         {
@@ -281,8 +285,6 @@ private:
         }
     }
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END
 #endif // TRTLLM_CUDA_LAMPORT_UTILS_CUH

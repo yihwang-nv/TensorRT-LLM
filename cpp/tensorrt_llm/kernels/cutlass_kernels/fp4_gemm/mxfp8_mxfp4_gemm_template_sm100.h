@@ -42,10 +42,8 @@
 using namespace cute;
 using namespace tensorrt_llm::kernels::cutlass_kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -94,7 +92,9 @@ size_t genericMXFP8xMXFP4GemmKernelLauncher(void* D, void const* A, void const* 
     int* occupancy)
 {
     throw std::runtime_error(
-        "[TensorRT LLM Error][FP4 gemm Runner] TensorRT LLM is not compiled with support for this Architecture.");
+        "[TensorRT LLM Error][FP4 gemm Runner] TensorRT LLM "
+        "is not compiled with support for this "
+        "Architecture.");
 }
 
 #else
@@ -291,6 +291,5 @@ size_t genericMXFP8xMXFP4GemmKernelLauncher(void* D, void const* A, void const* 
 #endif
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

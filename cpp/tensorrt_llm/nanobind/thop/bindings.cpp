@@ -15,7 +15,6 @@
  */
 
 #include "bindings.h"
-#include "tensorrt_llm/common/config.h"
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/vector.h>
@@ -25,9 +24,7 @@
 
 namespace nb = nanobind;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::thop
+namespace tensorrt_llm::nanobind::thop
 {
 
 void initBindings(nb::module_& m)
@@ -39,7 +36,8 @@ void initBindings(nb::module_& m)
     }
 
     m.def("attention", &torch_ext::attention,
-        // Parameters with default values using std::nullopt for optional arguments
+        // Parameters with default values using std::nullopt for optional
+        // arguments
         nb::arg("q"), nb::arg("k") = std::nullopt, nb::arg("v") = std::nullopt, nb::arg("output"),
         nb::arg("output_sf") = std::nullopt, nb::arg("out_dtype") = std::nullopt, nb::arg("workspace_") = std::nullopt,
         nb::arg("sequence_length"), nb::arg("host_past_key_value_lengths"), nb::arg("host_total_kv_lens"),
@@ -74,6 +72,4 @@ void initBindings(nb::module_& m)
         nb::arg("quant_q_buffer") = std::nullopt, "Multi-head attention operation",
         nb::call_guard<nb::gil_scoped_release>());
 }
-} // namespace nanobind::thop
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::thop

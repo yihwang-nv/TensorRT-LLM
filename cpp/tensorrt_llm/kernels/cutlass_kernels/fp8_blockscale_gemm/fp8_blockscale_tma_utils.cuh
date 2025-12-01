@@ -27,9 +27,9 @@
 #include <cuda/barrier>
 #include <cute/arch/util.hpp>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::fp8_blockscale_gemm
+namespace fp8_blockscale_gemm
 {
 
 template <class T>
@@ -136,13 +136,14 @@ CUtensorMap make_2d_tma_copy_desc(data_type* global_address, uint64_t gmem_dim[2
 __device__ uint64_t mbarrier_arrive_1_expect_tx_cta(void* smem_ptr, uint32_t tx_count)
 {
     uint64_t state;
-    asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
+    asm("mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // "
+        "8. "
         : "=l"(state)
         : "r"(static_cast<uint32_t>(cute::cast_smem_ptr_to_uint(smem_ptr))), "r"(tx_count)
         : "memory");
     return state;
 }
 
-} // namespace kernels::fp8_blockscale_gemm
+} // namespace fp8_blockscale_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

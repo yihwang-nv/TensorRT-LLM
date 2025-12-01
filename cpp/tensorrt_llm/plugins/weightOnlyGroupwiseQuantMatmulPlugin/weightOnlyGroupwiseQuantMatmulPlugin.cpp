@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "weightOnlyGroupwiseQuantMatmulPlugin.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <numeric>
 
@@ -37,7 +36,8 @@ std::vector<nvinfer1::PluginField> WeightOnlyGroupwiseQuantMatmulPluginCreator::
 void WeightOnlyGroupwiseQuantGemmPluginProfiler::runTactic(int m, int n, int k,
     WeightOnlyGroupwiseQuantGemmPluginProfiler::Config const& tactic, char* workspace, cudaStream_t const& stream)
 {
-    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 -> FP16)
+    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 ->
+    // FP16)
     int const originalN = mQuantAlgo & GroupwiseQuantAlgo::INT8_WEIGHT ? n * FP16_INT8_RATIO : n * FP16_INT4_RATIO;
     half* actPtr = reinterpret_cast<half*>(workspace);
     void* weightPtr = nextWorkspacePtr(reinterpret_cast<int8_t*>(actPtr), m * k * sizeof(half));
@@ -89,7 +89,8 @@ void WeightOnlyGroupwiseQuantGemmPluginProfiler::runTactic(int m, int n, int k,
 
 void WeightOnlyGroupwiseQuantGemmPluginProfiler::computeTmpSize(size_t maxM, size_t n, size_t k)
 {
-    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 -> FP16)
+    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 ->
+    // FP16)
     int const originalN = mQuantAlgo & GroupwiseQuantAlgo::INT8_WEIGHT ? n * FP16_INT8_RATIO : n * FP16_INT4_RATIO;
     std::vector<size_t> workspaces = {
         maxM * k * sizeof(half),                      // A
@@ -194,7 +195,8 @@ void WeightOnlyGroupwiseQuantMatmulPlugin::init(nvinfer1::DataType type, int qua
     mQuantAlgo = quant_algo;
     mGroupSize = group_size;
 
-    // quant_algo = int8_weight * 16 + fp8_alpha * 8 + pre_quant_scale * 4 + zero * 2 + bias
+    // quant_algo = int8_weight * 16 + fp8_alpha * 8 + pre_quant_scale * 4 + zero
+    // * 2 + bias
     mPreQuantScaleInputIdx = (quant_algo & GroupwiseQuantAlgo::PRE_QUANT_SCALE) ? 1 : 0;
     mWeightInputIdx = mPreQuantScaleInputIdx + 1;
     mScalesInputIdx = mWeightInputIdx + 1;
@@ -362,7 +364,8 @@ void WeightOnlyGroupwiseQuantMatmulPlugin::configurePlugin(nvinfer1::DynamicPlug
     auto const maxM = std::accumulate(in[0].max.d, in[0].max.d + in[0].max.nbDims - 1, 1, std::multiplies<int>());
     int const maxK = in[0].max.d[in[0].max.nbDims - 1];
 
-    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 -> FP16)
+    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 ->
+    // FP16)
     int const weight_multiplier = mQuantAlgo & GroupwiseQuantAlgo::INT8_WEIGHT ? FP16_INT8_RATIO : FP16_INT4_RATIO;
     int const maxN = in[mWeightInputIdx].max.d[1] * weight_multiplier;
 
@@ -432,8 +435,10 @@ int WeightOnlyGroupwiseQuantMatmulPlugin::enqueue(nvinfer1::PluginTensorDesc con
     bool use_cuda_kernel = false;
     auto const& bestTactic = mPluginProfiler->getBestConfig(m, mGemmId);
     TLLM_CHECK_WITH_INFO(bestTactic,
-        "No valid weight only groupwise GEMM tactic(It is usually caused by the failure to execute all "
-        "candidate configurations of the CUTLASS kernel, please pay attention to the warning information "
+        "No valid weight only groupwise GEMM tactic(It is "
+        "usually caused by the failure to execute all "
+        "candidate configurations of the CUTLASS kernel, please "
+        "pay attention to the warning information "
         "when building the engine.)");
     use_cuda_kernel = bestTactic->enableCudaKernel;
 
@@ -467,7 +472,8 @@ int WeightOnlyGroupwiseQuantMatmulPlugin::enqueue(nvinfer1::PluginTensorDesc con
     TLLM_CHECK_WITH_INFO(mType == nvinfer1::DataType::kHALF, "No valid weightOnlyGropwiseQuantMatmul configuration");
 #endif
 
-    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 -> FP16)
+    // Quantized weights are packed in FP16 format (INT4*4 -> FP16, INT8*2 ->
+    // FP16)
     int real_n = mQuantAlgo & GroupwiseQuantAlgo::INT8_WEIGHT ? n * FP16_INT8_RATIO : n * FP16_INT4_RATIO;
 
     if (use_cuda_kernel)
@@ -623,9 +629,11 @@ IPluginV2* WeightOnlyGroupwiseQuantMatmulPluginCreator::createPlugin(
     }
     try
     {
-        // WeightOnlyGroupwiseQuantMatmulPluginCreator is unique and shared for an engine generation
+        // WeightOnlyGroupwiseQuantMatmulPluginCreator is unique and shared for an
+        // engine generation
         // Create plugin profiler with shared tactics map
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false);
         auto* obj = new WeightOnlyGroupwiseQuantMatmulPlugin(type, QuantAlgo, GroupSize, Alpha, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
@@ -644,7 +652,8 @@ IPluginV2* WeightOnlyGroupwiseQuantMatmulPluginCreator::deserializePlugin(
     // call weightOnlyGroupwiseQuantMatmulPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
         auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
         auto* obj = new WeightOnlyGroupwiseQuantMatmulPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());

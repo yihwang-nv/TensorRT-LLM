@@ -25,7 +25,8 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -57,15 +58,19 @@ void runGemm(at::Tensor& out, at::Tensor const& mat1, at::Tensor const& mat2, at
     float* outScalePtr = globalScale.data_ptr<float>();
 
     runner.run(m, n, k, mat1.const_data_ptr(), mat1ScalePtr, mat2.const_data_ptr(), mat2ScalePtr, out.data_ptr(),
-        outScalePtr, /* cScalePtr */ nullptr, workspace.data_ptr(), stream.stream(), mat1.get_device());
+        outScalePtr,
+        /* cScalePtr */ nullptr, workspace.data_ptr(), stream.stream(), mat1.get_device());
 }
 
 // mat1: [M, K / 2], FLOAT4_E2M1X2
 // mat2: [N, K / 2], FLOAT4_E2M1X2
 // out: [M, N], fp16/bf16/fp32
-// mat1Scale: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
-// mat2Scale: ceil(N / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
-// globalScale: [1], 1 / (((448 * 6) / mat1.abs().max()) * ((448 * 6) / mat2.abs().max()))
+// mat1Scale: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3
+// or UE8M0)
+// mat2Scale: ceil(N / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3
+// or UE8M0)
+// globalScale: [1], 1 / (((448 * 6) / mat1.abs().max()) * ((448 * 6) /
+// mat2.abs().max()))
 // Only NVFP4 is currently supported
 at::Tensor fp4_gemm_impl(at::Tensor const& mat1, at::Tensor const& mat2, at::Tensor const& mat1Scale,
     at::Tensor const& mat2Scale, at::Tensor const& globalScale, bool sfUseUE8M0,
@@ -128,12 +133,13 @@ at::Tensor fp4_gemm_trtllmgen(at::Tensor const& mat1, at::Tensor const& mat2, at
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "fp4_gemm_trtllmgen(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, Tensor globalScale, bool "
+        "fp4_gemm_trtllmgen(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor "
+        "mat2Scale, Tensor globalScale, bool "
         "sfUseUE8M0, "
         "ScalarType? out_dtype=None) -> Tensor");
 }

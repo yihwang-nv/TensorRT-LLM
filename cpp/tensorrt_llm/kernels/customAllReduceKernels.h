@@ -25,14 +25,12 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 constexpr size_t WARP_SIZE = 32;
 constexpr size_t MAX_ALL_REDUCE_BLOCKS = 24;
-// Use max modules to avoid overflow and ABA problem when the block num changes for barrier_flag
+// Use max modules to avoid overflow and ABA problem when the block num changes
+// for barrier_flag
 // Not a perfect solution, but it has large chance that it is correct
 constexpr size_t MAX_ALL_REDUCE_MODULES = std::numeric_limits<uint32_t>::max() / 6 * 6;
 constexpr size_t MAX_RANKS_PER_NODE = 16;
@@ -195,6 +193,4 @@ namespace reduce_fusion
 bool is_lamport_supported(nvinfer1::DataType dataType, int token_num, int hidden_size);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

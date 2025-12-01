@@ -17,7 +17,6 @@
 #include "moeLoadBalancer.h"
 #include "hostAccessibleDeviceAllocator.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/kernels/moeLoadBalance/moeLoadBalanceKernels.h"
 #include "topologyDetector.h"
@@ -34,9 +33,7 @@
 #include <utility>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 // Helper structure to hold replica information
 struct ReplicaInfo
@@ -90,12 +87,14 @@ void doReplication(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaInfo, float
     std::fill(cpuPlacement->expertReplicaCount.begin(), cpuPlacement->expertReplicaCount.end(), 1);
     int assignedSlotCount = metaInfo.expertCount;
 
-    // Define a max-priority queue storing pairs of {current_slot_size, expert_id}
+    // Define a max-priority queue storing pairs of {current_slot_size,
+    // expert_id}
     // std::priority_queue is a max-heap by default.
     using SlotExpertPair = std::pair<double, int>;
     std::priority_queue<SlotExpertPair> pq;
 
-    // Initialize the priority queue with the initial slot size for each expert (replicaCount = 1)
+    // Initialize the priority queue with the initial slot size for each expert
+    // (replicaCount = 1)
     for (int i = 0; i < metaInfo.expertCount; ++i)
     {
         // Initial slot size based on replicaCount = 1
@@ -115,11 +114,13 @@ void doReplication(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaInfo, float
         cpuPlacement->expertReplicaCount[expertId]++;
         assignedSlotCount++;
 
-        // Calculate the new slot size for this expert with the updated replica count
+        // Calculate the new slot size for this expert with the updated replica
+        // count
         double newSlotSize
             = expertLoadFactorVec[expertId] / static_cast<double>(cpuPlacement->expertReplicaCount[expertId]);
 
-        // Push the updated state (new slot size and expert id) back into the queue
+        // Push the updated state (new slot size and expert id) back into the
+        // queue
         pq.push({newSlotSize, expertId});
     }
 }
@@ -166,7 +167,8 @@ void doPlacement(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaInfo, float* 
         pq.push({0.0, rank});
     }
 
-    // 4. Optimized Greedy assignment using Priority Queue, writing directly to rankExpertIds
+    // 4. Optimized Greedy assignment using Priority Queue, writing directly to
+    // rankExpertIds
     for (auto const& replica : allReplicas)
     {
         // Get the rank with the minimum load from the priority queue
@@ -185,7 +187,8 @@ void doPlacement(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaInfo, float* 
         currentRankLoad[bestRank] = currentLoad + replica.slotSize; // Update load explicitly
         currentRankSlots[bestRank]++;                               // Increment the slot count for this rank
 
-        // If the rank still has capacity, push it back into the queue with updated load
+        // If the rank still has capacity, push it back into the queue with
+        // updated load
         if (currentRankSlots[bestRank] < metaInfo.slotCountPerRank)
         {
             pq.push({currentRankLoad[bestRank], bestRank});
@@ -252,9 +255,12 @@ void prepareGpuPlacementInfo(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaI
 
     // Generate globalSlotIds
 
-    // globalSlotIds[i][j] is the list of global slot ids for expert i's j-th replica
-    // different experts have different number of replicas, so globalSlotIds is a vector of vectors
-    // the sum of sizes of all vectors in globalSlotIds is equal to the total number of slots
+    // globalSlotIds[i][j] is the list of global slot ids for expert i's j-th
+    // replica
+    // different experts have different number of replicas, so globalSlotIds is
+    // a vector of vectors
+    // the sum of sizes of all vectors in globalSlotIds is equal to the total
+    // number of slots
     std::vector<std::vector<int>> globalSlotIds(metaInfo.expertCount);
     for (int rank = 0; rank < metaInfo.epSize; ++rank)
     {
@@ -372,7 +378,8 @@ tensorrt_llm::kernels::MoeLoadBalanceSingleLayerSignal* allocateSingleLayerSigna
 {
     tensorrt_llm::kernels::MoeLoadBalanceSingleLayerSignal* ptr = nullptr;
     TLLM_CUDA_CHECK(cudaMallocHost(&ptr, sizeof(tensorrt_llm::kernels::MoeLoadBalanceSingleLayerSignal)));
-    // first initialized as CPU ownership and GPU should wait CPU thread to set to GPU ownership at startup.
+    // first initialized as CPU ownership and GPU should wait CPU thread to set
+    // to GPU ownership at startup.
     ptr->stepAndOwner = tensorrt_llm::kernels::MoeLoadBalanceSingleLayerSignal::kCPU;
     return ptr;
 }
@@ -643,8 +650,9 @@ void MoeWeightUpdaterBase::finalizeWeightSlot()
             {
                 TLLM_CHECK_WITH_INFO(
                     vecWeights[i].mHeight == vecWeights[0].mHeight && vecWeights[i].mWidth == vecWeights[0].mWidth,
-                    "finalizeWeightSlot slot shape not same for slot %d and 0, (%ld, %ld) v.s. (%ld, %ld)", i,
-                    vecWeights[i].mHeight, vecWeights[i].mWidth, vecWeights[0].mHeight, vecWeights[0].mWidth);
+                    "finalizeWeightSlot slot shape not same for "
+                    "slot %d and 0, (%ld, %ld) v.s. (%ld, %ld)",
+                    i, vecWeights[i].mHeight, vecWeights[i].mWidth, vecWeights[0].mHeight, vecWeights[0].mWidth);
             }
         }
     }
@@ -684,8 +692,9 @@ void HostMemoryMoeWeightUpdater::finalizeHostWeight()
 {
     TLLM_CHECK_WITH_INFO(mHostWeightsFinalized == false, "already finalized");
     TLLM_CHECK_WITH_INFO(mHostWeights.size() == mWeightSlots.size(),
-        "mHostWeights and mWeightSlots doesn't have same count of weights, %ld v.s. %ld.", mHostWeights.size(),
-        mWeightSlots.size());
+        "mHostWeights and mWeightSlots doesn't have same "
+        "count of weights, %ld v.s. %ld.",
+        mHostWeights.size(), mWeightSlots.size());
     for (auto it = mHostWeights.cbegin(); it != mHostWeights.cend(); ++it)
     {
         auto name = it->first;
@@ -703,15 +712,18 @@ void HostMemoryMoeWeightUpdater::finalizeHostWeight()
             {
                 TLLM_CHECK_WITH_INFO(
                     vecWeights[i].mHeight == vecWeights[0].mHeight && vecWeights[i].mWidth == vecWeights[0].mWidth,
-                    "finalizeHostWeight host weights shape not same for expert %d and 0, (%ld, %ld) v.s. (%ld, %ld)", i,
-                    vecWeights[i].mHeight, vecWeights[i].mWidth, vecWeights[0].mHeight, vecWeights[0].mWidth);
+                    "finalizeHostWeight host weights shape not same "
+                    "for expert %d and 0, (%ld, %ld) v.s. (%ld, "
+                    "%ld)",
+                    i, vecWeights[i].mHeight, vecWeights[i].mWidth, vecWeights[0].mHeight, vecWeights[0].mWidth);
             }
             else
             {
                 auto& slotWeight = slotIt->second[0];
                 TLLM_CHECK_WITH_INFO(
                     vecWeights[i].mHeight == slotWeight.mHeight && vecWeights[i].mWidth == slotWeight.mWidth,
-                    "finalizeHostWeight host weights shape not same for expert 0 and slot 0, (%ld, %ld) v.s. (%ld, "
+                    "finalizeHostWeight host weights shape not same "
+                    "for expert 0 and slot 0, (%ld, %ld) v.s. (%ld, "
                     "%ld)",
                     vecWeights[i].mHeight, vecWeights[i].mWidth, slotWeight.mHeight, slotWeight.mWidth);
             }
@@ -838,7 +850,8 @@ MoeLoadBalancer::MoeLoadBalancer(int epRank, int epSize, int layerUpdatesPerIter
     , mLayerUpdatesPerIter{layerUpdatesPerIter}
 {
     TLLM_CUDA_CHECK(cudaGetDevice(&mCudaDeviceId));
-    // create a non-blocking stream for compute and update, not needed anymore for CPU copy engine.
+    // create a non-blocking stream for compute and update, not needed anymore
+    // for CPU copy engine.
     TLLM_CUDA_CHECK(cudaStreamCreateWithFlags(&mStream, cudaStreamNonBlocking));
 
     auto& topologyDetector = TopologyDetector::getInstance();
@@ -847,7 +860,8 @@ MoeLoadBalancer::MoeLoadBalancer(int epRank, int epSize, int layerUpdatesPerIter
     int numaGpuCount = topologyDetector.getGpuCountUnderNuma(currentGpuNumaId);
     HostAccessibleDeviceAllocator::getInstance().IncRefCount();
     TLLM_CHECK_WITH_INFO(layerUpdatesPerIter == 0 || HostAccessibleDeviceAllocator::getInstance().isSupported(),
-        "HostAccessibleDeviceAllocator is not supported on current platform, please install gdrcopy(gdrdrv).");
+        "HostAccessibleDeviceAllocator is not supported on current platform, "
+        "please install gdrcopy(gdrdrv).");
     TLLM_CHECK_WITH_INFO(
         numaCpuCount > 0 && numaGpuCount > 0, "numaCpuCount=%d, numaGpuCount=%d", numaCpuCount, numaGpuCount);
     int cpuCountPerGpu = std::max(1, numaCpuCount / numaGpuCount);
@@ -860,7 +874,9 @@ MoeLoadBalancer::MoeLoadBalancer(int epRank, int epSize, int layerUpdatesPerIter
         if (numCopyThreadsFromEnv > 0)
         {
             TLLM_LOG_INFO(
-                "Setting TLLM_LOAD_BALANCE_NUM_COPY_THREADS to %d by environment variable", numCopyThreadsFromEnv);
+                "Setting TLLM_LOAD_BALANCE_NUM_COPY_THREADS to %d by "
+                "environment variable",
+                numCopyThreadsFromEnv);
             numCopyThreads = numCopyThreadsFromEnv;
         }
     }
@@ -869,7 +885,9 @@ MoeLoadBalancer::MoeLoadBalancer(int epRank, int epSize, int layerUpdatesPerIter
         if (cpuCountPerGpu > 0)
         {
             numCopyThreads = std::min(16, std::max(4, cpuCountPerGpu / 2));
-            TLLM_LOG_INFO("Auto-setting copy threads to %d based on NUMA topology (NUMA node %d, %d CPUs, arch: %s)",
+            TLLM_LOG_INFO(
+                "Auto-setting copy threads to %d based on NUMA topology "
+                "(NUMA node %d, %d CPUs, arch: %s)",
                 numCopyThreads, currentGpuNumaId, numaCpuCount, cpuArch.c_str());
         }
     }
@@ -1179,6 +1197,4 @@ void MultiThreadWorker::workerLoop(int rank)
     }
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

@@ -16,13 +16,10 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/serialization.h"
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 class CommState;
@@ -71,6 +68,4 @@ public:
     [[nodiscard]] virtual CommState const& getCommState() const = 0;
 };
 
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

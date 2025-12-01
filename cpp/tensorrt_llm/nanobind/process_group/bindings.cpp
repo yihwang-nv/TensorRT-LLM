@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +17,14 @@
  */
 
 #include "bindings.h"
-#include "tensorrt_llm/common/bindingUtils.h"
 #include <nanobind/stl/string.h>
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/common/bindingUtils.h"
 #include "tensorrt_llm/runtime/utils/pgUtils.h"
 
 namespace nb = nanobind;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::process_group
+namespace tensorrt_llm::nanobind::process_group
 {
 
 void initBindings(nb::module_& m)
@@ -43,6 +41,4 @@ void initBindings(nb::module_& m)
         });
 }
 
-} // namespace nanobind::process_group
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::process_group

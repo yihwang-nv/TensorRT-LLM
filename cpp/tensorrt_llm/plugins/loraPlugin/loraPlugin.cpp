@@ -19,7 +19,6 @@
 
 #include "pluginUtils.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <vector>
 
@@ -214,8 +213,10 @@ size_t LoraPlugin::getWorkspaceSize(nvinfer1::PluginTensorDesc const* inputs, in
 int64_t LoraPlugin::getNumTokens(nvinfer1::PluginTensorDesc const* input_tensors) const
 {
     int ndim = input_tensors[getInputTensorIdx()].dims.nbDims;
-    TLLM_CHECK_WITH_INFO(
-        3 == ndim || 2 == ndim, "hidden_state dimension should be either 2 [numTokens, hidden], or 3 [b, s, hidden]");
+    TLLM_CHECK_WITH_INFO(3 == ndim || 2 == ndim,
+        "hidden_state dimension should "
+        "be either 2 [numTokens, "
+        "hidden], or 3 [b, s, hidden]");
     int64_t num_tokens = input_tensors[getInputTensorIdx()].dims.d[0];
     if (ndim == 3)
     {
@@ -257,8 +258,10 @@ int LoraPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc, nvinfer1::P
         int idx = 0;
         for (int reqId = 0; reqId < numReqs; reqId++)
         {
-            // loraWeightModulePtrs has 3 pointers for each module: A,B, and an optional DoRA magnitude
-            // the current LoRA plugin does not apply DoRA scaling, so the magnitude is ignored
+            // loraWeightModulePtrs has 3 pointers for each module: A,B, and an
+            // optional DoRA magnitude
+            // the current LoRA plugin does not apply DoRA scaling, so the magnitude
+            // is ignored
             RequestType const reqType = static_cast<RequestType>(reqTypes[reqId]);
             if (reqType == RequestType::kGENERATION)
             {
@@ -281,12 +284,16 @@ int LoraPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc, nvinfer1::P
             }
         }
 
-        // In 1st generation phase cross attention qkv lora, cross qkv is skipped by passing an empty encoder_output
-        // (passing 0 to dim) getNumTokens() will get in cross qkv_lora. Skipping the check for this case.
+        // In 1st generation phase cross attention qkv lora, cross qkv is skipped by
+        // passing an empty encoder_output
+        // (passing 0 to dim) getNumTokens() will get in cross qkv_lora. Skipping
+        // the check for this case.
         if (numTokens > 0)
         {
             TLLM_CHECK_WITH_INFO(idx == numTokens,
-                fmtstr("LoraParams and input dims don't match, lora tokens %d input tokens %d", idx, numTokens));
+                fmtstr("LoraParams and input dims don't match, lora "
+                       "tokens %d input tokens %d",
+                    idx, numTokens));
         }
     }
 
@@ -490,7 +497,8 @@ IPluginV2* LoraPluginCreator::createPlugin(char const* name, PluginFieldCollecti
         // LoraPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
         // FIXME enable tactic profiler
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false, /* skip */ true);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false, /* skip */ true);
         auto* obj = new LoraPlugin(in_hidden_size, out_hidden_sizes, transA, transB, num_lora_modules, type,
             pluginProfiler, remove_input_padding, max_low_rank, weight_index);
         obj->setPluginNamespace(mNamespace.c_str());
@@ -513,7 +521,8 @@ IPluginV2* LoraPluginCreator::deserializePlugin(char const* name, void const* se
         // LoraPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
         // FIXME enable tactic profiler
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true, /* skip */ true);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ true, /* skip */ true);
         auto* obj = new LoraPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;

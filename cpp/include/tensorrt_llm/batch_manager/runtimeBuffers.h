@@ -18,7 +18,6 @@
 
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/rnnStateManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/runtime/eagleBuffers.h"
 #include "tensorrt_llm/runtime/explicitDraftTokensBuffers.h"
@@ -33,9 +32,7 @@
 #include <optional>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class TllmRuntime;
 
@@ -43,9 +40,9 @@ namespace decoder
 {
 class DecoderState;
 } // namespace decoder
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 namespace kv_cache_manager
@@ -186,7 +183,8 @@ public:
     //! Eagle decoding
     std::unique_ptr<runtime::EagleBuffers> mEagleBuffers;
 
-    //! Language adapter routing information if language adapter is presented, [numTokens, numLanguages]
+    //! Language adapter routing information if language adapter is presented,
+    //[numTokens, numLanguages]
     TensorPtr languageAdapterRoutings;
 
     TensorPtr cacheIndirDecoderIOBatchedCopySrcOffsets;
@@ -208,13 +206,16 @@ public:
         //! Record the usage offset of the cacheGenerationLogits buffer
         SizeType32 offset{0};
 
-        //! Temporarily store the transposed results of multiple fragment logits, [maxBeamWidth, kCACHE_LENGTH]
+        //! Temporarily store the transposed results of multiple fragment logits,
+        //[maxBeamWidth, kCACHE_LENGTH]
         TensorPtr transposedLogits;
 
-        //! Temporarily store logits buffer address during the transposing, [kCACHE_LENGTH]
+        //! Temporarily store logits buffer address during the transposing,
+        //[kCACHE_LENGTH]
         TensorPtr fragmentPointerDevice;
 
-        //! Temporarily store logits buffer address during the transposing, [maxBatchSize, kCACHE_LENGTH]
+        //! Temporarily store logits buffer address during the transposing,
+        //[maxBatchSize, kCACHE_LENGTH]
         TensorPtr fragmentPointerHost;
 
         //! Cycling index for workspace
@@ -239,21 +240,26 @@ public:
     TensorPtr seqSlots;
     TensorPtr seqSlotsDevice;
 
-    //! Explicitly device-copy src offsets to reduce warp stalls in copy batch kernel invocation
+    //! Explicitly device-copy src offsets to reduce warp stalls in copy batch
+    // kernel invocation
     //! [mMaxNumRequests], on gpu
     TensorPtr mCacheIndirDecoderIOBatchedCopySrcOffsetsSliceDevice;
-    //! Explicitly device-copy dst offsets to reduce warp stalls in copy batch kernel invocation
+    //! Explicitly device-copy dst offsets to reduce warp stalls in copy batch
+    // kernel invocation
     //! [mMaxNumRequests], on gpu
     TensorPtr mCacheIndirDecoderIOBatchedCopyDstOffsetsSliceDevice;
-    //! Explicitly device-copy size to reduce warp stalls in copy batch kernel invocation
+    //! Explicitly device-copy size to reduce warp stalls in copy batch kernel
+    // invocation
     //! [mMaxNumRequests], on gpu
     TensorPtr mCacheIndirDecoderIOBatchedCopyCopySizesDevice;
 
 private:
-    //! Re-capture cuda graph when max kv cache len of the batch has changed on kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE.
+    //! Re-capture cuda graph when max kv cache len of the batch has changed on
+    // kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE.
     static SizeType32 constexpr kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE{256};
 
-    TensorMap mAdditionalOutputTensors; // Tensors storing additional output tensors.
+    TensorMap mAdditionalOutputTensors; // Tensors storing additional output
+                                        // tensors.
 
     //! Engine I/O
     TensorMap inputMap;
@@ -321,6 +327,4 @@ private:
     void fillIOMaps(runtime::ModelConfig const& modelConfig, runtime::WorldConfig const& worldConfig);
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

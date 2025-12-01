@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
@@ -25,9 +24,7 @@
 struct ncclComm;
 typedef struct ncclComm* ncclComm_t;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class NcclCommunicator
@@ -69,6 +66,4 @@ private:
     ncclComm_t mComm;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

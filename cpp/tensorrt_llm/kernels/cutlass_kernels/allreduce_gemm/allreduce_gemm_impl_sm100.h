@@ -35,9 +35,9 @@
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::opened_cutlass_kernels
+namespace opened_cutlass_kernels
 {
 //////////////////////////////////////////////
 // Sm100 Two-shot fusion
@@ -198,7 +198,8 @@ public:
             assert(N > 0 && "N is 0.");
             // barriers to know when each tile ready to be consumed by AR
             _num_tile_barriers = CollectiveAllReduce::get_num_barrier_flags(M, N);
-            // need barrier per warpgroup to indicate broadcast complete, this is safe.
+            // need barrier per warpgroup to indicate broadcast complete, this is
+            // safe.
             _num_completion_barriers = _num_tile_barriers;
         }
 
@@ -377,6 +378,6 @@ private:
     cutlass::KernelHardwareInfo _hw_info;
 };
 
-} // namespace kernels::opened_cutlass_kernels
+} // namespace opened_cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

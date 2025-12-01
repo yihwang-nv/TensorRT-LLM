@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +40,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common::op
+namespace op
 {
 
 class AttentionOp
@@ -67,7 +68,8 @@ public:
     public:
         T const* attention_input = nullptr;
         T const* qkv_bias = nullptr;
-        // Attention mask input, which has shape of [batch_size, attention_mask_stride].
+        // Attention mask input, which has shape of [batch_size,
+        // attention_mask_stride].
         bool const* attention_mask = nullptr;
         // Attention sinks with shape of [num_heads_q] float.
         float const* attention_sinks = nullptr;
@@ -82,7 +84,8 @@ public:
         // unless each layer has different cyclic kv cache length.
         // Max cache capacity (used to allocate KV cache)
         int32_t max_attention_window_size = 0;
-        // Cyclic kv cache capacity (used to get the cyclic kv cache position for new tokens)
+        // Cyclic kv cache capacity (used to get the cyclic kv cache position for
+        // new tokens)
         int32_t cyclic_attention_window_size = 0;
         int32_t max_cyclic_attention_window_size = 0;
         bool can_use_one_more_block = false;
@@ -115,7 +118,8 @@ public:
         // optional when cross attention
         int32_t const* encoder_input_lengths = nullptr;
         int64_t const* runtime_perf_knobs = nullptr;
-        // optional when compute attention stats (MLA chunked prefill or Helix parallelism)
+        // optional when compute attention stats (MLA chunked prefill or Helix
+        // parallelism)
         // this is a buffer of size [num_tokens, num_heads_q] with each element
         // representing the max and LSE/denominator of the softmax values
         float2* softmax_stats = nullptr;
@@ -462,7 +466,8 @@ public:
     int mCpSize = 1;
     int mCpRank = 0;
     std::set<int32_t> mCpGroup = {};
-    // These parameters are used to specifically configure the attention attributes when cp/tp_size are different
+    // These parameters are used to specifically configure the attention
+    // attributes when cp/tp_size are different
     // between Attention and FFN(such as Ulysses)
     int mNumAttnHeads = -1;
     int mNumAttnKVHeads = -1;
@@ -487,7 +492,8 @@ public:
 
     kernels::SparseAttentionParams mRuntimeSparseAttentionParams;
 
-    // This is implementation details which we want to save when serializing, but not expose as
+    // This is implementation details which we want to save when serializing, but
+    // not expose as
     // a plugin field or a constructor parameter
     int32_t mNbMultiBlockSemaphores = 0;
 
@@ -521,14 +527,16 @@ private:
     bool mForceMultiBlockWarned = false;
     int mMultiProcessorCount = tensorrt_llm::common::getMultiProcessorCount();
     int mMaxSharedMemoryPerBlockOptin = tensorrt_llm::common::getMaxSharedMemoryPerBlockOptin();
-    // The default copy constructor will leave it as nullptr. clone() shall initialize it.
+    // The default copy constructor will leave it as nullptr. clone() shall
+    // initialize it.
     std::shared_ptr<CUDADriverWrapper> mDriver;
     UniqPtrWNullCopy<tensorrt_llm::kernels::FusedMHARunnerV2> mDecoderFMHARunner;
     UniqPtrWNullCopy<tensorrt_llm::kernels::FmhaDispatcher> mFmhaDispatcher;
     UniqPtrWNullCopy<tensorrt_llm::kernels::XqaDispatcher> mXqaDispatcher;
     UniqPtrWNullCopy<tensorrt_llm::kernels::TllmGenFmhaRunner> mTllmGenFMHARunner;
 
-    // The default copy constructor will leave it as nullptr. clone() shall initialize it.
+    // The default copy constructor will leave it as nullptr. clone() shall
+    // initialize it.
     UniqPtrWNullCopy<tensorrt_llm::common::CublasMMWrapper> mCublasWrapper;
 
 #if ENABLE_MULTI_DEVICE
@@ -546,6 +554,6 @@ private:
     UniqPtrWNullCopy<int32_t[], Deleter> mMultiBlockSemaphores = {};
 };
 
-} // namespace common::op
+} // namespace op
 
 TRTLLM_NAMESPACE_END

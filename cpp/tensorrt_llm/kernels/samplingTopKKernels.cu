@@ -33,10 +33,7 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T, int32_t BLOCK_SIZE_, int32_t BLOCKS_PER_BEAM_>
 __global__ void topKStage1(T const* __restrict logProbs, T const* const* __restrict logProbsPtrs, T* tmpLogProbs,
@@ -80,10 +77,12 @@ __global__ void topKStage1(T const* __restrict logProbs, T const* const* __restr
 
     if (finished != nullptr && finishState.isFinished())
     {
-        if (tid < k && endIds != nullptr) // if returnAllSelectedToken, endIds would not be an input
+        if (tid < k && endIds != nullptr) // if returnAllSelectedToken, endIds would
+                                          // not be an input
         {
             auto const index = tmpTopKBufIndex + tid;
-            // endId=-1 means generation doesn't stop upon encountering a certain token.
+            // endId=-1 means generation doesn't stop upon encountering a certain
+            // token.
             if (blockLane == 0 && tid == 0 && endIds[batchSlot] > -1)
             {
                 auto const endId = endIds[batchSlot];
@@ -225,11 +224,13 @@ __global__ void topKStage2Sampling(SizeType32 const* __restrict topKTmpIdBuf, T*
 
     if (tid == 0)
     {
-        // if we want to return all top k indices, we should not do random sampling for probThreshold
+        // if we want to return all top k indices, we should not do random sampling
+        // for probThreshold
         auto randNum = (returnAllSelectedTokens || curandState == nullptr)
             ? static_cast<float>(probThreshold * sSum)
             : static_cast<float>(curand_uniform(curandState + batchSlot) * probThreshold * sSum);
-        // when a token must still be multinomial sampled when returnAllSelectedTokens == True.
+        // when a token must still be multinomial sampled when
+        // returnAllSelectedTokens == True.
         auto randNum2 = sampleTokenInSelected
             ? static_cast<float>(curand_uniform(curandState + batchSlot) * probThreshold * sSum)
             : 0.0f;
@@ -245,7 +246,8 @@ __global__ void topKStage2Sampling(SizeType32 const* __restrict topKTmpIdBuf, T*
             if (randNum <= 0.0f || ki == k - 1 || returnAllSelectedTokens)
             {
                 auto idx = sId[ki];
-                // If sId is -1 here we force output token to the last from vocabulary to get vivid indicator of smth
+                // If sId is -1 here we force output token to the last from vocabulary
+                // to get vivid indicator of smth
                 // going wrong for the debug
                 auto outputId = idx != -1
                     ? topKTmpIdBuf[(batchIdx * maxTokensPerStep + tokenIdx) * stride + idx] % vocabSize
@@ -291,7 +293,8 @@ __global__ void topKStage2Sampling(SizeType32 const* __restrict topKTmpIdBuf, T*
 
                 if (sampleTokenInSelected && randNum2 <= 0.0f)
                 {
-                    // record the multinomial sampled token when returnAllSelectedTokens == True.
+                    // record the multinomial sampled token when returnAllSelectedTokens
+                    // == True.
                     randNum2 = MAX_T_VAL;
                     outputIdCurrentStep[batchSlot] = outputId;
                 }
@@ -299,7 +302,8 @@ __global__ void topKStage2Sampling(SizeType32 const* __restrict topKTmpIdBuf, T*
                 if (returnAllSelectedTokens && randNum <= 0.0f && strictTopPBoundary)
                 {
                     if (ki < k - 1)
-                    { // not the last k, write a -1 to to log top p tokens boundary for external draft token masking
+                    { // not the last k, write a -1 to to log top p tokens
+                      // boundary for external draft token masking
                         outputIdsRequestPtr[outIdx + 1] = -1;
                     }
                     break;
@@ -313,12 +317,14 @@ __global__ void topKStage2Sampling(SizeType32 const* __restrict topKTmpIdBuf, T*
             if (outputIdsRequestPtr[seqLen] == endIds[batchSlot])
             {
                 finishedOutput[batchSlot].setFinishedEOS();
-                // Do not increase seq len when EOS is generated. Seq len should always contain only tokens to be
+                // Do not increase seq len when EOS is generated. Seq len should always
+                // contain only tokens to be
                 // outputted
             }
             else
             {
-                // We don't need to set output finished state as it is assumed to be in non finished state
+                // We don't need to set output finished state as it is assumed to be in
+                // non finished state
                 sequenceLengths[batchSlot] += 1;
             }
         }
@@ -475,6 +481,4 @@ void invokeSetupTopKTopPRuntimeArgs(SizeType32 batchSize, ScatterDecodingParamEn
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

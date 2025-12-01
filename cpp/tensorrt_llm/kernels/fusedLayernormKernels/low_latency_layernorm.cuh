@@ -28,10 +28,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <uint32_t N_THREADS, typename T, size_t N>
 __forceinline__ __device__ void reduceSum(
@@ -104,7 +101,8 @@ struct LowLatencyLayerNorm
 
     struct Shared
     {
-        // One elem per warp per reduce. 2x reduces to reduce mean and var at the same time.
+        // One elem per warp per reduce. 2x reduces to reduce mean and var at the
+        // same time.
         __align__(16) typename Traits::AccumulatorType reduce[Traits::MATH_WARPGROUPS * 4][Traits::RMS_NORM ? 1 : 2];
     };
 
@@ -336,6 +334,4 @@ struct LowLatencyLayerNorm
     }
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

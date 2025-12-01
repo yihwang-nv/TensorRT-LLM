@@ -19,7 +19,6 @@
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/batch_manager/peftCacheManagerConfig.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/tllmException.h"
 #include "tensorrt_llm/runtime/loraCache.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
@@ -35,9 +34,7 @@
 #include <unordered_set>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using runtime::SizeType32;
@@ -53,7 +50,8 @@ public:
  * BasePeftCacheManager
  *
  * Manages caches of PEFT (Parameter Efficient Fine Tuning) weights.
- * Does cache updates during execution loop moving weights to device as needed.
+ * Does cache updates during execution loop moving weights to device as
+ *needed.
  */
 class BasePeftCacheManager
 {
@@ -65,14 +63,16 @@ public:
     virtual ~BasePeftCacheManager() = default;
 
     /**
-     * \brief add PEFT weights from llmRequest if any.  This will kickoff background copy tasks.
+     * \brief add PEFT weights from llmRequest if any.  This will kickoff
+     * background copy tasks.
      * \param[in] llmRequest: the request
      * \param[in] tryGpuCache: if true try to load weights into gpu cache
      */
     virtual void addRequestPeft(LlmRequestPtr llmRequest, bool tryGpuCache = true) = 0;
 
     /**
-     * \brief ensures device cache has all the weights needed to execute batch as specified by requests.
+     * \brief ensures device cache has all the weights needed to execute batch
+     * as specified by requests.
      * This acts as sync for the copy tasks started by addRequestPeft
      * \param[in] contextRequests: current context requests
      * \param[in] genRequests: current generation requests
@@ -197,6 +197,4 @@ private:
         return false;
     }
 };
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

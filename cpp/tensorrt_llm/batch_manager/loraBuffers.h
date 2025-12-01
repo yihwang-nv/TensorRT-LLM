@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
@@ -27,9 +27,7 @@
 #include "tensorrt_llm/runtime/tllmRuntime.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class LoraBuffers
@@ -61,6 +59,4 @@ public:
 
     void reshape(SizeType32 numSequences);
 };
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

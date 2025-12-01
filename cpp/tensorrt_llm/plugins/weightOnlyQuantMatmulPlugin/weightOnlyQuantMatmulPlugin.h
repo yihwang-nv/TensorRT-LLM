@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/fpA_intB_gemm.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/kernelLauncher.h"
@@ -30,13 +30,12 @@
 #include <string>
 #include <vector>
 
-// The blank line here is to avoid clang-format -sort-includes option reordering these two cutlass header files and
+// The blank line here is to avoid clang-format -sort-includes option reordering
+// these two cutlass header files and
 // breaking dependencies
 #include "cutlass/integer_subbyte.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 enum class WeightTypeId
 {
@@ -60,11 +59,12 @@ using WeightOnlyGemmRunner = tensorrt_llm::kernels::cutlass_kernels::CutlassFpAI
 using WeightOnlyGemmRunnerPtr = std::shared_ptr<WeightOnlyGemmRunner>;
 using KernelType = tensorrt_llm::kernels::weight_only::KernelType;
 
-class WeightOnlyQuantGemmPluginProfiler : public GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
-                                              WeightOnlyGemmRunnerPtr, GemmIdCore, GemmIdCoreHash>
+class WeightOnlyQuantGemmPluginProfiler
+    : public GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig, WeightOnlyGemmRunnerPtr,
+          GemmIdCore, GemmIdCoreHash>
 {
 public:
-    using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
 
     void setWeightTypeId(WeightTypeId weightId)
     {
@@ -175,6 +175,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

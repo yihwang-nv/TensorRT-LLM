@@ -23,14 +23,16 @@
 #include <cuda_fp8.h>
 #include <stdexcept>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_fp8_bf16_gemm
+namespace llama4_min_latency::llama4_fp8_bf16_gemm
 {
 
-// Grid size is num_tokens / TILE_TOKEN * hidden_out / TILE_OUT / WARP_PER_BLOCK.
+// Grid size is num_tokens / TILE_TOKEN * hidden_out / TILE_OUT /
+// WARP_PER_BLOCK.
 // Each warp processes TILE_TOKEN tokens and TILE_OUT rows.
-// Within each warp, it loops through hidden_in in steps of WARP_SIZE * VEC_SIZE.
+// Within each warp, it loops through hidden_in in steps of WARP_SIZE *
+// VEC_SIZE.
 template <int HIDDEN_IN, int TILE_TOKEN, int TILE_OUT, bool ALIGNED>
 __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kernel(
     __nv_fp8_e4m3 const* __restrict__ A, // Input tensor [num_tokens][hidden_in]
@@ -102,7 +104,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kern
         int base_idx_a = chunk * BLOCK_SIZE + tid;
         int base_idx_b = chunk * BLOCK_SIZE + lane_idx;
 
-        // Load values from tensor A into shared memory
+// Load values from tensor A into shared memory
 #pragma unroll
         for (int tile_token_idx = 0; tile_token_idx < TILE_TOKEN; tile_token_idx++)
         {
@@ -128,7 +130,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kern
 
         __syncthreads();
 
-        // Compute partial sum
+// Compute partial sum
 #pragma unroll
         for (int tile_out_idx = 0; tile_out_idx < TILE_OUT; tile_out_idx++)
         {
@@ -163,7 +165,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kern
 
         if (ALIGNED || base_idx_a * VEC_SIZE < hidden_in)
         {
-            // Load values from tensor A into shared memory
+// Load values from tensor A into shared memory
 #pragma unroll
             for (int tile_token_idx = 0; tile_token_idx < TILE_TOKEN; tile_token_idx++)
             {
@@ -193,7 +195,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kern
 
         __syncthreads();
 
-        // Compute partial sum
+// Compute partial sum
 #pragma unroll
         for (int tile_out_idx = 0; tile_out_idx < TILE_OUT; tile_out_idx++)
         {
@@ -227,7 +229,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kern
         __syncthreads();
     }
 
-    // Reduce partial sums using warp-level reduction.
+// Reduce partial sums using warp-level reduction.
 #pragma unroll
     for (int tile_out_idx = 0; tile_out_idx < TILE_OUT; tile_out_idx++)
     {
@@ -326,6 +328,6 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_bf16_gemm_per_warp_kern
         DISPATCH_PER_WARP_FC_FP8_BF16_TILE_OUT(HIDDEN_IN, tile_token, tile_out, ALIGNED);                              \
     }
 
-} // namespace kernels::llama4_min_latency::llama4_fp8_bf16_gemm
+} // namespace llama4_min_latency::llama4_fp8_bf16_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

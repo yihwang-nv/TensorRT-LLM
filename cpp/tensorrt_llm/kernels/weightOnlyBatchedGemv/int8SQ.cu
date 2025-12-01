@@ -17,10 +17,8 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/int8SQ.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace smooth_quant
 {
 template <typename Type, int CtaM, int CtaN, int Threads, bool PerChannel, bool PerToken>
@@ -172,6 +170,5 @@ template void int8_sq_launcher<int>(Params& params, cudaStream_t s);
 template void int8_sq_launcher<__nv_bfloat16>(Params& params, cudaStream_t s);
 #endif
 } // namespace smooth_quant
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

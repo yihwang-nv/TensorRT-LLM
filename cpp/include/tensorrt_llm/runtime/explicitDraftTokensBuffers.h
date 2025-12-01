@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/explicitDraftTokensModule.h"
@@ -27,9 +26,7 @@
 
 #include <cstddef>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class ExplicitDraftTokensBuffers
@@ -52,11 +49,14 @@ public:
         TensorPtr generationLengths;
         //! [maxBatchSize]
         TensorPtr randomDataSample;
-        //! [maxBatchSize, maxNumPaths, maxPathDraftLen] or [numGenSequences, maxNumPaths, maxPathDraftLen]
+        //! [maxBatchSize, maxNumPaths, maxPathDraftLen] or [numGenSequences,
+        // maxNumPaths, maxPathDraftLen]
         TensorPtr randomDataValidation;
-        //! [maxBatchSize, maxNumPaths, maxPathLen] or [numGenSequences, maxNumPaths, maxPathLen]
+        //! [maxBatchSize, maxNumPaths, maxPathLen] or [numGenSequences,
+        // maxNumPaths, maxPathLen]
         TensorPtr draftTokens;
-        //! [maxBatchSize, maxNumPaths, maxPathLen] or [numGenSequences, maxNumPaths, maxPathLen]
+        //! [maxBatchSize, maxNumPaths, maxPathLen] or [numGenSequences,
+        // maxNumPaths, maxPathLen]
         TensorPtr draftIndices;
         //! [maxBatchSize, maxNumPaths, maxPathDraftLen, vocabSize]
         //! or [numGenSequences, maxNumPaths, maxPathDraftLen, vocabSize]
@@ -146,6 +146,4 @@ public:
     TensorPtr cumSumGenerationLengths;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

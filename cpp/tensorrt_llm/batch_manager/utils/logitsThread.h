@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,16 +19,13 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
 #include <memory>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 namespace kv_cache_manager
 {
@@ -37,20 +35,14 @@ class BaseKVCacheManager;
 class SequenceSlotManager;
 class BasePeftCacheManager;
 class GenerateRequestOptions;
-} // namespace batch_manager
+} // namespace tensorrt_llm::batch_manager
 
-TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 struct SpeculativeDecodingFastLogitsInfo;
-} // namespace executor
+} // namespace tensorrt_llm::executor
 
-TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::utils
+namespace tensorrt_llm::batch_manager::utils
 {
 
 void draftModelSendLogitsThread(int device, std::atomic<bool>* draftModelThreadShouldExit,
@@ -62,6 +54,4 @@ void draftModelSendLogitsThread(int device, std::atomic<bool>* draftModelThreadS
 void targetModelReceiveLogits(runtime::ITensor::SharedPtr& draftLogitsHost,
     executor::SpeculativeDecodingFastLogitsInfo const& fastLogitsInfo, nvinfer1::DataType logitsDtype);
 
-} // namespace batch_manager::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::utils

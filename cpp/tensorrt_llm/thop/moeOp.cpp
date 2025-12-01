@@ -43,7 +43,8 @@
         C10_THROW_ERROR(ErrorType, oss.str());                                                                         \
     } while (0)
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -70,7 +71,7 @@ public:
             // TODO We need an atomic FP8 reduction for the finalize fusions
             C10_THROW_ERROR_FORMATTED(NotImplementedError,
                 "Outputting " << torch::toString(output_type) << " directly is not currently supported");
-            // return std::make_unique<kernels::CutlassMoeFCRunner<Type, Type>>();
+        // return std::make_unique<kernels::CutlassMoeFCRunner<Type, Type>>();
         case c10::ScalarType::Half:
             if constexpr (NeedQuant)
             {
@@ -137,7 +138,8 @@ public:
         mUseFusedFinalize = use_fused_finalize;
         mInnerDimMultiplier = 1;
 
-        // keep consistent with cpp/tensorrt_llm/plugins/mixtureOfExperts/mixtureOfExpertsPlugin.cpp
+        // keep consistent with
+        // cpp/tensorrt_llm/plugins/mixtureOfExperts/mixtureOfExpertsPlugin.cpp
         if (mActivationDtype == c10::ScalarType::Half && mWeightDtype == c10::ScalarType::Half)
         {
             mKernelRunner = std::make_shared<kernels::CutlassMoeFCRunner<half, half>>();
@@ -227,7 +229,8 @@ public:
         if (!mKernelRunner)
         {
             C10_THROW_ERROR_FORMATTED(Error,
-                "Could not construct fused moe op with the requested input combination Activation: "
+                "Could not construct fused moe op with the requested input "
+                "combination Activation: "
                     << torch::toString(mActivationDtype) << ", Weight: " << torch::toString(mWeightDtype)
                     << ", Output: " << torch::toString(mOutputDtype));
         }
@@ -294,9 +297,11 @@ public:
             TORCH_CHECK(fc1_expert_biases.value().dim() == 2, "fc1_expert_biases must be 2D.");
             TORCH_CHECK(fc2_expert_biases.value().dim() == 2, "fc2_expert_biases must be 2D.");
             TORCH_CHECK(fc1_expert_weights.sizes()[0] == fc1_expert_biases.value().sizes()[0],
-                "fc1_expert_weights and fc1_expert_biases must have the same number of experts.");
+                "fc1_expert_weights and fc1_expert_biases must have the same "
+                "number of experts.");
             TORCH_CHECK(fc2_expert_weights.sizes()[0] == fc2_expert_biases.value().sizes()[0],
-                "fc2_expert_weights and fc2_expert_biases must have the same number of experts.");
+                "fc2_expert_weights and fc2_expert_biases must have the same "
+                "number of experts.");
             TORCH_CHECK(fc1_expert_biases.value().sizes()[1] == fc1_expert_weights.sizes()[1],
                 "fc1_expert_biases should match fc1_expert_weights output shape.");
             TORCH_CHECK(fc2_expert_biases.value().sizes()[1] == fc2_expert_weights.sizes()[1],
@@ -310,9 +315,11 @@ public:
             TORCH_CHECK(fc1_expert_biases.value().dim() == 2, "fc1_expert_biases must be 2D.");
             TORCH_CHECK(fc2_expert_biases.value().dim() == 2, "fc2_expert_biases must be 2D.");
             TORCH_CHECK(fc1_expert_weights.sizes()[0] == fc1_expert_biases.value().sizes()[0],
-                "fc1_expert_weights and fc1_expert_biases must have the same number of experts.");
+                "fc1_expert_weights and fc1_expert_biases must have the same "
+                "number of experts.");
             TORCH_CHECK(fc2_expert_weights.sizes()[0] == fc2_expert_biases.value().sizes()[0],
-                "fc2_expert_weights and fc2_expert_biases must have the same number of experts.");
+                "fc2_expert_weights and fc2_expert_biases must have the same "
+                "number of experts.");
             TORCH_CHECK(fc1_expert_biases.value().sizes()[1] == fc1_expert_weights.sizes()[1],
                 "fc1_expert_biases should match fc1_expert_weights output shape.");
             TORCH_CHECK(fc2_expert_biases.value().sizes()[1] == fc2_expert_weights.sizes()[1],
@@ -325,34 +332,41 @@ public:
         {
             TORCH_CHECK(token_final_scales.value().dim() == 2, "token_selected_experts_probs must be 2D.");
             TORCH_CHECK(input.sizes()[0] == token_final_scales.value().sizes()[0],
-                "input and token_selected_experts_probs must have the same num tokens.");
+                "input and token_selected_experts_probs must have the same "
+                "num tokens.");
             TORCH_CHECK(token_selected_experts.sizes()[1] == token_final_scales.value().sizes()[1],
-                "token_selected_experts and token_final_scales must have the same number of experts per token.");
+                "token_selected_experts and token_final_scales must have the "
+                "same number of experts per token.");
         }
         TORCH_CHECK(fc1_expert_weights.sizes()[0] == fc2_expert_weights.sizes()[0],
-            "fc1_expert_weights and fc2_expert_weights must have the same number of experts.");
+            "fc1_expert_weights and fc2_expert_weights must have the same "
+            "number of experts.");
 
         ActivationType base_activation_type = activation_type.has_value()
             ? static_cast<ActivationType>(activation_type.value())
             : ActivationType::Swiglu;
         if (mUseINT8WoqPerChannel)
         {
-            // Note: The weight shape for INT8 weight only quantization is different, e.g., fc2_expert_weights:
+            // Note: The weight shape for INT8 weight only quantization is different,
+            // e.g., fc2_expert_weights:
             // [num_experts, inter_size, hidden_size]
             TORCH_CHECK(fc1_expert_weights.sizes()[2] == fc2_expert_weights.sizes()[1] * mInnerDimMultiplier * 2,
-                "fc1_expert_weights inter size must be 2 times fc2_expert_weights inter size.");
+                "fc1_expert_weights inter size must be 2 times "
+                "fc2_expert_weights inter size.");
         }
         else
         {
             if (isGatedActivation(base_activation_type))
             {
                 TORCH_CHECK(fc1_expert_weights.sizes()[1] == fc2_expert_weights.sizes()[2] * mInnerDimMultiplier * 2,
-                    "fc1_expert_weights inter size must be 2 times fc2_expert_weights inter size.");
+                    "fc1_expert_weights inter size must be 2 times "
+                    "fc2_expert_weights inter size.");
             }
             else
             {
                 TORCH_CHECK(fc1_expert_weights.sizes()[1] == fc2_expert_weights.sizes()[2] * mInnerDimMultiplier,
-                    "fc1_expert_weights inter size must be equal to fc2_expert_weights inter size.");
+                    "fc1_expert_weights inter size must be equal to "
+                    "fc2_expert_weights inter size.");
             }
         }
 
@@ -364,7 +378,8 @@ public:
         int64_t inter_size = fc2_expert_weights.sizes()[2] * mInnerDimMultiplier;
         if (mUseINT8WoqPerChannel)
         {
-            // Note: The weight shape for INT8 weight only quantization is different, e.g., fc2_expert_weights:
+            // Note: The weight shape for INT8 weight only quantization is different,
+            // e.g., fc2_expert_weights:
             // [num_experts, inter_size, hidden_size]
             hidden_size = fc2_expert_weights.sizes()[2] * mInnerDimMultiplier;
             inter_size = fc2_expert_weights.sizes()[1];
@@ -519,9 +534,11 @@ public:
             TORCH_CHECK(fc1_expert_biases.value().dim() == 2, "fc1_expert_biases must be 2D.");
             TORCH_CHECK(fc2_expert_biases.value().dim() == 2, "fc2_expert_biases must be 2D.");
             TORCH_CHECK(fc1_expert_weights.sizes()[0] == fc1_expert_biases.value().sizes()[0],
-                "fc1_expert_weights and fc1_expert_biases must have the same number of experts.");
+                "fc1_expert_weights and fc1_expert_biases must have the same "
+                "number of experts.");
             TORCH_CHECK(fc2_expert_weights.sizes()[0] == fc2_expert_biases.value().sizes()[0],
-                "fc2_expert_weights and fc2_expert_biases must have the same number of experts.");
+                "fc2_expert_weights and fc2_expert_biases must have the same "
+                "number of experts.");
             TORCH_CHECK(fc1_expert_biases.value().sizes()[1] == fc1_expert_weights.sizes()[1],
                 "fc1_expert_biases should match fc1_expert_weights output shape.");
             TORCH_CHECK(fc2_expert_biases.value().sizes()[1] == fc2_expert_weights.sizes()[1],
@@ -534,14 +551,18 @@ public:
         {
             TORCH_CHECK(token_final_scales.value().dim() == 2, "token_selected_experts_probs must be 2D.");
             TORCH_CHECK(input.sizes()[0] == token_final_scales.value().sizes()[0],
-                "input and token_selected_experts_probs must have the same num tokens.");
+                "input and token_selected_experts_probs must have the same "
+                "num tokens.");
             TORCH_CHECK(token_selected_experts.sizes()[1] == token_final_scales.value().sizes()[1],
-                "token_selected_experts and token_final_scales must have the same number of experts per token.");
+                "token_selected_experts and token_final_scales must have the "
+                "same number of experts per token.");
         }
         TORCH_CHECK(fc1_expert_weights.sizes()[0] == fc2_expert_weights.sizes()[0],
-            "fc1_expert_weights and fc2_expert_weights must have the same number of experts.");
+            "fc1_expert_weights and fc2_expert_weights must have the same "
+            "number of experts.");
         TORCH_CHECK(fc1_expert_weights.sizes()[1] == fc2_expert_weights.sizes()[2] * mInnerDimMultiplier * 2,
-            "fc1_expert_weights inter size must be 2 times fc2_expert_weights inter size.");
+            "fc1_expert_weights inter size must be 2 times "
+            "fc2_expert_weights inter size.");
 
         TORCH_CHECK(!input_sf.has_value() || isWMxfp4AMxfp8Quant() || isNvfp4Quant(),
             "Block-scaling factors provided for non block-scaling quantization");
@@ -686,7 +707,8 @@ public:
         int64_t inter_size = fc2_expert_weights.sizes()[2] * mInnerDimMultiplier;
         if (mUseINT8WoqPerChannel)
         {
-            // Note: The weight shape for INT8 weight only quantization is different, e.g., fc2_expert_weights:
+            // Note: The weight shape for INT8 weight only quantization is different,
+            // e.g., fc2_expert_weights:
             // [num_experts, inter_size, hidden_size]
             hidden_size = fc2_expert_weights.sizes()[2] * mInnerDimMultiplier;
             inter_size = fc2_expert_weights.sizes()[1];
@@ -704,7 +726,8 @@ public:
 
         // Get specific profile configs according to the profile_id.
         // Fallback tactic is set to be 0
-        // TODO: use the best tactic id found offline for a better default inference perf
+        // TODO: use the best tactic id found offline for a better default inference
+        // perf
         auto const& profile = profile_id == -1 ? profiles.front() : profiles[profile_id];
 
         auto stream = at::cuda::getCurrentCUDAStream(input.get_device());
@@ -753,7 +776,8 @@ public:
             mProfiler->prepare(num_rows, mProfileWorkspace, expert_weights_ptr, stream);
         }
 
-        // Profile specific tactic. Assuming at least one preparation phase has been executed already.
+        // Profile specific tactic. Assuming at least one preparation phase has been
+        // executed already.
         mProfiler->runProfiler(num_rows, profile, mProfileWorkspace, expert_weights_ptr, stream);
     }
 
@@ -782,7 +806,7 @@ private:
     bool mUseMxfp8ActScaling = false;
     bool mUseFusedFinalize = true;
 
-    using Profile = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Profile = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
     std::vector<Profile> mGemm1Profiles;
     std::vector<Profile> mGemm2Profiles;
 
@@ -792,7 +816,9 @@ private:
         {
             auto const cu_free_status = cudaFree(mProfileWorkspace);
             TORCH_CHECK(cu_free_status == cudaSuccess,
-                "Can't free profile workspace for MoE GEMM profile during memory reallocation.");
+                "Can't free profile workspace "
+                "for MoE GEMM profile during "
+                "memory reallocation.");
             mProfileWorkspace = nullptr;
         }
     }
@@ -801,11 +827,11 @@ private:
     {
         if (mUseDeepSeekFP8BlockScaling)
         {
-            auto config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig(
-                tensorrt_llm::cutlass_extensions::CutlassTileConfigSM90::CtaShape128x16x128B,
-                tensorrt_llm::cutlass_extensions::MainloopScheduleType::AUTO,
-                tensorrt_llm::cutlass_extensions::EpilogueScheduleType::AUTO,
-                tensorrt_llm::cutlass_extensions::ClusterShape::ClusterShape_1x1x1);
+            auto config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig(
+                tensorrt_llm::kernels::cutlass_extensions::CutlassTileConfigSM90::CtaShape128x16x128B,
+                tensorrt_llm::kernels::cutlass_extensions::MainloopScheduleType::AUTO,
+                tensorrt_llm::kernels::cutlass_extensions::EpilogueScheduleType::AUTO,
+                tensorrt_llm::kernels::cutlass_extensions::ClusterShape::ClusterShape_1x1x1);
             mKernelRunner->setTactic(config, config);
             return;
         }
@@ -838,17 +864,22 @@ private:
         int64_t const total_workspace_size = common::calculateTotalWorkspaceSize(workspaces.data(), workspaces.size());
 
         bool is_capturing = tensorrt_llm::common::isCapturing(stream);
-        // Always allocate workspace when capturing cuda graph to avoid illegal memory access during replay
+        // Always allocate workspace when capturing cuda graph to avoid illegal
+        // memory access during replay
         if (is_capturing || workspace_info.workspace.numel() < total_workspace_size)
         {
             if (is_capturing)
             {
                 TLLM_LOG_DEBUG(
-                    "Allocating MoE workspace with %ld bytes size during cuda graph capture", total_workspace_size);
+                    "Allocating MoE workspace with %ld bytes size during "
+                    "cuda graph capture",
+                    total_workspace_size);
             }
             else
             {
-                TLLM_LOG_DEBUG("MoE workspace size is not enough, increase the size from %ld bytes to %ld bytes",
+                TLLM_LOG_DEBUG(
+                    "MoE workspace size is not enough, increase the size "
+                    "from %ld bytes to %ld bytes",
                     workspace_info.workspace.numel(), total_workspace_size);
             }
             // Release memory first to avoid OOM.
@@ -909,7 +940,8 @@ private:
             auto const fc2_weight_block = quant_scales.value()[3];
             auto const fc2_global = quant_scales.value()[4];
 
-            // The input for scale fc1_weight_block / fc2_weight_block is packed into INT32
+            // The input for scale fc1_weight_block / fc2_weight_block is packed into
+            // INT32
             constexpr int FP8_PER_INT32 = 4;
             // Check types
             CHECK_INPUT(fc1_weight_block, c10::ScalarType::Int);
@@ -934,7 +966,8 @@ private:
                             * TmaWarpSpecializedGroupedGemmInput::MXFPXBlockScaleVectorSize
                         == TmaWarpSpecializedGroupedGemmInput::alignToSfDim(
                             hidden_size, TmaWarpSpecializedGroupedGemmInput::MinKDimAlignmentMXFPX),
-                "fc1 weight block size must be (num_experts_on_rank, inter_size * 2, hidden_size // 4 // "
+                "fc1 weight block size must be (num_experts_on_rank, "
+                "inter_size * 2, hidden_size // 4 // "
                 "block_scale_vector_size)");
             TORCH_CHECK(fc1_global.sizes()[0] == num_experts_on_rank, "fc1 global size must be (num_experts_on_rank,)");
             TORCH_CHECK(fc2_act_global.dim() == 0 || fc2_act_global.sizes()[0] == num_experts_on_rank,
@@ -947,7 +980,8 @@ private:
                             * TmaWarpSpecializedGroupedGemmInput::MXFPXBlockScaleVectorSize
                         == TmaWarpSpecializedGroupedGemmInput::alignToSfDim(
                             inter_size, TmaWarpSpecializedGroupedGemmInput::MinKDimAlignmentMXFPX),
-                "fc2 weight block size must be (num_experts_on_rank, hidden_size, inter_size // 4 // "
+                "fc2 weight block size must be (num_experts_on_rank, "
+                "hidden_size, inter_size // 4 // "
                 "block_scale_vector_size)");
             TORCH_CHECK(fc2_global.sizes()[0] == num_experts_on_rank, "fc2 global size must be (num_experts_on_rank,)");
 
@@ -968,7 +1002,8 @@ private:
             auto const fc2_weight_block = quant_scales.value()[2];
             auto const fc2_global = quant_scales.value()[3];
 
-            // The input for scale fc1_weight_block / fc2_weight_block is packed into INT32
+            // The input for scale fc1_weight_block / fc2_weight_block is packed into
+            // INT32
             constexpr int FP8_PER_INT32 = 4;
             CHECK_INPUT(fc1_weight_block, c10::ScalarType::Int);
             CHECK_INPUT(fc1_global, c10::ScalarType::Float);
@@ -987,7 +1022,8 @@ private:
                             * TmaWarpSpecializedGroupedGemmInput::MXFPXBlockScaleVectorSize
                         == TmaWarpSpecializedGroupedGemmInput::alignToSfDim(
                             hidden_size, TmaWarpSpecializedGroupedGemmInput::MinKDimAlignmentMXFPX),
-                "fc1 weight block size must be (num_experts_on_rank, inter_size * 2, hidden_size // 4 // "
+                "fc1 weight block size must be (num_experts_on_rank, "
+                "inter_size * 2, hidden_size // 4 // "
                 "block_scale_vector_size)");
             TORCH_CHECK(fc1_global.sizes()[0] == num_experts_on_rank, "fc1 global size must be (num_experts_on_rank,)");
             TORCH_CHECK(fc2_weight_block.sizes()[0] == num_experts_on_rank
@@ -998,7 +1034,8 @@ private:
                             * TmaWarpSpecializedGroupedGemmInput::MXFPXBlockScaleVectorSize
                         == TmaWarpSpecializedGroupedGemmInput::alignToSfDim(
                             inter_size, TmaWarpSpecializedGroupedGemmInput::MinKDimAlignmentMXFPX),
-                "fc2 weight block size must be (num_experts_on_rank, hidden_size, inter_size // 4 // "
+                "fc2 weight block size must be (num_experts_on_rank, "
+                "hidden_size, inter_size // 4 // "
                 "block_scale_vector_size)");
             TORCH_CHECK(fc2_global.sizes()[0] == num_experts_on_rank, "fc2 global size must be (num_experts_on_rank,)");
 
@@ -1008,7 +1045,9 @@ private:
                 static_cast<TmaWarpSpecializedGroupedGemmInput::ElementSF*>(fc2_weight_block.data_ptr()),
                 static_cast<float const*>(fc2_global.data_ptr()));
 #else
-            TORCH_CHECK(false, "MXFP8 x MXFP4 quantization is not supported in OSS Cutlass Moe Gemm");
+            TORCH_CHECK(false,
+                "MXFP8 x MXFP4 quantization is not supported in OSS "
+                "Cutlass Moe Gemm");
 #endif
         }
         else if (isNvfp4Quant())
@@ -1023,7 +1062,8 @@ private:
             auto const fc2_weight_block = quant_scales.value()[4];
             auto const fc2_global = quant_scales.value()[5];
 
-            // The input for scale fc1_weight_block / fc2_weight_block is packed into INT32
+            // The input for scale fc1_weight_block / fc2_weight_block is packed into
+            // INT32
             constexpr int FP8_PER_INT32 = 4;
             // Check types
             CHECK_INPUT(fc1_act_global, c10::ScalarType::Float);
@@ -1053,7 +1093,8 @@ private:
                             * TmaWarpSpecializedGroupedGemmInput::NVFP4BlockScaleVectorSize
                         == TmaWarpSpecializedGroupedGemmInput::alignToSfDim(
                             hidden_size, TmaWarpSpecializedGroupedGemmInput::MinKDimAlignmentNVFP4),
-                "fc1 weight block size must be (num_experts_on_rank, inter_size * 2, hidden_size // 4 // "
+                "fc1 weight block size must be (num_experts_on_rank, "
+                "inter_size * 2, hidden_size // 4 // "
                 "block_scale_vector_size)");
             TORCH_CHECK(fc1_global.sizes()[0] == num_experts_on_rank, "fc1 global size must be (num_experts_on_rank,)");
             TORCH_CHECK(fc2_act_global.dim() == 0 || fc2_act_global.sizes()[0] == num_experts_on_rank,
@@ -1066,7 +1107,8 @@ private:
                             * TmaWarpSpecializedGroupedGemmInput::NVFP4BlockScaleVectorSize
                         == TmaWarpSpecializedGroupedGemmInput::alignToSfDim(
                             inter_size, TmaWarpSpecializedGroupedGemmInput::MinKDimAlignmentNVFP4),
-                "fc2 weight block size must be (num_experts_on_rank, hidden_size, inter_size // 4 // "
+                "fc2 weight block size must be (num_experts_on_rank, "
+                "hidden_size, inter_size // 4 // "
                 "block_scale_vector_size)");
             TORCH_CHECK(fc2_global.sizes()[0] == num_experts_on_rank, "fc2 global size must be (num_experts_on_rank,)");
 
@@ -1150,7 +1192,9 @@ private:
     bool isNvfp4Quant() const
     {
         return mWeightDtype == c10::ScalarType::Long
-            && mActivationDtype != c10::ScalarType::Float8_e4m3fn; // FP8 activation does not use FP4
+            && mActivationDtype != c10::ScalarType::Float8_e4m3fn; // FP8 activation
+                                                                   // does not use
+                                                                   // FP4
     }
 
     bool isWFP4A16Quant() const
@@ -1193,7 +1237,7 @@ private:
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY(trtllm, m)
 {

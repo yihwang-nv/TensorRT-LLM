@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <utility>
 
 #include "tensorrt_llm/layers/decodingParams.h"
@@ -24,9 +23,7 @@
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/decodingLayerWorkspace.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 class BaseLayer
@@ -60,15 +57,18 @@ public:
     };
 
     // clang-format off
-    //! \brief Virtual function to setup internal states of the layer with sampling params
+    //! \brief Virtual function to setup internal states of the layer with
+    // sampling params
     //! specified in setupParams for the entries specified by batchSlots.
     //! It updates data for new requests in internal tensors inplace.
     //! Thus, it must be called only once for new requests.
     //!
     //! \param batchSize current batch size configured in the system
     //! \param beamWidth current beam width configured in the system
-    //! \param batchSlots input buffer [maxBatchSize], address map of the new requests, in pinned memory
-    //! \param setupParams shared pointer to params inherited from BaseSetupParams
+    //! \param batchSlots input buffer [maxBatchSize], address map of the new
+    // requests, in pinned memory
+    //! \param setupParams shared pointer to params inherited from
+    // BaseSetupParams
     // clang-format on
     virtual void setup(runtime::SizeType32 batchSize, runtime::SizeType32 beamWidth, TensorConstPtr batchSlots,
         std::shared_ptr<BaseSetupParams> const& setupParams,
@@ -79,7 +79,8 @@ public:
     //! \brief Virtual function to execute layer async on GPU.
     //! There must be no stream synchronization inside this function.
     //!
-    //! \param outputs shared pointer to params inherited from BaseDecodingOutputs
+    //! \param outputs shared pointer to params inherited from
+    // BaseDecodingOutputs
     //! \param inputs shared pointer to params inherited from BaseForwardParams
     // clang-format on
     virtual void forwardAsync(std::shared_ptr<BaseDecodingOutputs> const& outputs,
@@ -89,10 +90,12 @@ public:
 
     // clang-format off
     //! \brief Virtual function to execute layer synchronously on CPU / GPU.
-    //! It is allowed (but not necassary) to synchronize on stream inside this function.
+    //! It is allowed (but not necassary) to synchronize on stream inside this
+    // function.
     //! It is targeted mainly for prototyping.
     //!
-    //! \param outputs shared pointer to params inherited from BaseDecodingOutputs
+    //! \param outputs shared pointer to params inherited from
+    // BaseDecodingOutputs
     //! \param inputs shared pointer to params inherited from BaseForwardParams
     // clang-format on
     virtual void forwardSync(std::shared_ptr<BaseDecodingOutputs> const& outputs,
@@ -109,6 +112,4 @@ protected:
     DecoderDomain mDecoderDomain;
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

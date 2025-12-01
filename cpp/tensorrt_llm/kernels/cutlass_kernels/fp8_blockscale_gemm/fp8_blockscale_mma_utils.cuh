@@ -21,9 +21,9 @@
 #include <cuda.h>
 #include <cute/arch/util.hpp>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::fp8_blockscale_gemm
+namespace fp8_blockscale_gemm
 {
 
 struct SM90_64x16x32_F32E4M3E4M3_SS
@@ -615,6 +615,6 @@ struct Fp8MmaSelector
     using Type = decltype(select_type());
 };
 
-} // namespace kernels::fp8_blockscale_gemm
+} // namespace fp8_blockscale_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

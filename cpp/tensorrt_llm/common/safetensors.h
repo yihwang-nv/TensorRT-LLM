@@ -26,7 +26,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common::safetensors
+namespace safetensors
 {
 class INdArray
 {
@@ -61,6 +61,6 @@ public:
     virtual ~ISafeTensor() = default;
 };
 
-} // namespace common::safetensors
+} // namespace safetensors
 
 TRTLLM_NAMESPACE_END

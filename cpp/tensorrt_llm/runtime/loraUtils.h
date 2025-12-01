@@ -17,15 +17,12 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::lora
+namespace tensorrt_llm::runtime::lora
 {
 
 // old lora configs without isDora field have only 3 fields
@@ -34,7 +31,8 @@ SizeType32 constexpr kLORA_CONFIG_ROW_SIZE = 4;
 SizeType32 constexpr kLORA_CONFIG_MODULE_OFF = 0;
 SizeType32 constexpr kLORA_CONFIG_LAYER_OFF = 1;
 SizeType32 constexpr kLORA_CONFIG_ADAPTER_SIZE_OFF = 2;
-// new lora configs have an additional isDora field in addition to the previous 3
+// new lora configs have an additional isDora field in addition to the
+// previous 3
 SizeType32 constexpr kLORA_CONFIG_IS_DORA_OFF = 3;
 
 // old lora weights without dora scaling ptr
@@ -61,6 +59,4 @@ void loraValidateRequestTensors(std::optional<std::uint64_t> const& optTaskId,
     std::optional<ITensor::SharedPtr> const& optReqLoraWeights,
     std::optional<ITensor::SharedPtr> const& optReqLoraConfig, runtime::ModelConfig const& modelConfig,
     runtime::WorldConfig const& worldConfig);
-} // namespace runtime::lora
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::lora

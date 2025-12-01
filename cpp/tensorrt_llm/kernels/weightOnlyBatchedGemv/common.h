@@ -25,10 +25,8 @@
 #include <cuda_runtime_api.h>
 #include <iostream>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 enum class KernelType
@@ -102,6 +100,5 @@ struct Params
     }
 };
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

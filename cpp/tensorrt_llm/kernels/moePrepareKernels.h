@@ -24,10 +24,7 @@
 
 #define DEBUG_PIPELINE 0
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace moe_prepare
 {
@@ -90,6 +87,4 @@ size_t getMoePrepareWorkspaceSize(int epSize);
 
 } // namespace moe_prepare
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

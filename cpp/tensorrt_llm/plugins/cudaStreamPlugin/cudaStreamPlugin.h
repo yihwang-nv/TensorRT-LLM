@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 #pragma once
 
 #include "NvInferPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include "tensorrt_llm/runtime/cudaMemPool.h"
 #include "tensorrt_llm/runtime/utils/debugUtils.h"
@@ -80,7 +80,8 @@ public:
         , mWorkspace{}
         , mInit{init}
     {
-        // The object passed to acquirePluginResource should use the default value init=false
+        // The object passed to acquirePluginResource should use the default value
+        // init=false
         if (init)
         {
             TLLM_CUDA_CHECK(cudaStreamCreate(&mStream));
@@ -118,7 +119,8 @@ public:
 
     IPluginResource* clone() noexcept override
     {
-        // An object is cloned only when calling acquirePluginResource for the first time for each key
+        // An object is cloned only when calling acquirePluginResource for the first
+        // time for each key
         std::unique_ptr<SideStream> cloned{};
         try
         {
@@ -191,9 +193,7 @@ private:
 } // namespace pluginInternal
 } // namespace nvinfer1
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class CudaStreamPlugin : public BasePlugin
@@ -265,6 +265,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/runtime/explicitDraftTokensBuffers.h"
 
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/explicitDraftTokensKernels.h"
 #include "tensorrt_llm/runtime/common.h"
-#include "tensorrt_llm/runtime/explicitDraftTokensBuffers.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 
 namespace tksd = tensorrt_llm::kernels::speculative_decoding;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 void ExplicitDraftTokensBuffers::Inputs::create(SizeType32 maxNumSequences, BufferManager const& manager,
@@ -285,7 +282,8 @@ void ExplicitDraftTokensBuffers::setFromInputs(SizeType32 numCtxSequences, SizeT
 
     // Reshape position ids.
     engineInputs.positionIds->reshape(ITensor::makeShape({contextPositionIds.getShape().d[0] + totalGenLengths}));
-    // Copy position ids -- hacky solution to avoid filling them for the context requests.
+    // Copy position ids -- hacky solution to avoid filling them for the context
+    // requests.
     TensorPtr posIdsSlice = ITensor::slice(engineInputs.positionIds, 0, contextPositionIds.getShape().d[0]);
     manager.copy(contextPositionIds, *posIdsSlice);
 
@@ -379,6 +377,4 @@ void ExplicitDraftTokensBuffers::insertInputTensors(
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

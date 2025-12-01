@@ -15,7 +15,6 @@
  */
 
 #include "explicitDraftTokensLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/penaltyTypes.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/common.h"
@@ -28,9 +27,7 @@ using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::kernels::speculative_decoding;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -302,6 +299,4 @@ void ExplicitDraftTokensLayer<T>::packAcceptedPaths(ExplicitDraftTokensOutputs c
 template class ExplicitDraftTokensLayer<float>;
 template class ExplicitDraftTokensLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

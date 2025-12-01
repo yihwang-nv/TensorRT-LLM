@@ -21,10 +21,8 @@
 #include "tensorrt_llm/common/cudaDriverWrapper.h"
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/decoderXQAImpl.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace jit
 {
 
@@ -50,7 +48,8 @@ public:
     void initialize();
     void launch(dim3 gridDim, dim3 blockDim, CUstream hStream, void** kernelParams) const;
 
-    // It is safe to call getSerializeSize()/serialize() before calling initialize().
+    // It is safe to call getSerializeSize()/serialize() before calling
+    // initialize().
     size_t getSerializationSize() const noexcept;
     void serialize(void* buffer, size_t buffer_size) const noexcept;
 
@@ -86,6 +85,5 @@ private:
 };
 
 } // namespace jit
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

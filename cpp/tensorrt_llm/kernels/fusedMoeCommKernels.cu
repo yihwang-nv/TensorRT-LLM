@@ -23,18 +23,20 @@
 #include "tensorrt_llm/kernels/fusedMoeCommKernels.h"
 #include "tensorrt_llm/kernels/quantization.cuh"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using tensorrt_llm::common::launchWithPdlWhenEnabled;
 
-// Quantize a contiguous shared-memory buffer containing elements of DType into NVFP4 with per-16-element FP8 scales.
-// Output layout (repeated per 16-element group per lane), followed by one global scale float:
-//   [WARP_SIZE * 8 bytes packed e2m1 values] [WARP_SIZE * 1 byte E4M3 per-group scales] ... [global_scale (4 bytes)]
-// Each lane writes one 64-bit packed e2m1 for its 16 values and one 1-byte E4M3 scale per group.
-// Global scale is computed as (448*6)/absmax and written once at the end of the buffer.
+// Quantize a contiguous shared-memory buffer containing elements of DType into
+// NVFP4 with per-16-element FP8 scales.
+// Output layout (repeated per 16-element group per lane), followed by one
+// global scale float:
+//   [WARP_SIZE * 8 bytes packed e2m1 values] [WARP_SIZE * 1 byte E4M3 per-group
+// scales] ... [global_scale (4 bytes)]
+// Each lane writes one 64-bit packed e2m1 for its 16 values and one 1-byte E4M3
+// scale per group.
+// Global scale is computed as (448*6)/absmax and written once at the end of the
+// buffer.
 template <typename DType>
 __device__ __forceinline__ void quantize_nvfp4_sharedmem(uint8_t* compact_ptr, int sizeInBytes, int laneId)
 {
@@ -48,7 +50,8 @@ __device__ __forceinline__ void quantize_nvfp4_sharedmem(uint8_t* compact_ptr, i
 
     DType const* in = reinterpret_cast<DType const*>(compact_ptr);
 
-    // 1) Global absmax across the field (warp reduce) in original dtype precision when possible
+    // 1) Global absmax across the field (warp reduce) in original dtype precision
+    // when possible
     float threadMaxFloat = 0.f;
     if constexpr (std::is_same_v<DType, half> || std::is_same_v<DType, __nv_bfloat16>)
     {
@@ -56,7 +59,8 @@ __device__ __forceinline__ void quantize_nvfp4_sharedmem(uint8_t* compact_ptr, i
         DType2 const* in2 = reinterpret_cast<DType2 const*>(in);
         int const numPairs = numElems / 2;
 
-        // Initialize to zero to avoid a concentrated shared-memory read from index 0 across all lanes
+        // Initialize to zero to avoid a concentrated shared-memory read from
+        // index 0 across all lanes
         DType2 localMax2;
         localMax2.x = DType(0.);
         localMax2.y = DType(0.);
@@ -163,7 +167,8 @@ __device__ __forceinline__ void quantize_nvfp4_sharedmem(uint8_t* compact_ptr, i
             ? reciprocal_approximate_ftz(SFValueNarrow * reciprocal_approximate_ftz(SFScaleVal))
             : 0.0f;
 
-        // Pack 16 values -> 8 bytes e2m1 (use raw[] read above to avoid a second shared-memory read)
+        // Pack 16 values -> 8 bytes e2m1 (use raw[] read above to avoid a second
+        // shared-memory read)
         float2 fp2Vals[8];
 #pragma unroll
         for (int i = 0; i < 8; ++i)
@@ -188,7 +193,8 @@ __device__ __forceinline__ void quantize_nvfp4_sharedmem(uint8_t* compact_ptr, i
         outScalePtr[0] = sf8.__x;
     }
 
-    // Store global scale (fp32) once with a single 32-bit store. Use lane 0 to avoid races.
+    // Store global scale (fp32) once with a single 32-bit store. Use lane 0 to
+    // avoid races.
     if (laneId == 0)
     {
         *reinterpret_cast<float*>(globalScaleOutBytes) = SFScaleVal;
@@ -196,8 +202,10 @@ __device__ __forceinline__ void quantize_nvfp4_sharedmem(uint8_t* compact_ptr, i
 #endif
 }
 
-// Convert one lane's packed 16 e2m1 values (in a 64-bit word) into eight float2 values (16 floats).
-// Uses 8 cvt.rn.f16x2.e2m1x2 instructions, one per input byte, to produce eight half2 which are cast to float2.
+// Convert one lane's packed 16 e2m1 values (in a 64-bit word) into eight float2
+// values (16 floats).
+// Uses 8 cvt.rn.f16x2.e2m1x2 instructions, one per input byte, to produce eight
+// half2 which are cast to float2.
 inline __device__ void e2m1_to_fp32_vec(uint64_t e2m1Vec, float2 (&array)[8])
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 1000)
@@ -253,7 +261,8 @@ __device__ __forceinline__ void dequantize_nvfp4_sharedmem(uint8_t* compact_ptr,
 
     int const numGroups = (numElems + WARP_SIZE * 16 - 1) / (WARP_SIZE * 16);
 
-    // New layout matches quantize: per-group blocks of [8*WARP_SIZE bytes values][WARP_SIZE bytes scales],
+    // New layout matches quantize: per-group blocks of [8*WARP_SIZE bytes
+    // values][WARP_SIZE bytes scales],
     // followed by a single 4-byte global scale at the end.
     int const inputBlockSizeInBytes = 8 * WARP_SIZE + WARP_SIZE;
     uint8_t* const globalScaleOutBytes = compact_ptr + numGroups * inputBlockSizeInBytes;
@@ -262,12 +271,14 @@ __device__ __forceinline__ void dequantize_nvfp4_sharedmem(uint8_t* compact_ptr,
 
     DType* out = reinterpret_cast<DType*>(compact_ptr);
 
-    // Process groups in reverse order to avoid overwriting packed input before it is read
+    // Process groups in reverse order to avoid overwriting packed input before it
+    // is read
     for (int groupId = numGroups - 1; groupId >= 0; --groupId)
     {
         int const groupStart = laneId * 16 + groupId * (WARP_SIZE * 16);
         // Conflict-free read of packed 64-bit e2m1 values from shared memory:
-        // serialize half-warps to avoid lane i and i+16 hitting the same bank in the same cycle.
+        // serialize half-warps to avoid lane i and i+16 hitting the same bank in
+        // the same cycle.
         uint8_t const* const valBase = compact_ptr + groupId * inputBlockSizeInBytes;
         uint64_t packed = 0ull;
         if (laneId < 16)
@@ -292,7 +303,8 @@ __device__ __forceinline__ void dequantize_nvfp4_sharedmem(uint8_t* compact_ptr,
         float2 tmp[8];
         e2m1_to_fp32_vec(packed, tmp);
 
-        // Vectorized stores with swizzle to avoid bank conflicts, matching quantize path
+        // Vectorized stores with swizzle to avoid bank conflicts, matching quantize
+        // path
         if constexpr (std::is_same_v<DType, half> || std::is_same_v<DType, __nv_bfloat16>)
         {
             using DType2 = typename tensorrt_llm::common::packed_as<DType, 2>::type;
@@ -317,7 +329,7 @@ __device__ __forceinline__ void dequantize_nvfp4_sharedmem(uint8_t* compact_ptr,
         }
         else
         {
-            // Fallback linear layout for non-16-bit types
+// Fallback linear layout for non-16-bit types
 #pragma unroll
             for (int t = 0; t < 8; ++t)
             {
@@ -445,7 +457,8 @@ __device__ __forceinline__ void cp_async_wait_group()
 __device__ __forceinline__ void cp_async_bulk_g2s(void* dstMem, void const* srcMem, int copySize, uint64_t* smemBar)
 {
 #if defined(__CUDACC__) && __CUDA_ARCH__ >= 900
-    asm("cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];"
+    asm("cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes [%0], "
+        "[%1], %2, [%3];"
         :
         : "r"(__as_ptr_smem(dstMem)), "l"(__as_ptr_gmem(srcMem)), "r"(copySize), "r"(__as_ptr_smem(smemBar))
         : "memory");
@@ -537,7 +550,8 @@ public:
         int countIn128Bytes, int fifoEntry128ByteIndexBase, int loaded128ByteCount, int warpId, int laneId)
     {
         // return value should be how many package already been received.
-        // 0 means no data received, -1 means has received finish package(should be the very first 128 Byte).
+        // 0 means no data received, -1 means has received finish package(should be
+        // the very first 128 Byte).
         uint64_t* aligned128BytesShm = reinterpret_cast<uint64_t*>(sharedMemoryBase);
         int totalValidCount = 0;
         for (int idxBase = loaded128ByteCount; idxBase < countIn128Bytes; idxBase += WARP_SIZE)
@@ -562,7 +576,8 @@ public:
             }
             __syncwarp();
             unsigned validMask = __ballot_sync(WARP_MASK, valid);
-            // here we check valid in order, if previous valid is not true, we ignore the current valid.
+            // here we check valid in order, if previous valid is not true, we ignore
+            // the current valid.
             int validCount = (validMask == WARP_MASK) ? WARP_SIZE : (__ffs(~validMask) - 1);
             if (USE_FINISH)
             {
@@ -590,7 +605,8 @@ public:
         int halfLaneId = laneId % 16;
         int halfIndex = laneId / 16;
         int tailOffsetIn128Bytes = countIn128Bytes + halfIndex;
-        // for LL128 15 * 128 Bytes will be packed to 16 * 128 Bytes, each 16 threads is used for one 15 * 128 bytes.
+        // for LL128 15 * 128 Bytes will be packed to 16 * 128 Bytes, each 16
+        // threads is used for one 15 * 128 bytes.
         for (int idxIn128BytesBase = halfIndex * 15; idxIn128BytesBase < countIn128Bytes; idxIn128BytesBase += 30)
         {
             int tailFlagIndexFromFifoEntry = fifoEntry128ByteIndexBase + tailOffsetIn128Bytes;
@@ -867,7 +883,8 @@ __device__ __forceinline__ void g2sBasicFields(FusedMoeFieldInfo const& sendFiel
         laneId < topK && sendFieldInfo.expertScales != nullptr);
 }
 
-// May commit 1 group for basic fields(tokenSelectedSlots and scales) if HAS_BASIC_FIELDS is true
+// May commit 1 group for basic fields(tokenSelectedSlots and scales) if
+// HAS_BASIC_FIELDS is true
 // For other fields, use smemBar.
 template <bool HAS_BASIC_FIELDS = true, int FIELD_COUNT = MOE_COMM_FIELD_MAX_COUNT>
 __device__ __forceinline__ uint64_t g2sAllFields(FusedMoeFieldInfo const& sendFieldInfo,
@@ -1779,6 +1796,4 @@ void launchLocalFifoSendRecv(FusedMoeFieldInfo const& sendFieldInfo, FusedMoeFie
 
 } // namespace fused_moe_comm_tests
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

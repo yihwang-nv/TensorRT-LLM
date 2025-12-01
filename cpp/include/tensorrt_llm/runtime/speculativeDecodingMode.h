@@ -16,18 +16,15 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
-
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class SpeculativeDecodingMode
 {
-    // [WARNING] KEEP BELOW DEFINITION IN SYNC WITH tensorrt_llm/models/modeling_utils.py
+    // [WARNING] KEEP BELOW DEFINITION IN SYNC WITH
+    // tensorrt_llm/models/modeling_utils.py
 public:
     static auto constexpr None()
     {
@@ -195,6 +192,4 @@ static_assert(!SpeculativeDecodingMode::Eagle().isMedusa());
 static_assert(!SpeculativeDecodingMode::Eagle().isExplicitDraftTokens());
 static_assert(!SpeculativeDecodingMode::Eagle().isLookaheadDecoding());
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

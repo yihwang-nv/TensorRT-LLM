@@ -16,15 +16,12 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/layers/decodingParams.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -56,9 +53,12 @@ private:
     using Base::mDecoderDomain;
 
     size_t mByteMaxSharedMemoryPerBlock{0};   // Device information
-    size_t mByteSharedMemoryStage1{0};        // Max dynamic shashared memoryn stage 1 kernel, useless in V2
-    size_t mByteSharedMemoryStage3{0};        // Max static shared memory in stage 3 kernel
-    size_t mVPart{0};                         // Count of parts the beamed-logProbs will be divided into, useless in V2
+    size_t mByteSharedMemoryStage1{0};        // Max dynamic shashared memoryn stage
+                                              // 1 kernel, useless in V2
+    size_t mByteSharedMemoryStage3{0};        // Max static shared memory in stage 3
+                                              // kernel
+    size_t mVPart{0};                         // Count of parts the beamed-logProbs will be divided
+                                              // into, useless in V2
     size_t mWorkspaceSize{0};                 // Total workspace size for Beam Search kernels
     bool mV2{false};                          // Whether to use V2 Beam Search kernels
     bool mVBWS{false};                        // Whether to use Variable-Beam-Width-Search
@@ -70,11 +70,12 @@ private:
     TensorPtr mEarlyStoppingHost;             // [batchSize] cpu
     TensorPtr mEarlyStoppingDevice;           // [batchSize] gpu
     TensorPtr mBeamWidthArrayHost;            // [batchSize, kMaxBeamWidthArrayLength] cpu
-    TensorPtr mBeamWidthArrayDevice;          // [batchSize, kMaxBeamWidthArrayLength] gpu
-    TensorPtr mBeamWidthIn;                   // [batchSize] cpu, the beamWidth of last forward computation
-    TensorPtr mBeamWidthOut;                  // [batchSize] cpu, the beamWidth of next forward computation
+    TensorPtr mBeamWidthArrayDevice;          // [batchSize, kMaxBeamWidthArrayLength]
+                                              // gpu
+    TensorPtr mBeamWidthIn;                   // [batchSize] cpu, the beamWidth of last forward
+                                              // computation
+    TensorPtr mBeamWidthOut;                  // [batchSize] cpu, the beamWidth of next forward
+                                              // computation
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

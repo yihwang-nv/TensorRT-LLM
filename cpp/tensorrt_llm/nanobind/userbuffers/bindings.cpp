@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "bindings.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/userbuffers/ub_interface.h"
 #include "tensorrt_llm/kernels/userbuffers/userbuffersManager.h"
 #include "tensorrt_llm/nanobind/common/customCasters.h"
@@ -25,9 +25,7 @@
 namespace nb = nanobind;
 namespace tub = tensorrt_llm::runtime::ub;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels::userbuffers
+namespace tensorrt_llm::kernels::userbuffers
 {
 
 void UserBufferBindings::initBindings(nb::module_& m)
@@ -52,6 +50,4 @@ void UserBufferBindings::initBindings(nb::module_& m)
     m.def("initialize_userbuffers_manager", &tub::initialize_userbuffers_manager,
         nb::call_guard<nb::gil_scoped_release>());
 }
-} // namespace kernels::userbuffers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::kernels::userbuffers

@@ -31,10 +31,8 @@
 #include "cutlass/float_subbyte.h"
 #include <cuda_fp4.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -163,6 +161,5 @@ struct CutlassToTllmTypeAdapter<cutlass::float_e2m1_t>
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

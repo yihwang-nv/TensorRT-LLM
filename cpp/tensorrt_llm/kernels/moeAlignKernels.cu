@@ -26,10 +26,7 @@
 #define CEILDIV(x, y) (((x) + (y) -1) / (y))
 #define WARP_SIZE 32
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename scalar_t>
 __global__ void moe_align_block_size_kernel(scalar_t const* __restrict__ topk_ids,
@@ -281,6 +278,4 @@ void invokeMoeAlignBlockSize(void const* topk_ids, int32_t topk_ids_dtype_size, 
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

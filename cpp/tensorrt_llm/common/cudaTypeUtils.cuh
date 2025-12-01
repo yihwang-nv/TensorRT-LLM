@@ -29,9 +29,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 template <typename T>
 inline __device__ T ldg(T const* val)
 {
@@ -748,7 +745,5 @@ __device__ inline __nv_fp8_e4m3 cuda_cast<__nv_fp8_e4m3, int8_t>(int8_t val)
 }
 
 #endif // ENABLE_FP8
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

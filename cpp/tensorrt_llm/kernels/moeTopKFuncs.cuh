@@ -25,10 +25,7 @@
 
 #include "tensorrt_llm/kernels/archCondition.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace reduce_topk
 {
@@ -56,13 +53,15 @@ struct TopKRedType
         auto valueBits = cub::Traits<T>::TwiddleIn(reinterpret_cast<typename cub::Traits<T>::UnsignedBits&>(val));
         TypeCmp compactTmp = valueBits;
         compactTmp = (compactTmp << kMoveBits) | (0xFFFF & (kMaxIdx - idx));
-        // Use 65535 minus idx to give higher priority to elements with smaller indices.
+        // Use 65535 minus idx to give higher priority to elements with smaller
+        // indices.
         return compactTmp;
     }
 
     static __host__ __device__ void unpack(T& value, int32_t& index, TypeCmp cmp)
     {
-        // Since “65535-idx” is always smaller than 65536 and positive, we can directly use it as the lower 16 bits
+        // Since “65535-idx” is always smaller than 65536 and positive, we can
+        // directly use it as the lower 16 bits
         index = kMaxIdx - static_cast<int32_t>((cmp & 0xFFFF));
 
         auto compactTmp = cmp >> kMoveBits;
@@ -228,8 +227,10 @@ __forceinline__ __device__ void reduceTopK(cg::thread_block_tile<kWARP_SIZE> con
     static_assert(K < kWARP_SIZE, "Top K must have K < kWARP_SIZE");
     static_assert(N > 0, "Top K must have N > 0");
     static_assert(N <= 16, "Only support candidates number less than or equal to 16*32=512");
-    static_assert(
-        N <= 4 || N % 4 == 0, "Only support candidates number is a multiple of 4*32=128 or less than or equal to 4");
+    static_assert(N <= 4 || N % 4 == 0,
+        "Only support candidates number is a "
+        "multiple of 4*32=128 or less than or "
+        "equal to 4");
     using RedType = TopKRedType<Type>;
 
     if constexpr (N <= 4)
@@ -284,7 +285,6 @@ __forceinline__ __device__ void reduceTopK(cg::thread_block_tile<kWARP_SIZE> con
 #undef TOPK_SWAP
 
 } // namespace reduce_topk
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 #endif // TRTLLM_MOETOPKFUNCS_CUH_H

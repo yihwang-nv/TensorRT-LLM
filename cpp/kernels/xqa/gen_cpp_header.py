@@ -129,16 +129,15 @@ TEMPLATE_PROLOGUE = '''/*
 #pragma once
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-namespace kernels {
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 '''
 
 TEMPLATE_CONTENT = '''inline constexpr const char* {content_var_name} = "{content}";
 inline constexpr const char* {fname_var_name} = "{fname}";
 '''
 
-TEMPLATE_EPILOGUE = '''}
-TRTLLM_NAMESPACE_END
+TEMPLATE_EPILOGUE = '''
+TRTLLM_KERNELS_NAMESPACE_END
 
 '''
 

@@ -21,9 +21,9 @@
 #include <map>
 #include <stdexcept>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
+namespace llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
 {
 
 DEFINE_GET_FUNC_PTR(5120, true);
@@ -239,6 +239,6 @@ void llama4_fp8_fp8_gemm_swiglu_op(int num_tokens, int hidden_in, int hidden_out
         A, B, C, in_scale, out_scale_inv, num_tokens, hidden_in, hidden_out, tactic.first, tactic.second, stream);
 }
 
-} // namespace kernels::llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
+} // namespace llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

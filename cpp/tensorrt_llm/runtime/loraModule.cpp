@@ -15,11 +15,8 @@
  */
 
 #include "tensorrt_llm/runtime/loraModule.h"
-#include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 std::vector<LoraModule> LoraModule::createLoraModules(std::vector<std::string> const& loraModuleNames,
@@ -73,6 +70,4 @@ std::vector<LoraModule> LoraModule::createLoraModules(std::vector<std::string> c
     }
     return modules;
 }
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

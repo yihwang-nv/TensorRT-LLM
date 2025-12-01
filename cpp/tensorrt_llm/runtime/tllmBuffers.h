@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/cudaMemPool.h"
@@ -40,9 +39,7 @@
 #include <type_traits>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 // CRTP base class
@@ -91,7 +88,8 @@ public:
     CudaAllocator() noexcept = default;
 
 protected:
-    void allocateImpl(PointerType* ptr, std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
+    void allocateImpl(PointerType* ptr,
+        std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
     {
         TLLM_CUDA_CHECK(::cudaMalloc(ptr, n));
     }
@@ -149,10 +147,12 @@ public:
     UVMAllocator() noexcept = default;
 
 protected:
-    void allocateImpl(PointerType* ptr, std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
+    void allocateImpl(PointerType* ptr,
+        std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
     {
         TLLM_CUDA_CHECK(::cudaMallocManaged(ptr, n));
-        // TLLM_CUDA_CHECK(::cudaMemAdvise(ptr, n, cudaMemAdviseSetPreferredLocation, 0));
+        // TLLM_CUDA_CHECK(::cudaMemAdvise(ptr, n,
+        // cudaMemAdviseSetPreferredLocation, 0));
     }
 
     void deallocateImpl( // NOLINT(readability-convert-member-functions-to-static)
@@ -171,7 +171,8 @@ public:
     PinnedAllocator() noexcept = default;
 
 protected:
-    void allocateImpl(PointerType* ptr, std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
+    void allocateImpl(PointerType* ptr,
+        std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
     {
         TLLM_CUDA_CHECK(::cudaHostAlloc(ptr, n, cudaHostAllocDefault));
     }
@@ -191,7 +192,8 @@ public:
     HostAllocator() noexcept = default;
 
 protected:
-    void allocateImpl(PointerType* ptr, std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
+    void allocateImpl(PointerType* ptr,
+        std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
     {
         *ptr = std::malloc(n);
         if (*ptr == nullptr)
@@ -224,7 +226,8 @@ public:
     }
 
 protected:
-    void allocateImpl(PointerType* ptr, std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
+    void allocateImpl(PointerType* ptr,
+        std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
     {
         if (n <= mCapacity)
         {
@@ -256,7 +259,8 @@ using PinnedPoolBorrowingAllocator = BorrowingAllocator<MemoryType::kPINNEDPOOL>
 
 /**
  * A memory manager that acts as a memory pool, preallocating a configurable
- * amount of memory. It is able to grow in size and allocate memory chunks as required.
+ * amount of memory. It is able to grow in size and allocate memory chunks as
+ * required.
  */
 template <typename TAllocator>
 class MemoryPool : public BaseAllocator<MemoryPool<TAllocator>, TAllocator::kMemoryType, false>
@@ -379,8 +383,10 @@ void MemoryPool<TAllocator>::allocateImpl(MemoryPool::PointerType* ptr, std::siz
     std::lock_guard<std::mutex> lock(mLock);
 
     // Align requested size to kAlignment
-    // When requesting 0 B, default to allocating 1 B (from "Effective C++", item 51)
-    // See https://stackoverflow.com/questions/2660076/returning-aligned-memory-with-new
+    // When requesting 0 B, default to allocating 1 B (from "Effective C++",
+    // item 51)
+    // See
+    // https://stackoverflow.com/questions/2660076/returning-aligned-memory-with-new
     std::size_t const alignedRequest{
         requestedSize == 0 ? kAlignment : common::ceilDiv(requestedSize, kAlignment) * kAlignment};
 
@@ -490,7 +496,8 @@ public:
     static PoolType& getPool();
 
 protected:
-    void allocateImpl(PointerType* ptr, std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
+    void allocateImpl(PointerType* ptr,
+        std::size_t n) // NOLINT(readability-convert-member-functions-to-static)
     {
         *ptr = getPool().allocate(n);
     }
@@ -508,7 +515,8 @@ class CudaVirtualMemoryAllocatorAdaptor
     : public BaseAllocator<CudaVirtualMemoryAllocatorAdaptor, MemoryType::kGPU, /* count */ false>,
       CudaVirtualMemoryAllocator
 {
-    // Update to MemoryCounters is done in Creator to more precisely reflect the memory usage.
+    // Update to MemoryCounters is done in Creator to more precisely reflect the
+    // memory usage.
     using Base = BaseAllocator<CudaVirtualMemoryAllocatorAdaptor, MemoryType::kGPU, false>;
     friend Base;
 
@@ -534,18 +542,24 @@ protected:
     }
 };
 
-// Adopted from https://github.com/NVIDIA/TensorRT/blob/release/8.6/samples/common/buffers.h
+// Adopted from
+// https://github.com/NVIDIA/TensorRT/blob/release/8.6/samples/common/buffers.h
 
 //!
 //! \brief  The GenericBuffer class is a templated class for buffers.
 //!
-//! \details This templated RAII (Resource Acquisition Is Initialization) class handles the allocation,
-//!          deallocation, querying of buffers on both the device and the host.
-//!          It can handle data of arbitrary types because it stores byte buffers.
-//!          The template parameter TAllocator must inherit from BaseAllocator.
+//! \details This templated RAII (Resource Acquisition Is Initialization)
+// class handles the allocation,
+//!          deallocation, querying of buffers on both the device and the
+// host.
+//!          It can handle data of arbitrary types because it stores byte
+// buffers.
+//!          The template parameter TAllocator must inherit from
+// BaseAllocator.
 //!
 template <typename TAllocator>
-class GenericBuffer : virtual public IBuffer, TAllocator // Inherit from TAllocator for EBO
+class GenericBuffer : virtual public IBuffer,
+                      TAllocator // Inherit from TAllocator for EBO
 {
 public:
     using AllocatorType = TAllocator;
@@ -559,7 +573,8 @@ public:
     }
 
     //!
-    //! \brief Construct a buffer with the specified allocation size in number of elements.
+    //! \brief Construct a buffer with the specified allocation size in number
+    // of elements.
     //!
     explicit GenericBuffer( // NOLINT(*-pro-type-member-init)
         std::size_t size, nvinfer1::DataType type, TAllocator allocator = {})
@@ -604,7 +619,8 @@ public:
 
     //!
     //! \brief Returns pointer to underlying array.
-    //! \details Return nullptr if size == 0 so behavior is consistent with BufferView.
+    //! \details Return nullptr if size == 0 so behavior is consistent with
+    // BufferView.
     //!
     void* data() override
     {
@@ -613,7 +629,8 @@ public:
 
     //!
     //! \brief Returns pointer to underlying array.
-    //! \details Return nullptr if size == 0 so behavior is consistent with BufferView.
+    //! \details Return nullptr if size == 0 so behavior is consistent with
+    // BufferView.
     //!
     [[nodiscard]] void const* data() const override
     {
@@ -653,7 +670,8 @@ public:
     }
 
     //!
-    //! \brief Resizes the buffer. This is a no-op if the new size is smaller than or equal to the current capacity.
+    //! \brief Resizes the buffer. This is a no-op if the new size is smaller
+    // than or equal to the current capacity.
     //!
     void resize(std::size_t newSize) override
     {
@@ -1105,6 +1123,4 @@ using PinnedPoolTensor = GenericTensor<PinnedPoolAllocator>;
 using UVMTensor = GenericTensor<UVMAllocator>;
 using VirtualAddressDeviceTensor = GenericTensor<CudaVirtualMemoryAllocatorAdaptor>;
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

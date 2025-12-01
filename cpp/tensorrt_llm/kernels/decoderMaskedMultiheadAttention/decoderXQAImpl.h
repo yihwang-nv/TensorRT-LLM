@@ -20,10 +20,7 @@
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/xqaParams.h"
 #include "tensorrt_llm/kernels/kvCacheUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // Forward declaration to avoid cyclic dependency.
 class DecoderXQARunner;
@@ -31,7 +28,8 @@ class DecoderXQARunner;
 /**
  * The underlying XQA implementation called from DecoderXQARunner.
  *
- * We need this layer of abstraction for abstracting out implementation details. Two possible implementations:
+ * We need this layer of abstraction for abstracting out implementation details.
+ *Two possible implementations:
  *   1. Precompiled, i.e. kernels are compiled and saved as cubins in advance.
  *   2. JIT, i.e. kernels are compiled on the fly via NVRTC.
  */
@@ -41,7 +39,8 @@ public:
     // TODO: shouldUse()/prepare() should be templated with KVCacheBuffer.
     // Whether it is beneficial to use this XQA codepath.
     //
-    // forConfigurePlugin: whether this method is called in configure plugin phase.
+    // forConfigurePlugin: whether this method is called in configure plugin
+    // phase.
     virtual bool shouldUse(XQAParams const& xqaParams, bool forConfigurePlugin) = 0;
     // Prepares for the kernel running. Must be called before calling run.
     virtual void prepare(XQAParams const& xqa_params) = 0;
@@ -84,6 +83,4 @@ enum class XQAKernelType : int32_t
     kSM120_MLA = 2
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

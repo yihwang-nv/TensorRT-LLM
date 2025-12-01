@@ -24,10 +24,7 @@
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/kernels/moeCommKernelsCommon.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct ALIGN_256 SenderSideFifoInfo
 {
@@ -45,7 +42,8 @@ struct ALIGN_256 ReceiverSideFifoInfo
 struct SendRecvIndices
 {
     int const* rankCountCumSum; // length = epSize
-    int* rankLocalIndices;      // length = rankCountCumSum[epRank] - rankCountCumSum[epRank - 1] if epRank > 0 else
+    int* rankLocalIndices;      // length = rankCountCumSum[epRank] -
+                                // rankCountCumSum[epRank - 1] if epRank > 0 else
                                 // rankCountCumSum[epRank]
 
 #ifdef __CUDACC__
@@ -71,14 +69,17 @@ struct SendRecvIndices
 struct MoeCommFieldInfo
 {
     uint8_t* dataPtrBase;
-    uint8_t alignedUnitBit;          // 0, 1, 2, 3, 4 (for 1, 2, 4, 8, 16 Bytes), smallest aligned unit.
+    uint8_t alignedUnitBit;          // 0, 1, 2, 3, 4 (for 1, 2, 4, 8, 16 Bytes), smallest
+                                     // aligned unit.
     uint16_t alignedUnitCount;       // data count in aligned unit
     uint16_t alignedUnitStride;      // data stride in aligned unit
 
-    uint8_t unalignedFieldIndex;     // the index of unaligned Field, no decrease with field index
+    uint8_t unalignedFieldIndex;     // the index of unaligned Field, no decrease with
+                                     // field index
     uint16_t compact16BOffset;       // aligned to 16 Bytes, offset is count of 16 Byte
 
-    cudaDataType_t originalDataType; // original data type, used for low precision alltoall.
+    cudaDataType_t originalDataType; // original data type, used for low precision
+                                     // alltoall.
 
     static constexpr uint64_t kAlign16BytePtrMask = (1ULL << 4) - 1;
     static constexpr uint32_t kAligned16BMask = (1 << 4) - 1;
@@ -88,9 +89,11 @@ struct MoeCommFieldInfo
     static constexpr int INTS_PER_128B_BLOCK = BYTES_PER_128B_BLOCK / sizeof(int);
     static constexpr int UINT64_PER_128B_BLOCK = BYTES_PER_128B_BLOCK / sizeof(uint64_t);
     static constexpr int BYTES_PER_16B_BLOCK = 16;
-    // Will pad one 16 byte for each unaligned field, then head and tail 16 byte might not be aligned
+    // Will pad one 16 byte for each unaligned field, then head and tail 16 byte
+    // might not be aligned
 
-    // Fill single field info, the fields that need global info is not filled here.
+    // Fill single field info, the fields that need global info is not filled
+    // here.
     __host__ void fillFieldInfo(
         uint8_t* dataPtr, size_t elementSize, int vectorSize, int stride, cudaDataType_t originalDataType);
 
@@ -204,17 +207,20 @@ struct MoeCommFieldInfo
     }
 };
 
-// Maximum number of field supported, except tokenSelectedExpert and expertScales
+// Maximum number of field supported, except tokenSelectedExpert and
+// expertScales
 static constexpr int MOE_COMM_FIELD_MAX_COUNT = 8;
 
 struct MoeSingleCommMeta
 {
     int singleTransferAlignedSize;  // transfer size aligned to 128 bytes.
     int singleCompactAlignedSize;   // compact buffer is always aligned to 128 bytes
-    int singleUncompactAlignedSize; // uncompact shared memory size, aligned to 128 bytes, might be larger than compact
+    int singleUncompactAlignedSize; // uncompact shared memory size, aligned to
+                                    // 128 bytes, might be larger than compact
                                     // buffer if unaligned field exist.
 
-    // TODO: Do we need reduce shared memory usage, make it able to be smaller, and enable multiple wave?
+    // TODO: Do we need reduce shared memory usage, make it able to be smaller,
+    // and enable multiple wave?
 
     __device__ __host__ __forceinline__ int getTransfer128ByteCount() const
     {
@@ -267,7 +273,9 @@ public:
         int smCount = tensorrt_llm::common::getMultiProcessorCount();
         if (maxUsableSmCount > smCount)
         {
-            TLLM_LOG_WARNING("setMaxUsableSmCount, maxUsableSmCount=%d, larger than smCount=%d, using smCount instead",
+            TLLM_LOG_WARNING(
+                "setMaxUsableSmCount, maxUsableSmCount=%d, larger than "
+                "smCount=%d, using smCount instead",
                 maxUsableSmCount, smCount);
             maxUsableSmCount = smCount;
         }
@@ -331,9 +339,11 @@ size_t getFusedMoeCommWorkspaceSize(int epSize);
 
 struct FusedMoeFieldInfo
 {
-    int8_t isBasicInterleaved; // using tokenSelectedSlots and expertScales interleaving?
+    int8_t isBasicInterleaved; // using tokenSelectedSlots and expertScales
+                               // interleaving?
     int32_t* tokenSelectedSlots;
-    float* expertScales;       // can be nullptr if no scale is used(all 1.0), if so, interleaved should all be 0
+    float* expertScales;       // can be nullptr if no scale is used(all 1.0), if so,
+                               // interleaved should all be 0
     int fieldCount;
     MoeCommFieldInfo fieldsInfo[MOE_COMM_FIELD_MAX_COUNT];
 
@@ -414,7 +424,9 @@ struct FusedMoeFieldInfo
 struct FusedMoeCommKernelParam
 {
     FusedMoeWorldInfo worldInfo;
-    MoeExpertParallelInfo expertParallelInfo; // expertCount inside should be slotCount if using redundant experts.
+    MoeExpertParallelInfo expertParallelInfo; // expertCount inside should be
+                                              // slotCount if using redundant
+                                              // experts.
     MoeSingleCommMeta sendCommMeta;
     MoeSingleCommMeta recvCommMeta;
     SendRecvIndices sendIndices;
@@ -430,46 +442,67 @@ struct FusedMoeCommKernelParam
  * N: Number of GPUs, e.g. EpSize or WorldSize, n = N - 1
  * Ci: Channel i
  * M: Number of Channels, m = M - 1
- * MMr: Memory Mapped from Rank r, physically located at rank r, and mapped to all ranks.
+ * MMr: Memory Mapped from Rank r, physically located at rank r, and mapped to
+ *all ranks.
  *
  *  Whole workspace memory space:
  *  ---------------------------------------------------------------------------------------------------
- *  |<--   MM0   -->   |<--   MM1   -->   |<--   MM2   -->   |       ......        |<--   MMn   -->   |
- *  ^                  ^                  ^                  ^                     ^                  ^
- *  0           rankStrideInU64   2*rankStrideInU64   3*rankStrideInU64     n*rankStrideInU64 N*rankStrideInU64
+ *  |<--   MM0   -->   |<--   MM1   -->   |<--   MM2   -->   |       ......
+ *|<--   MMn   -->   |
+ *  ^                  ^                  ^                  ^
+ *^                  ^
+ *  0           rankStrideInU64   2*rankStrideInU64   3*rankStrideInU64
+ *n*rankStrideInU64 N*rankStrideInU64
  *
  *  For each MMr, the layout is:
  *  -------------------------------------------------------------------------------------------------
- *  |<--- FIFO memory --->|<--- SenderSideFifoInfo memory --->|<--- ReceiverSideFifoInfo memory --->|
+ *  |<--- FIFO memory --->|<--- SenderSideFifoInfo memory --->|<---
+ *ReceiverSideFifoInfo memory --->|
  *  -------------------------------------------------------------------------------------------------
  *
  *  For each FIFO memory, it is physically placed at the receiver rank.
- *  To find the FIFO whose receiver is rank r, we need to find that in the FIFO memory of MMr.
+ *  To find the FIFO whose receiver is rank r, we need to find that in the FIFO
+ *memory of MMr.
  *  The layout of FIFO memory of each MMR is(here rank is the sender rank):
  *  -------------------------------------------------------------------------------------------------
- *  | R0C0 | R0C1 | .... | R0Cm | R1C0 | R1C1 | .... | R1Cm | .... .... | RnC0 | RnC1 | .... | RnCm |
- *  |<-  Channels for Rank 0  ->|<-  Channels for Rank 1  ->|           |<-  Channels for Rank n  ->|
+ *  | R0C0 | R0C1 | .... | R0Cm | R1C0 | R1C1 | .... | R1Cm | .... .... | RnC0 |
+ *RnC1 | .... | RnCm |
+ *  |<-  Channels for Rank 0  ->|<-  Channels for Rank 1  ->|           |<-
+ *Channels for Rank n  ->|
  *  -------------------------------------------------------------------------------------------------
- *  Each R*C* has length of FIFO_TOTAL_U64 in uint64_t, which is internally divided into FIFO_DEPTH entries of
+ *  Each R*C* has length of FIFO_TOTAL_U64 in uint64_t, which is internally
+ *divided into FIFO_DEPTH entries of
  *  size FIFO_ENTRY_BYTES each.
  *
- *  For each SenderSideFifoInfo memory, it is physically placed at the sender rank.
- *  To find the SenderSideFifoInfo whose sender is rank r, we need to find that in the FIFO memory of MMr.
- *  The layout of SenderSideFifoInfo memory of each MMR is(here rank is the receiver rank):
+ *  For each SenderSideFifoInfo memory, it is physically placed at the sender
+ *rank.
+ *  To find the SenderSideFifoInfo whose sender is rank r, we need to find that
+ *in the FIFO memory of MMr.
+ *  The layout of SenderSideFifoInfo memory of each MMR is(here rank is the
+ *receiver rank):
  *  -------------------------------------------------------------------------------------------------
- *  | R0C0 | R0C1 | .... | R0Cm | R1C0 | R1C1 | .... | R1Cm | .... .... | RnC0 | RnC1 | .... | RnCm |
- *  |<-  Channels for Rank 0  ->|<-  Channels for Rank 1  ->|           |<-  Channels for Rank n  ->|
+ *  | R0C0 | R0C1 | .... | R0Cm | R1C0 | R1C1 | .... | R1Cm | .... .... | RnC0 |
+ *RnC1 | .... | RnCm |
+ *  |<-  Channels for Rank 0  ->|<-  Channels for Rank 1  ->|           |<-
+ *Channels for Rank n  ->|
  *  -------------------------------------------------------------------------------------------------
- *  Each R*C* is one struct of SenderSideFifoInfo. There are total M * N SenderSideFifoInfo in each MMR.
+ *  Each R*C* is one struct of SenderSideFifoInfo. There are total M * N
+ *SenderSideFifoInfo in each MMR.
  *
- *  For each ReceiverSideFifoInfo memory, it is physically placed at the receiver rank.
- *  To find the ReceiverSideFifoInfo whose receiver is rank r, we need to find that in the FIFO memory of MMr.
- *  The layout of ReceiverSideFifoInfo memory of each MMR is(here rank is the sender rank):
+ *  For each ReceiverSideFifoInfo memory, it is physically placed at the
+ *receiver rank.
+ *  To find the ReceiverSideFifoInfo whose receiver is rank r, we need to find
+ *that in the FIFO memory of MMr.
+ *  The layout of ReceiverSideFifoInfo memory of each MMR is(here rank is the
+ *sender rank):
  *  -------------------------------------------------------------------------------------------------
- *  | R0C0 | R0C1 | .... | R0Cm | R1C0 | R1C1 | .... | R1Cm | .... .... | RnC0 | RnC1 | .... | RnCm |
- *  |<-  Channels for Rank 0  ->|<-  Channels for Rank 1  ->|           |<-  Channels for Rank n  ->|
+ *  | R0C0 | R0C1 | .... | R0Cm | R1C0 | R1C1 | .... | R1Cm | .... .... | RnC0 |
+ *RnC1 | .... | RnCm |
+ *  |<-  Channels for Rank 0  ->|<-  Channels for Rank 1  ->|           |<-
+ *Channels for Rank n  ->|
  *  -------------------------------------------------------------------------------------------------
- *  Each R*C* is one struct of ReceiverSideFifoInfo. There are total M * N ReceiverSideFifoInfo in each MMR.
+ *  Each R*C* is one struct of ReceiverSideFifoInfo. There are total M * N
+ *ReceiverSideFifoInfo in each MMR.
  */
 
 struct FusedMoeWorkspace
@@ -558,6 +591,4 @@ void launchLocalFifoSendRecv(FusedMoeFieldInfo const& sendFieldInfo, FusedMoeFie
 
 } // namespace fused_moe_comm_tests
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

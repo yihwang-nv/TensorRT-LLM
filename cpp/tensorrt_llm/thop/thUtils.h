@@ -55,7 +55,8 @@
 #define PRINT_TENSOR(x) std::cout << #x << ":\n" << x << std::endl
 #define PRINT_TENSOR_SIZE(x) std::cout << "size of " << #x << ": " << x.sizes() << std::endl
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -97,4 +98,4 @@ cudaDataType_t convert_torch_dtype(torch::ScalarType dtype);
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

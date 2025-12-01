@@ -24,10 +24,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename Tout>
 __global__ void reduce4ring_attention(
@@ -138,6 +135,5 @@ INSTANTIATE_RECOVER_RA(half);
 #ifdef ENABLE_BF16
 INSTANTIATE_RECOVER_RA(__nv_bfloat16);
 #endif
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

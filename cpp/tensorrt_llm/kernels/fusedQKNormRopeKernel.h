@@ -19,33 +19,31 @@
 #include "tensorrt_llm/common/config.h"
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // Perform fused QK Normalization and RoPE in a single CUDA kernel
-// This function efficiently applies RMS normalization and RoPE embeddings to query and key tensors
-void launchFusedQKNormRope(
-    void* qkv,               // Combined QKV tensor [num_tokens, (num_heads_q+num_heads_k+num_heads_v)*head_dim]
-    int const num_tokens,    // Number of tokens
-    int const num_heads_q,   // Number of query heads
-    int const num_heads_k,   // Number of key heads
-    int const num_heads_v,   // Number of value heads
-    int const head_dim,      // Dimension per head
-    float const eps,         // Epsilon for RMS normalization
-    void const* q_weight,    // RMSNorm weights for query [head_dim]
-    void const* k_weight,    // RMSNorm weights for key [head_dim]
-    float const base,        // Base for RoPE computation
-    bool const interleave,   // Whether RoPE is applied in interleave mode (non-Neox style)
-    int const* position_ids, // Position IDs for RoPE [num_tokens]
-    float factor, // factor in rope_scaling in config.json. When it is not 1.0, it means the model is using yarn.
-    float low,    // threshold for high frequency
-    float high,   // threshold for low frequency
-    float attention_factor, // attention_factor applied on cos and sin
-    cudaStream_t stream,    // CUDA stream
+// This function efficiently applies RMS normalization and RoPE embeddings to
+// query and key tensors
+void launchFusedQKNormRope(void* qkv, // Combined QKV tensor [num_tokens,
+                                      // (num_heads_q+num_heads_k+num_heads_v)*head_dim]
+    int const num_tokens,             // Number of tokens
+    int const num_heads_q,            // Number of query heads
+    int const num_heads_k,            // Number of key heads
+    int const num_heads_v,            // Number of value heads
+    int const head_dim,               // Dimension per head
+    float const eps,                  // Epsilon for RMS normalization
+    void const* q_weight,             // RMSNorm weights for query [head_dim]
+    void const* k_weight,             // RMSNorm weights for key [head_dim]
+    float const base,                 // Base for RoPE computation
+    bool const interleave,            // Whether RoPE is applied in interleave mode
+                                      // (non-Neox style)
+    int const* position_ids,          // Position IDs for RoPE [num_tokens]
+    float factor,                     // factor in rope_scaling in config.json. When it is not 1.0,
+                                      // it means the model is using yarn.
+    float low,                        // threshold for high frequency
+    float high,                       // threshold for low frequency
+    float attention_factor,           // attention_factor applied on cos and sin
+    cudaStream_t stream,              // CUDA stream
     bool is_qk_norm);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

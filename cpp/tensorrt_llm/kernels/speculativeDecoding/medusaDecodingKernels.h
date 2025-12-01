@@ -24,30 +24,37 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 
-//! \brief assembles draft tokens to treeDraftIds from sourceDraftIds using indices of treeIds
+//! \brief assembles draft tokens to treeDraftIds from sourceDraftIds using
+// indices of treeIds
 //!
-//! \param treeDraftIds output buffer [maxBatchSize, maxDecodingTokens-1], output draft tokens
+//! \param treeDraftIds output buffer [maxBatchSize, maxDecodingTokens-1],
+// output draft tokens
 //! scattered from sourceDraftIds according to treeIds111
-//! \param sourceDraftIds input buffer [maxBatchSize, maxDecodingTokens], draft tokens saved leanearly after
+//! \param sourceDraftIds input buffer [maxBatchSize, maxDecodingTokens], draft
+// tokens saved leanearly after
 //! sampling from Medusa heads with TopK.
-//! \param treeIds input buffer [maxBatchSize, maxDecodingTokens-1], address map from sourceDraftIds to treeDraftIds
-//! [0, unqiueDraftTokens] -> [0, maxDecodingTokens], where unqiueDraftTokens = sum(MedusaHeadsTopK)
+//! \param treeIds input buffer [maxBatchSize, maxDecodingTokens-1], address map
+// from sourceDraftIds to treeDraftIds
+//! [0, unqiueDraftTokens] -> [0, maxDecodingTokens], where unqiueDraftTokens =
+// sum(MedusaHeadsTopK)
 //! unqiueDraftTokens <= maxDraftTokens
-//! \param tokensPerStep input buffer [maxBatchSize], number of output draft tokens
+//! \param tokensPerStep input buffer [maxBatchSize], number of output draft
+// tokens
 //! \param batchSlots input buffer [maxBatchSize], address map from local index
 //! to global index [0, batchSize] -> [0, maxBatchSize]
-//! \param maxDecodingTokens maximum number of tokens per step configured in the system
+//! \param maxDecodingTokens maximum number of tokens per step configured in the
+// system
 //! \param batchSize current batch size
 //! \param stream cuda stream
 void scatterMedusaDraftTokens(runtime::TokenIdType* treeDraftIds, runtime::TokenIdType const* sourceDraftIds,
     runtime::SizeType32 const* treeIds, runtime::SizeType32 const* tokensPerStep, runtime::SizeType32 const* batchSlots,
     runtime::SizeType32 maxDecodingTokens, runtime::SizeType32 batchSize, cudaStream_t stream);
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

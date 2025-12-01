@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 #include "eaglePrepareDrafterInputsPlugin.h"
-#include "tensorrt_llm/common/assert.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/dataType.h"
 #include "tensorrt_llm/common/memoryUtils.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/eagleDecodingKernels.h"
@@ -181,7 +180,8 @@ int32_t EaglePrepareDrafterInputsPlugin::getOutputShapes(nvinfer1::DimsExprs con
         {
             if (mLayerIdx == 0)
             {
-                // We have at most numGenRequests * (mNumLayers + 1) accepted tokens per step for gen requests and
+                // We have at most numGenRequests * (mNumLayers + 1) accepted tokens per
+                // step for gen requests and
                 // input_ids - numGenTokens tokens for context requests.
                 auto numOutputGenTokensExpr = exprBuilder.operation(
                     DimensionOperation::kPROD, *numGenRequestsExpr, *exprBuilder.constant(mNumLayers + 1));
@@ -436,17 +436,21 @@ int EaglePrepareDrafterInputsPlugin::enqueue(nvinfer1::PluginTensorDesc const* i
     cudaStream_t stream) noexcept
 {
     // First EagleNet instance (EagleNet0) is always chunked context attn,
-    // where we process either context tokens or newly accepted tokens and append them to EagleNet KV cache.
+    // where we process either context tokens or newly accepted tokens and append
+    // them to EagleNet KV cache.
 
-    // For all following EagleNetX (X > 0) instances there is need for masked spec decoding attn.
+    // For all following EagleNetX (X > 0) instances there is need for masked spec
+    // decoding attn.
     // Ideally with mask for context.
-    // Let's say we have prompt ABCD and two variants of tokens spec decoding tokens E and F
+    // Let's say we have prompt ABCD and two variants of tokens spec decoding
+    // tokens E and F
     // predicted by EagleNet0. If we draw full attn mask, it becomes:
     //  |A|B|C|D|E|F
     // E|1|1|1|1|1|0
     // F|1|1|1|1|0|1
     //
-    // In the next step we predict token G from ABCDE branch and token H from ABCDF branch -- like beam search.
+    // In the next step we predict token G from ABCDE branch and token H from
+    // ABCDF branch -- like beam search.
     // And we'd need spec decoding mask that includes kv cache:
     //  |A|B|C|D|E|F|G|H
     // G|1|1|1|1|1|0|1|0

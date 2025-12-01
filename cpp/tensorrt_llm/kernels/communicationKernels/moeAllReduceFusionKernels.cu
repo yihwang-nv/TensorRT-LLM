@@ -20,9 +20,9 @@
 #include "tensorrt_llm/kernels/quantization.cuh"
 #include <cooperative_groups.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ar_fusion::moe
+namespace ar_fusion::moe
 {
 template <int NRanks>
 struct LamportComm
@@ -227,17 +227,21 @@ __global__ void moereduce_allreduce_fusion_kernel_oneshot_lamport(MoeReductionAl
     int token_id = grid.cluster_rank();
     // total number of token
     int num_token = params.size / params.hidden_dim;
-    // Each thread handle kElemsPerAccess num elem in token. Total cluster.num_threads() to handle one token
-    // For current token, which kElemsPerAccess is handled by current thread (in unit of kElemsPerAccess)
+    // Each thread handle kElemsPerAccess num elem in token. Total
+    // cluster.num_threads() to handle one token
+    // For current token, which kElemsPerAccess is handled by current thread (in
+    // unit of kElemsPerAccess)
     int access_id_in_token = cluster.thread_rank();
-    // Across all token, which kElemsPerAccess is handled by current thread (in unit of kElemsPerAccess)
+    // Across all token, which kElemsPerAccess is handled by current thread (in
+    // unit of kElemsPerAccess)
     int access_id = token_id * params.hidden_dim / kElemsPerAccess + access_id_in_token;
     // Persistent kernel
     // stride to next token handled by current cta
     int token_stride = grid.num_clusters();
     // stride in unit of kElemsPerAccess
     int access_stride = token_stride * params.hidden_dim / kElemsPerAccess;
-    // Total number of access in unit of kElemsPerAccess to handle (token_num * hidden_dim)
+    // Total number of access in unit of kElemsPerAccess to handle (token_num *
+    // hidden_dim)
     // This is within one rank
     int tot_access = params.size / kElemsPerAccess;
     float4 clear_vec = get_neg_zero();
@@ -250,7 +254,8 @@ __global__ void moereduce_allreduce_fusion_kernel_oneshot_lamport(MoeReductionAl
     // * MoE related
     int threadid_in_cluster = cluster.thread_rank();
     // Start Offset within one token's hidden_size of element
-    // Current thread handle token[thread_offset_within_token : thread_offset_within_token + kElemsPerAccess]
+    // Current thread handle token[thread_offset_within_token :
+    // thread_offset_within_token + kElemsPerAccess]
     int thread_offset_within_token = threadid_in_cluster * kElemsPerAccess;
 
     union ACC_TYPE
@@ -284,7 +289,8 @@ __global__ void moereduce_allreduce_fusion_kernel_oneshot_lamport(MoeReductionAl
         for (int actexp_i = 0; actexp_i < num_actexp; ++actexp_i)
         {
             // * Load active expert i's token j's partial data
-            // Offset within (num_act_exp, num_token, hidden_size) in unit of element
+            // Offset within (num_act_exp, num_token, hidden_size) in unit of
+            // element
             int thread_offset_across_actexp_token
                 = actexp_i * (params.hidden_dim * num_token) + thread_offset_across_token;
             ACC_TYPE actexp_i_data;
@@ -296,7 +302,7 @@ __global__ void moereduce_allreduce_fusion_kernel_oneshot_lamport(MoeReductionAl
             float actexp_i_token_j_scale
                 = reinterpret_cast<float const*>(params.moe_reduction_scale_input)[thread_offset_scale];
 
-            // * acc += scale(data)
+// * acc += scale(data)
 #pragma unroll
             for (int i = 0; i < kElemsPerAccess; ++i)
             {
@@ -394,7 +400,8 @@ void moereduction_allreduce_fusion_kernel_launcher(MoeReductionAllReduceFusionPa
     TLLM_CHECK(oneshot);
     // Each token is handled by one cluster
     int cluster_num = token_num;
-    // Total number of threads (within one cluster) that's need to handle one token
+    // Total number of threads (within one cluster) that's need to handle one
+    // token
     // given that each thread handle kElemsPerAccess
     int threads_per_token = params.hidden_dim / kElemsPerAccess;
     // Total number of warp (within one cluster) that's need to handle one token
@@ -503,17 +510,21 @@ __global__ void moefinalize_allreduce_fusion_kernel_oneshot_lamport(MoeFinalizeA
     int token_id = grid.cluster_rank();
     // total number of token
     int num_token = params.size / params.hidden_dim;
-    // Each thread handle kElemsPerAccess num elem in token. Total cluster.num_threads() to handle one token
-    // For current token, which kElemsPerAccess is handled by current thread (in unit of kElemsPerAccess)
+    // Each thread handle kElemsPerAccess num elem in token. Total
+    // cluster.num_threads() to handle one token
+    // For current token, which kElemsPerAccess is handled by current thread (in
+    // unit of kElemsPerAccess)
     int access_id_in_token = cluster.thread_rank();
-    // Across all token, which kElemsPerAccess is handled by current thread (in unit of kElemsPerAccess)
+    // Across all token, which kElemsPerAccess is handled by current thread (in
+    // unit of kElemsPerAccess)
     int access_id = token_id * params.hidden_dim / kElemsPerAccess + access_id_in_token;
     // Persistent kernel
     // stride to next token handled by current cta
     int token_stride = grid.num_clusters();
     // stride in unit of kElemsPerAccess
     int access_stride = token_stride * params.hidden_dim / kElemsPerAccess;
-    // Total number of access in unit of kElemsPerAccess to handle (token_num * hidden_dim)
+    // Total number of access in unit of kElemsPerAccess to handle (token_num *
+    // hidden_dim)
     // This is within one rank
     int tot_access = params.size / kElemsPerAccess;
     float4 clear_vec = get_neg_zero();
@@ -526,7 +537,8 @@ __global__ void moefinalize_allreduce_fusion_kernel_oneshot_lamport(MoeFinalizeA
     // * MoE related
     int threadid_in_cluster = cluster.thread_rank();
     // Start Offset within one token's hidden_size of element
-    // Current thread handle token[thread_offset_within_token : thread_offset_within_token + kElemsPerAccess]
+    // Current thread handle token[thread_offset_within_token :
+    // thread_offset_within_token + kElemsPerAccess]
     int thread_offset_within_token = threadid_in_cluster * kElemsPerAccess;
 
     union ACC_TYPE
@@ -574,7 +586,7 @@ __global__ void moefinalize_allreduce_fusion_kernel_oneshot_lamport(MoeFinalizeA
             permuted_data.packed
                 = reinterpret_cast<float4 const*>(params.allreduce_in)[thread_offset_across_token / kElemsPerAccess];
 
-            // * acc += scale(data)
+// * acc += scale(data)
 #pragma unroll
             for (int i = 0; i < kElemsPerAccess; ++i)
             {
@@ -679,7 +691,8 @@ void moefinalize_allreduce_fusion_kernel_launcher(MoeFinalizeAllReduceFusionPara
     TLLM_CHECK(oneshot);
     // Each token is handled by one cluster
     int cluster_num = token_num;
-    // Total number of threads (within one cluster) that's need to handle one token
+    // Total number of threads (within one cluster) that's need to handle one
+    // token
     // given that each thread handle kElemsPerAccess
     int threads_per_token = params.hidden_dim / kElemsPerAccess;
     // Total number of warp (within one cluster) that's need to handle one token
@@ -773,6 +786,6 @@ void moefinalize_allreduce_fusion_op(MoeFinalizeAllReduceFusionParams const& par
 #undef MOE_FINALIZE_DISPATCH1
 }
 
-}; // namespace kernels::ar_fusion::moe
+}; // namespace ar_fusion::moe
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

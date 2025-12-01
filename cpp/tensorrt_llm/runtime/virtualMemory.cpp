@@ -16,14 +16,11 @@
 
 #include "tensorrt_llm/runtime/virtualMemory.h"
 #include "bufferManager.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <forward_list>
 #include <shared_mutex>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 namespace
@@ -97,10 +94,13 @@ void CUDAVirtualMemoryChunk::_release(bool destructing)
 
     // Revert materialize(). Only configurators that ran setup() successfully
     // will have their teardown() been called.
-    // Never early returns on exceptions. The last exception will be rethrown, and
+    // Never early returns on exceptions. The last exception will be rethrown,
+    // and
     // previous ones will be logged.
     std::exception_ptr ePtr{};
-    auto const* msg = "Multiple exceptions thrown during release. The previous exception is: %s";
+    auto const* msg
+        = "Multiple exceptions thrown during release. The previous "
+          "exception is: %s";
     for (size_t i = start; i < count; ++i)
     {
         safe_invoke_helper(
@@ -149,7 +149,8 @@ void OffloadConfigurator::teardown(CUmemGenericAllocationHandle, bool destructin
         default: TLLM_THROW("Unknown memory type: %d", static_cast<int32_t>(mBackType));
         }
     }
-    // We have to synchronize here, or the memory may be unmapped before the copy operation.
+    // We have to synchronize here, or the memory may be unmapped before the
+    // copy operation.
     TLLM_CU_CHECK_FREE_RESOURCE(cuMemcpyDtoH_v2(mBackedStorage->data(), mAddress, mSize));
 }
 
@@ -163,8 +164,10 @@ void CudaVirtualMemoryManager::add(uintptr_t handle, std::string tag, CUDAVirtua
 
     std::unique_lock lock(mMutex);
     auto [memIt, created] = mMemories.try_emplace(handle, Entry{});
-    TLLM_CHECK_WITH_INFO(
-        created, "CudaVirtualMemoryManager: handle 0x%016zx already being used by another memory", handle);
+    TLLM_CHECK_WITH_INFO(created,
+        "CudaVirtualMemoryManager: handle 0x%016zx "
+        "already being used by another memory",
+        handle);
     ScopeGuard eraseMemIt{success, [&, memIt_ = memIt] { mMemories.erase(memIt_); }};
 
     auto const entryIt = mEntries.emplace(std::move(tag), memIt);
@@ -184,8 +187,10 @@ void CudaVirtualMemoryManager::add(uintptr_t handle, std::string tag, CUDAVirtua
         Entry{
             {std::move(creator), std::move(configurators)},
         });
-    TLLM_CHECK_WITH_INFO(
-        created, "CudaVirtualMemoryManager: handle 0x%016zx already being used by another memory", handle);
+    TLLM_CHECK_WITH_INFO(created,
+        "CudaVirtualMemoryManager: handle 0x%016zx "
+        "already being used by another memory",
+        handle);
     ScopeGuard eraseMemIt{success, [&, memIt_ = memIt] { mMemories.erase(memIt_); }};
 
     auto const entryIt = mEntries.emplace(std::move(tag), memIt);
@@ -194,7 +199,8 @@ void CudaVirtualMemoryManager::add(uintptr_t handle, std::string tag, CUDAVirtua
 
     try
     {
-        // Hopefully we don't need to hold the mutex guarding mMemories and mEntries anymore.
+        // Hopefully we don't need to hold the mutex guarding mMemories and mEntries
+        // anymore.
         lock.unlock();
         memIt->second.mMemory.materialize();
         success = true;
@@ -253,11 +259,14 @@ size_t CudaVirtualMemoryManager::releaseWithTag(std::string const& tag)
     {
         auto const handle = it->second->first;
         auto& memory = it->second->second.mMemory;
-        ++it; // element referenced by `it` will be invalidated by unsafeRemove(handle)
+        ++it; // element referenced by `it` will be invalidated by
+              // unsafeRemove(handle)
         if (memory.status() == CUDAVirtualMemoryChunk::MATERIALIZED)
         {
             if (!safe_invoke_helper(ePtr,
-                    "Multiple exceptions thrown during releaseWithTag. The previous exception is: %s",
+                    "Multiple exceptions thrown during "
+                    "releaseWithTag. The previous exception "
+                    "is: %s",
                     &CUDAVirtualMemoryChunk::release, &memory))
             {
                 addBadHandle(handle);
@@ -311,7 +320,10 @@ size_t CudaVirtualMemoryManager::materializeWithTag(std::string const& tag)
             {
                 addBadHandle(handle);
                 unsafeRemove(handle);
-                TLLM_LOG_ERROR("Additional exception thrown during rollback of materializeWithTag: %s", e.what());
+                TLLM_LOG_ERROR(
+                    "Additional exception thrown during rollback of "
+                    "materializeWithTag: %s",
+                    e.what());
             }
         }
 
@@ -390,12 +402,9 @@ void CudaVirtualMemoryAllocator::deallocate(Pointer ptr, std::size_t n) const
     TLLM_CU_CHECK_FREE_RESOURCE(cuMemAddressFree(address, pageAlignedSize));
 }
 
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 CudaVirtualMemoryManager& getVirtualMemoryManager()
@@ -425,7 +434,8 @@ void setVirtualMemoryAllocator(
     std::unique_lock lock(currentConfMutex);
 
     TLLM_CHECK_WITH_INFO(currentConf == bgConf,
-        "An active virtual memory allocator (tag: %s, mode: %d, stream: %p) is already present",
+        "An active virtual memory allocator (tag: %s, mode: "
+        "%d, stream: %p) is already present",
         currentConf->mTag.c_str(), currentConf->mMode, currentConf->mBackStream.get());
     currentConf = std::make_shared<AllocConf>(getVirtualMemoryManager(), tag, mode, backStream);
 }
@@ -436,6 +446,4 @@ void clearVirtualMemoryAllocator()
     currentConf = bgConf;
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

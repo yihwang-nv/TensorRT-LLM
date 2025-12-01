@@ -20,7 +20,6 @@
 #include "gemmPluginProfiler.h"
 #include "plugin.h"
 #include "pluginUtils.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/cudaCoreGemm.h"
 #include "tensorrt_llm/runtime/utils/debugUtils.h"
 
@@ -581,7 +580,8 @@ IPluginV2* GemmPluginCreator::createPlugin(char const* name, PluginFieldCollecti
         // GemmPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
         // FIXME enable tactic profiler
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false, /* skip */ true);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false, /* skip */ true);
         auto* obj = new GemmPlugin(transA, transB, padLda, padLdb, padLdc, type, useFp8, alpha, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
@@ -602,7 +602,8 @@ IPluginV2* GemmPluginCreator::deserializePlugin(char const* name, void const* se
         // GemmPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
         // FIXME enable tactic profiler
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true, /* skip */ true);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ true, /* skip */ true);
         auto* obj = new GemmPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;

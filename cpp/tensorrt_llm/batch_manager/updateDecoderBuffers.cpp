@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +18,11 @@
 
 #include "tensorrt_llm/batch_manager/updateDecoderBuffers.h"
 #include "tensorrt_llm/batch_manager/decoderBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/runtime/decoderState.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using BufferManager = tensorrt_llm::runtime::BufferManager;
@@ -73,11 +71,10 @@ runtime::CudaEvent UpdateDecoderBuffers::operator()(runtime::ModelConfig const& 
 
     runtime::CudaEvent copyEvent{};
     copyBufferManager.getStream().record(copyEvent);
-    // Store the event for later sync. Sync stream before calling next decoder. Sync host before updating requests.
+    // Store the event for later sync. Sync stream before calling next decoder.
+    // Sync host before updating requests.
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
     return copyEvent;
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

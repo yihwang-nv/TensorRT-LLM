@@ -19,13 +19,10 @@
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 void kvCacheBlockPartialCopy(IBuffer& dst, IBuffer const& src, unsigned int numLayers, unsigned int numHeads,
     unsigned int tokensPerBlock, unsigned int numHidden, unsigned int numTokensToCopy, int kvFactor,
     cudaStream_t stream);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

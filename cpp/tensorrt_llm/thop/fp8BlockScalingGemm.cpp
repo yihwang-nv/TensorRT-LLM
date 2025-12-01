@@ -27,7 +27,8 @@
 using namespace tensorrt_llm::kernels::fp8_blockscale_gemm;
 using namespace tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -217,7 +218,8 @@ torch::Tensor fp8_block_scale_gemm_blackwell(torch::Tensor const& mat1, torch::T
     at::Tensor out = at::detail::empty_cuda({m, n}, at::ScalarType::BFloat16, mat1.device(), std::nullopt);
     // The output scale is not used in the current implementation.
     /*
-    at::Tensor outScale = at::detail::empty_cuda({n / 128, m}, at::ScalarType::Float, mat1.device(), std::nullopt);
+    at::Tensor outScale = at::detail::empty_cuda({n / 128, m},
+    at::ScalarType::Float, mat1.device(), std::nullopt);
     float* outScalePtr = outScale.data_ptr<float>();
     */
     float* outScalePtr = nullptr;
@@ -385,19 +387,24 @@ torch::Tensor fp8_block_scaling_bmm(torch::Tensor const& mat1, torch::Tensor con
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("fp8_block_scaling_gemm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale) -> Tensor");
     m.def(
-        "fp8_block_scaling_bmm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, ScalarType? "
+        "fp8_block_scaling_gemm(Tensor mat1, Tensor mat2, Tensor mat1Scale, "
+        "Tensor mat2Scale) -> Tensor");
+    m.def(
+        "fp8_block_scaling_bmm(Tensor mat1, Tensor mat2, Tensor mat1Scale, "
+        "Tensor mat2Scale, ScalarType? "
         "out_dtype=None) -> Tensor");
     m.def(
-        "fp8_block_scaling_bmm_out(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, Tensor(a!) out) -> "
+        "fp8_block_scaling_bmm_out(Tensor mat1, Tensor mat2, Tensor mat1Scale, "
+        "Tensor mat2Scale, Tensor(a!) out) -> "
         "Tensor(a!)");
     m.def(
-        "fp8_block_scaling_moe_gemm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, Tensor token_offset) "
+        "fp8_block_scaling_moe_gemm(Tensor mat1, Tensor mat2, Tensor "
+        "mat1Scale, Tensor mat2Scale, Tensor token_offset) "
         "-> Tensor");
 }
 

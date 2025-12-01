@@ -31,8 +31,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
 #if ENABLE_BF16
 static inline std::basic_ostream<char>& operator<<(std::basic_ostream<char>& stream, __nv_bfloat16 const& val)
 {
@@ -162,7 +160,8 @@ inline std::string fmtstr(char const* format, ...)
     return result;
 }
 
-// __PRETTY_FUNCTION__ is used for neat debugging printing but is not supported on Windows
+// __PRETTY_FUNCTION__ is used for neat debugging printing but is not supported
+// on Windows
 // The alternative is __FUNCSIG__, which is similar but not identical
 #if defined(_WIN32)
 #define __PRETTY_FUNCTION__ __FUNCSIG__
@@ -230,7 +229,5 @@ inline void toUpper(std::string& s)
         c = std::toupper(static_cast<unsigned char>(c));
     }
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

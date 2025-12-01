@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/utils/mpiTags.h"
 #include "tensorrt_llm/runtime/utils/multiDeviceUtils.h"
 
@@ -67,15 +66,13 @@ typedef struct MPI_Status
 
 #define MPICHECK(cmd) TLLM_MPI_CHECK(cmd)
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class IBuffer;
 }
 
 // A wrapper module of the MPI library.
-namespace mpi
+namespace tensorrt_llm::mpi
 {
 
 // A wrapper of MPI data type. MpiType::{data_type}
@@ -111,7 +108,6 @@ struct MpiTypeConverter<std::byte>
 
 template <>
 struct MpiTypeConverter<half>
-
 {
     static constexpr auto value = MpiType::kHALF;
 };
@@ -142,7 +138,6 @@ struct MpiTypeConverter<std::int8_t>
 
 template <>
 struct MpiTypeConverter<std::uint8_t>
-
 {
     static constexpr auto value = MpiType::kUINT8;
 };
@@ -277,7 +272,8 @@ public:
     //! \brief Returns the MPI world communicator.
     static MpiComm const& world();
 
-    //! \brief Corresponds to `world()` by default, but can be overridden per process.
+    //! \brief Corresponds to `world()` by default, but can be overridden per
+    // process.
     static MpiComm const& session()
     {
         return mutableSession();
@@ -360,7 +356,8 @@ public:
     std::unique_ptr<MpiRequest> sendAsync(
         void const* buffer, std::size_t size, MpiType dtype, int dest, MpiTag tag) const;
     std::unique_ptr<MpiRequest> sendAsync(runtime::IBuffer const& buf, int dest, MpiTag tag) const;
-    //! \deprecated This function is discouraged. Use the one with MpiTag enum instead.
+    //! \deprecated This function is discouraged. Use the one with MpiTag enum
+    // instead.
     void sendRawTag(void const* buffer, std::size_t size, MpiType dtype, int dest, int tag) const;
     void send(void const* buffer, std::size_t size, MpiType dtype, int dest, MpiTag tag) const;
     void send(runtime::IBuffer const& buf, int dest, MpiTag tag) const;
@@ -378,7 +375,8 @@ public:
         }
     }
 
-    //! \deprecated This function is discouraged. Use the one with MpiTag enum instead.
+    //! \deprecated This function is discouraged. Use the one with MpiTag enum
+    // instead.
     MPI_Status recvRawTag(void* buffer, size_t size, MpiType dtype, int source, int tag) const;
     MPI_Status recv(void* buffer, size_t size, MpiType dtype, int source, MpiTag tag) const;
     MPI_Status recv(runtime::IBuffer& buf, int source, MpiTag tag) const;
@@ -408,12 +406,14 @@ public:
 
     void barrier() const;
 
-    //! \deprecated This function is discouraged. Use the one with MpiTag enum instead.
+    //! \deprecated This function is discouraged. Use the one with MpiTag enum
+    // instead.
     void mprobeRawTag(int source, int tag, MPI_Message* msg, MPI_Status* status) const;
     void mprobe(int source, MpiTag tag, MPI_Message* msg, MPI_Status* status) const;
     bool improbe(int source, MpiTag tag, MPI_Message* msg, MPI_Status* status) const;
 
-    //! \brief Returns if a message with the specified source and tag is available
+    //! \brief Returns if a message with the specified source and tag is
+    // available
     bool iprobe(int source, MpiTag tag, MPI_Status* status) const;
 
     //! \brief Poll every periodMs until a message is available
@@ -452,7 +452,8 @@ public:
 
 private:
     mutable std::optional<bool> mDisableMPI;
-    //! \brief Corresponds to `world()` by default, but can be overridden per process.
+    //! \brief Corresponds to `world()` by default, but can be overridden per
+    // process.
     static MpiComm& mutableSession();
 
     //! \brief Returns the MPI local communicator.
@@ -495,9 +496,7 @@ private:
     std::atomic<bool> mShouldExit{false};
 };
 
-} // namespace mpi
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::mpi
 
 #define COMM_SESSION tensorrt_llm::mpi::MpiComm::session()
 #define LOCAL_COMM_SESSION tensorrt_llm::mpi::MpiComm::localSession()

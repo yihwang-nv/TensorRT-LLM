@@ -20,10 +20,8 @@
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 __device__ __host__ inline int32_t ceilDiv(int32_t a, int32_t b)
@@ -31,8 +29,10 @@ __device__ __host__ inline int32_t ceilDiv(int32_t a, int32_t b)
     return (a + b - 1) / b;
 }
 
-// Input: customMaskInput (generalPackedCustoMaskPtr) shape: [batch_size, seqLenQ, ceilDiv(seqLenKv-firstSparse, 32)]
-// Output: customMaskInput shape:[batch_size,numTilesQ, numTilesKv, numInstsQ, numInstsKv, tileSizeQ, tileSizeKv]
+// Input: customMaskInput (generalPackedCustoMaskPtr) shape: [batch_size,
+// seqLenQ, ceilDiv(seqLenKv-firstSparse, 32)]
+// Output: customMaskInput shape:[batch_size,numTilesQ, numTilesKv, numInstsQ,
+// numInstsKv, tileSizeQ, tileSizeKv]
 // Output: customMaskOffsets shape:[batch_size]
 // Output: firstSparseMaskOffsetsKv shape:[batch_size]
 __global__ void prepareCustomMaskBuffersKernelForKeepsMmaAb(
@@ -211,7 +211,8 @@ void launchComputeCustomMaskOffsetsKernel(
     cudaFreeAsync(d_globalCounter, stream);
 }
 
-// Post-processing kernel to write adjusted firstSparseMaskOffsetsKv after all work is done
+// Post-processing kernel to write adjusted firstSparseMaskOffsetsKv after all
+// work is done
 __global__ void adjustFirstSparseMaskOffsetsKernel(
     TllmGenFmhaRunnerParams runnerParams, TllmGenFmhaKernelMetaInfo kernelMeta)
 {
@@ -240,8 +241,10 @@ void launchPrepareCustomMaskBuffersKernelForKeepsMmaAb(
 
     // Calculate the maximum KV range to process
     // The actual range is [adjustedFirstSparseMaskOffsetKv, seqLenKv)
-    // adjustedFirstSparseMaskOffsetKv <= firstSparseMaskOffsetKv = seqLenKv - seqLenQ
-    // So the maximum range length is: seqLenKv - adjustedFirstSparseMaskOffsetKv <= maxSeqLenQ + (tileSizeKvPerCta - 1)
+    // adjustedFirstSparseMaskOffsetKv <= firstSparseMaskOffsetKv = seqLenKv -
+    // seqLenQ
+    // So the maximum range length is: seqLenKv - adjustedFirstSparseMaskOffsetKv
+    // <= maxSeqLenQ + (tileSizeKvPerCta - 1)
     int32_t const maxKvRangeLength = maxSeqLenQ + (tileSizeKvPerCta - 1);
 
     int32_t const qTokensPerBlock = 64;
@@ -254,7 +257,8 @@ void launchPrepareCustomMaskBuffersKernelForKeepsMmaAb(
     dim3 blockDim(qTokensPerBlock, kvTokensPerBlock, 1);
 
     prepareCustomMaskBuffersKernelForKeepsMmaAb<<<gridDim, blockDim, 0, stream>>>(runnerParams, kernelMeta);
-    // Ensure adjusted firstSparse offsets are written only after all blocks finish
+    // Ensure adjusted firstSparse offsets are written only after all blocks
+    // finish
     {
         int const blockSize = 128;
         int const gridSize = (batchSize + blockSize - 1) / blockSize;
@@ -273,8 +277,10 @@ void runPrepareCustomMask(
         if (cta_tile_size > 128 * 128 * 2)
         {
             TLLM_LOG_ERROR(
-                "TRTLLM-GEN needs larger buffer for  custom mask preparation please enlarge it according to the "
-                "formula: tile_size_q * tile_size_k * num_instances_q * num_instances_k");
+                "TRTLLM-GEN needs larger buffer for  custom mask "
+                "preparation please enlarge it according to the "
+                "formula: tile_size_q * tile_size_k * num_instances_q * "
+                "num_instances_k");
             return;
         }
         // Step 1: Compute offsets on GPU using prefix sum
@@ -286,12 +292,12 @@ void runPrepareCustomMask(
     else
     {
         TLLM_LOG_ERROR(
-            "TRTLLM-GEN does not support kernel type: %d for custom mask preparation", runnerParams.mKernelType);
+            "TRTLLM-GEN does not support kernel type: %d for custom "
+            "mask preparation",
+            runnerParams.mKernelType);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

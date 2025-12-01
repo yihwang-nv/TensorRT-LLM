@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,8 @@
 /**
  * This file contains a specialized implementation of AIR TopK
  * introduced in https://dl.acm.org/doi/pdf/10.1145/3581784.3607062 .
- * Another variant can be found in TopP sampling: cpp/tensorrt_llm/kernels/samplingAirTopPKernels.cu .
+ * Another variant can be found in TopP sampling:
+ * cpp/tensorrt_llm/kernels/samplingAirTopPKernels.cu .
  */
 #include "tensorrt_llm/common/config.h"
 #include <cuda_runtime_api.h>
@@ -35,10 +37,8 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <type_traits>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
 
 ///////////////
@@ -110,8 +110,10 @@ __host__ __device__ int round(int num, int round_value)
 
 /**
  * Bit 0 is the least significant (rightmost);
- * this implementation processes input from the most to the least significant bit.
- * This way, we can skip some passes in the end at the cost of having an unsorted output.
+ * this implementation processes input from the most to the least significant
+ *bit.
+ * This way, we can skip some passes in the end at the cost of having an
+ *unsorted output.
  *
  * NB: Use pass=-1 for calc_mask().
  */
@@ -135,7 +137,8 @@ __device__ constexpr unsigned calc_mask(int pass)
 }
 
 /**
- * Use CUB to twiddle bits - so that we can correctly compare bits of floating-point
+ * Use CUB to twiddle bits - so that we can correctly compare bits of
+ * floating-point
  * values as well as of integers.
  */
 template <typename T>
@@ -178,14 +181,18 @@ template <typename T, typename IdxT, typename RATIO_T = float>
 __host__ __device__ IdxT calc_buf_len(IdxT len)
 {
     // When writing is skipped, only read `in`(type T).
-    // When writing is not skipped, read `in_buf`(T) and `in_idx_buf`(IdxT), and write
-    // `out_buf`(T) and `out_idx_buf`(IdxT). The ratio between these cases determines
+    // When writing is not skipped, read `in_buf`(T) and `in_idx_buf`(IdxT), and
+    // write
+    // `out_buf`(T) and `out_idx_buf`(IdxT). The ratio between these cases
+    // determines
     // whether to skip writing and hence the buffer size.
     constexpr RATIO_T ratio = 2 + sizeof(IdxT) * 2 / sizeof(T);
-    // Even such estimation is too conservative, so further decrease buf_len by 1/8
+    // Even such estimation is too conservative, so further decrease buf_len by
+    // 1/8
     IdxT buf_len = len / (ratio * 8);
 
-    // one-block kernel splits one large buffer into smaller ones, so round buf size to
+    // one-block kernel splits one large buffer into smaller ones, so round buf
+    // size to
     // 256 bytes to avoid alignment issues
     static_assert(is_a_power_of_two(sizeof(T)));
     static_assert(is_a_power_of_two(sizeof(IdxT)));
@@ -195,10 +202,13 @@ __host__ __device__ IdxT calc_buf_len(IdxT len)
 }
 
 /**
- * Map a Func over the input data, using vectorized load instructions if possible.
+ * Map a Func over the input data, using vectorized load instructions if
+ *possible.
  *
- * NB: in future, we should move this to cpp/include/raft/linalg/detail/unary_op.cuh,
- * which currently does not support the second lambda argument (index of an element)
+ * NB: in future, we should move this to
+ *cpp/include/raft/linalg/detail/unary_op.cuh,
+ * which currently does not support the second lambda argument (index of an
+ *element)
  *
  * @tparam T element type
  * @tparam IdxT indexing type
@@ -263,7 +273,8 @@ __device__ void vectorized_process(size_t thread_rank, size_t num_threads, T con
         // because len_cast = (len - skip_cnt) / items_per_scalar,
         // len_cast * items_per_scalar + items_per_scalar > len - skip_cnt;
         // and so
-        // len - (skip_cnt + len_cast * items_per_scalar) < items_per_scalar <= WARP_SIZE
+        // len - (skip_cnt + len_cast * items_per_scalar) < items_per_scalar <=
+        // WARP_SIZE
         // no need to use loop
         const IdxT remain_i = skip_cnt + len_cast * items_per_scalar + thread_rank;
         if (remain_i < len)
@@ -343,40 +354,55 @@ __device__ void vectorized_process(T const* in, IdxT len, Func f, int sync_width
 template <typename T, typename IdxT>
 struct alignas(128) Counter
 {
-    // We are processing the values in multiple passes, from most significant to least
-    // significant. In each pass, we keep the length of input (`len`) and the `k` of
+    // We are processing the values in multiple passes, from most significant to
+    // least
+    // significant. In each pass, we keep the length of input (`len`) and the `k`
+    // of
     // current pass, and update them at the end of the pass.
     IdxT k;
     IdxT len;
 
-    //  `previous_len` is the length of input in previous pass. Note that `previous_len`
-    //  rather than `len` is used for the filtering step because filtering is indeed for
+    //  `previous_len` is the length of input in previous pass. Note that
+    // `previous_len`
+    //  rather than `len` is used for the filtering step because filtering is
+    // indeed for
     //  previous pass (see comments before `radix_kernel`).
     IdxT previous_len;
 
-    // We determine the bits of the k_th value inside the mask processed by the pass. The
-    // already known bits are stored in `kth_value_bits`. It's used to discriminate a
-    // element is a result (written to `out`), a candidate for next pass (written to
-    // `out_buf`), or not useful (discarded). The bits that are not yet processed do not
+    // We determine the bits of the k_th value inside the mask processed by the
+    // pass. The
+    // already known bits are stored in `kth_value_bits`. It's used to
+    // discriminate a
+    // element is a result (written to `out`), a candidate for next pass (written
+    // to
+    // `out_buf`), or not useful (discarded). The bits that are not yet processed
+    // do not
     // matter for this purpose.
     typename cub::Traits<T>::UnsignedBits kth_value_bits;
 
-    // Record how many elements have passed filtering. It's used to determine the position
+    // Record how many elements have passed filtering. It's used to determine the
+    // position
     // in the `out_buf` where an element should be written.
     alignas(128) IdxT filter_cnt;
 
-    // For a row inside a batch, we may launch multiple thread blocks. This counter is
-    // used to determine if the current block is the last running block. If so, this block
+    // For a row inside a batch, we may launch multiple thread blocks. This
+    // counter is
+    // used to determine if the current block is the last running block. If so,
+    // this block
     // will execute scan() and choose_bucket().
     alignas(128) unsigned int finished_block_cnt;
 
-    // Record how many elements have been written to the front of `out`. Elements less (if
+    // Record how many elements have been written to the front of `out`. Elements
+    // less (if
     // select_min==true) than the k-th value are written from front to back.
     alignas(128) IdxT out_cnt;
 
-    // Record how many elements have been written to the back of `out`. Elements equal to
-    // the k-th value are written from back to front. We need to keep count of them
-    // separately because the number of elements that <= the k-th value might exceed k.
+    // Record how many elements have been written to the back of `out`. Elements
+    // equal to
+    // the k-th value are written from back to front. We need to keep count of
+    // them
+    // separately because the number of elements that <= the k-th value might
+    // exceed k.
     alignas(128) IdxT out_back_cnt;
 };
 
@@ -402,8 +428,10 @@ __device__ void filter_and_histogram(T const* in_buf, IdxT const* in_idx_buf, T*
 
     if (pass == 0)
     {
-        // Passed to vectorized_process, this function executes in all blocks in parallel,
-        // i.e. the work is split along the input (both, in batches and chunks of a single
+        // Passed to vectorized_process, this function executes in all blocks in
+        // parallel,
+        // i.e. the work is split along the input (both, in batches and chunks of a
+        // single
         // row). Later, the histograms are merged using atomicAdd.
         auto f = [select_min, start_bit, mask](T value, IdxT)
         {
@@ -448,9 +476,12 @@ __device__ void filter_and_histogram(T const* in_buf, IdxT const* in_idx_buf, T*
                 }
             }
             // the condition `(out_buf || early_stop)` is a little tricky:
-            // If we skip writing to `out_buf` (when `out_buf` is nullptr), we should skip
-            // writing to `out` too. So we won't write the same value to `out` multiple
-            // times in different passes. And if we keep skipping the writing, values will
+            // If we skip writing to `out_buf` (when `out_buf` is nullptr), we should
+            // skip
+            // writing to `out` too. So we won't write the same value to `out`
+            // multiple
+            // times in different passes. And if we keep skipping the writing, values
+            // will
             // be written in `last_filter_kernel()` at last. But when `early_stop` is
             // true, we need to write to `out` since it's the last chance.
             else if ((out_buf || early_stop) && previous_bits < kth_value_bits)
@@ -546,7 +577,8 @@ __device__ void choose_bucket(Counter<T, IdxT>* counter, IdxT const* histogram, 
         IdxT prev = (i == 0) ? 0 : histogram[i - 1];
         IdxT cur = histogram[i];
 
-        // one and only one thread will satisfy this condition, so counter is written by
+        // one and only one thread will satisfy this condition, so counter is
+        // written by
         // only one thread
         if (prev < k && cur >= k)
         {
@@ -559,7 +591,8 @@ __device__ void choose_bucket(Counter<T, IdxT>* counter, IdxT const* histogram, 
     }
 }
 
-// For one-block version, last_filter() could be called when pass < num_passes - 1.
+// For one-block version, last_filter() could be called when pass < num_passes -
+// 1.
 // So `pass` could not be constexpr
 template <typename T, typename IdxT, int BitsPerPass, bool prioritize_smaller_indice = false>
 __device__ void last_filter(T const* in_buf, IdxT const* in_idx_buf, T* out, IdxT* out_idx, IdxT current_len, IdxT k,
@@ -583,7 +616,8 @@ __device__ void last_filter(T const* in_buf, IdxT const* in_idx_buf, T* out, Idx
             IdxT pos = atomicAdd(p_out_cnt, static_cast<IdxT>(1));
             out[pos] = value;
             // For one-block version, `in_idx_buf` could be nullptr at pass 0.
-            // For non one-block version, if writing has been skipped, `in_idx_buf` could
+            // For non one-block version, if writing has been skipped, `in_idx_buf`
+            // could
             // be nullptr if `in_buf` is `in`
             out_idx[pos] = in_idx_buf ? in_idx_buf[i] : i;
         }
@@ -700,39 +734,55 @@ __global__ void last_filter_kernel(T const* in, IdxT const* in_idx, T const* in_
 
 /**
  *
- * It is expected to call this kernel multiple times (passes), in each pass we process a
- * radix, going from the most significant towards the least significant bits (MSD).
+ * It is expected to call this kernel multiple times (passes), in each pass we
+ *process a
+ * radix, going from the most significant towards the least significant bits
+ *(MSD).
  *
  * Conceptually, each pass consists of 4 steps:
  *
  * 1. Calculate histogram
  *      First, transform bits into a digit, the value of which is in the range
- *      [0, 2^{BITS_PER_PASS}-1]. Then count the frequency of each digit value and the
- * result is a histogram. That is, histogram[i] contains the count of inputs having value
+ *      [0, 2^{BITS_PER_PASS}-1]. Then count the frequency of each digit value
+ *and the
+ * result is a histogram. That is, histogram[i] contains the count of inputs
+ *having value
  * i.
  *
  * 2. Scan the histogram
- *      Inclusive prefix sum is computed for the histogram. After this step, histogram[i]
+ *      Inclusive prefix sum is computed for the histogram. After this step,
+ *histogram[i]
  * contains the count of inputs having value <= i.
  *
  * 3. Find the bucket j of the histogram that the k-th value falls into
  *
  * 4. Filtering
- *      Input elements whose digit value <j are the top-k elements. We put them into the
- * result array out. The number of such elements is histogram[j-1]. Since the k-th value
- * must be in the bucket j, we write all elements in bucket j into a intermediate buffer
- * out_buf. For the next pass, these elements are used as input, and we would like to find
- * the (k - histogram[j-1])-th value among them. That is, the k in the next pass is set to
+ *      Input elements whose digit value <j are the top-k elements. We put them
+ *into the
+ * result array out. The number of such elements is histogram[j-1]. Since the
+ *k-th value
+ * must be in the bucket j, we write all elements in bucket j into a
+ *intermediate buffer
+ * out_buf. For the next pass, these elements are used as input, and we would
+ *like to find
+ * the (k - histogram[j-1])-th value among them. That is, the k in the next pass
+ *is set to
  *      (k - histogram[j-1]).
  *
- * In the implementation, the filtering step is delayed to the next pass so the filtering
- * and histogram computation are fused. In this way, inputs are read once rather than
+ * In the implementation, the filtering step is delayed to the next pass so the
+ *filtering
+ * and histogram computation are fused. In this way, inputs are read once rather
+ *than
  * twice.
  *
- * During the filtering step, we won't write candidates (elements in bucket j) to
- * `out_buf` if the number of candidates is larger than the length of `out_buf` (this
- * could happen when the leading bits of input values are almost the same). And then in
- * the next pass, inputs are read from `in` rather than from `in_buf`. The benefit is that
+ * During the filtering step, we won't write candidates (elements in bucket j)
+ *to
+ * `out_buf` if the number of candidates is larger than the length of `out_buf`
+ *(this
+ * could happen when the leading bits of input values are almost the same). And
+ *then in
+ * the next pass, inputs are read from `in` rather than from `in_buf`. The
+ *benefit is that
  * we can save the cost of writing candidates and their indices.
  */
 template <typename T, typename IdxT, int BitsPerPass, int BlockSize, bool fused_last_filter,
@@ -750,8 +800,10 @@ __global__ void radix_kernel(T const* in, IdxT const* in_idx, T const* in_buf, I
     {
         current_k = k;
         previous_len = len;
-        // Need to do this so setting counter->previous_len for the next pass is correct.
-        // This value is meaningless for pass 0, but it's fine because pass 0 won't be the
+        // Need to do this so setting counter->previous_len for the next pass is
+        // correct.
+        // This value is meaningless for pass 0, but it's fine because pass 0 won't
+        // be the
         // last pass in this implementation so pass 0 won't hit the "if (pass ==
         // num_passes - 1)" branch.
         // Maybe it's better to reload counter->previous_len and use it rather than
@@ -769,9 +821,12 @@ __global__ void radix_kernel(T const* in, IdxT const* in_idx, T const* in_buf, I
         return;
     }
 
-    // When k=len, early_stop will be true at pass 0. It means filter_and_histogram()
-    // should handle correctly the case that pass=0 and early_stop=true. However, this
-    // special case of k=len is handled in other way in select_k() so such case is not
+    // When k=len, early_stop will be true at pass 0. It means
+    // filter_and_histogram()
+    // should handle correctly the case that pass=0 and early_stop=true. However,
+    // this
+    // special case of k=len is handled in other way in select_k() so such case is
+    // not
     // possible here.
     bool const early_stop = (current_len == current_k);
     const IdxT buf_len = calc_buf_len<T>(len);
@@ -845,7 +900,8 @@ __global__ void radix_kernel(T const* in, IdxT const* in_idx, T const* in_buf, I
         }
         if (threadIdx.x == 0)
         {
-            // `last_filter_kernel()` requires setting previous_len even in the last pass
+            // `last_filter_kernel()` requires setting previous_len even in the last
+            // pass
             counter->previous_len = current_len;
             // not necessary for the last pass, but put it here anyway
             counter->filter_cnt = 0;
@@ -855,7 +911,8 @@ __global__ void radix_kernel(T const* in, IdxT const* in_idx, T const* in_buf, I
         //     if (pass == num_passes - 1) {
         //         last_filter<T, IdxT, BitsPerPass>(out_buf ? out_buf : in_buf,
         //                                           out_idx_buf ? out_idx_buf :
-        //                                           in_idx_buf, out, out_idx, out_buf ?
+        //                                           in_idx_buf, out, out_idx,
+        // out_buf ?
         //                                           current_len : len, k, counter,
         //                                           select_min,
         //                                           pass);
@@ -902,7 +959,8 @@ unsigned calc_grid_dim(int batch_size, IdxT len, int sm_cnt)
         float actual_num_waves = static_cast<float>(num_blocks) * batch_size / active_blocks;
         float tail_wave_penalty = (ceilf(actual_num_waves) - actual_num_waves) / ceilf(actual_num_waves);
 
-        // 0.15 is determined experimentally. It also ensures breaking the loop early,
+        // 0.15 is determined experimentally. It also ensures breaking the loop
+        // early,
         // e.g. when num_waves > 7, tail_wave_penalty will always <0.15
         if (tail_wave_penalty < 0.15)
         {
@@ -992,7 +1050,8 @@ __device__ void set_buf_pointers(T const* in, IdxT const* in_idx, char* bufs, Id
     }
 }
 
-// The following a few functions are for the one-block version, which uses single thread
+// The following a few functions are for the one-block version, which uses
+// single thread
 // block for each row of a batch.
 template <typename T, typename IdxT, int BitsPerPass>
 __device__ void filter_and_histogram_for_one_block(T const* in_buf, IdxT const* in_idx_buf, T* out_buf,
@@ -1132,8 +1191,7 @@ __global__ void radix_topk_one_block_kernel(T const* in, IdxT const* in_idx, con
         }
 
         filter_and_histogram_for_one_block<T, IdxT, BitsPerPass>(in_buf, in_idx_buf, out_buf, out_idx_buf, out, out_idx,
-            previous_len, &counter, histogram, select_min,
-            pass); //@TODO CHECK UPDATE CODE
+            previous_len, &counter, histogram, select_min, pass); //@TODO CHECK UPDATE CODE
         __syncthreads();
 
         scan<IdxT, BitsPerPass, BlockSize>(histogram);
@@ -1198,7 +1256,8 @@ __device__ __nv_bfloat16 negativeInfinity<__nv_bfloat16>()
     return -CUDART_INF_BF16;
 }
 
-/****************TopK kernel for candidate number<= 128 and K <= 8 **************** */
+/****************TopK kernel for candidate number<= 128 and K <= 8
+ * **************** */
 template <typename InputT, typename OutputT, typename IdxT, int MaxLen, int MaxTopK>
 __global__ void moe_topk_kernel(
     InputT const* in, OutputT* out, IdxT* outIdx, int32_t const batchSize, int32_t const len, int32_t const topK)
@@ -1672,7 +1731,8 @@ void invokeTopkLastDim(SizeType32 batchSize, SizeType32 inputLength, SizeType32 
     SizeType32* out_idx_ = reinterpret_cast<SizeType32*>(out_idx);
     if (inputLength <= 128 && k <= 8 && is_largest == true)
     {
-        // This method does not require a buffer, but since the implementation may vary in different cases,
+        // This method does not require a buffer, but since the implementation may
+        // vary in different cases,
         // we still allocate the buffer in case AIR TopK is used instead.
         moe_reduce_topk(in, batchSize, inputLength, k, out_val_, out_idx_, !is_largest, stream);
     }
@@ -1696,6 +1756,4 @@ INSTANTIATE_TOPK_LastDim_DATA_TYPE(__nv_bfloat16);
 #endif
 #undef INSTANTIATE_TOPK_LastDim_DATA_TYPE
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

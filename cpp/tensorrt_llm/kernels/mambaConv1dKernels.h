@@ -20,10 +20,7 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct MambaConv1dParamsBase
 {
@@ -48,6 +45,4 @@ void invokeMambaConv1dContext(MambaConv1dParamsBase& params, cudaStream_t stream
 template <typename input_t>
 void invokeMambaConv1dGeneration(MambaConv1dParamsBase& params, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

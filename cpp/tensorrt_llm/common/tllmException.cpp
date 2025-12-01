@@ -29,9 +29,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 namespace
 {
 int constexpr VOID_PTR_SZ = 2 + sizeof(void*) * 2;
@@ -130,7 +127,5 @@ RequestErrorCode RequestSpecificException::getErrorCode() const noexcept
 {
     return mErrorCode;
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

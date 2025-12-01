@@ -19,9 +19,9 @@
 #include "userbuffers.h"
 #include "utils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ub
+namespace ub
 {
 using namespace tensorrt_llm::runtime::ub;
 #define MAX_THREADS 1024
@@ -272,7 +272,8 @@ __device__ __forceinline__ void MULTIMEM_LD(ValType& val, PtrType ptr)
     {
         if (!DISABLE_FP32_ACC)
         {
-            asm("multimem.ld_reduce.global.add.v4.f16x2.acc::f32 {%0,%1,%2,%3}, [%4];"
+            asm("multimem.ld_reduce.global.add.v4.f16x2.acc::f32 {%0,%1,%2,%3}, "
+                "[%4];"
                 : "=r"(val.x), "=r"(val.y), "=r"(val.z), "=r"(val.w)
                 : "l"(ptr)
                 : "memory");
@@ -290,7 +291,8 @@ __device__ __forceinline__ void MULTIMEM_LD(ValType& val, PtrType ptr)
     {
         if (!DISABLE_FP32_ACC)
         {
-            asm("multimem.ld_reduce.global.add.v4.bf16x2.acc::f32 {%0,%1,%2,%3}, [%4];"
+            asm("multimem.ld_reduce.global.add.v4.bf16x2.acc::f32 {%0,%1,%2,%3}, "
+                "[%4];"
                 : "=r"(val.x), "=r"(val.y), "=r"(val.z), "=r"(val.w)
                 : "l"(ptr)
                 : "memory");
@@ -513,7 +515,8 @@ __device__ uint32_t cvt_warp_fp16_to_fp4_mc(PackedVec<Type>& vec, float SFScaleV
         SFValue = float(tmp);
     }
     // Get the output scale.
-    // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal))) * reciprocal(SFScaleVal))
+    // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal))) *
+    // reciprocal(SFScaleVal))
     float outputScale
         = SFValue != 0 ? reciprocal_approximate_ftz(SFValue * reciprocal_approximate_ftz(SFScaleVal)) : 0.0f;
 
@@ -1908,7 +1911,10 @@ int allreduce2_userbuff_inplace_rmsnorm_quant_impl(int const handler, size_t con
         break;
     }
 #endif
-    default: TLLM_THROW("Unsupported dataType for allreduce2_userbuff_inplace_rmsnorm_quant_impl");
+    default:
+        TLLM_THROW(
+            "Unsupported dataType for "
+            "allreduce2_userbuff_inplace_rmsnorm_quant_impl");
     }
 }
 
@@ -1953,9 +1959,12 @@ int allreduce2_userbuff_inplace_rmsnorm_quant_fp4_impl(int const handler, size_t
         break;
     }
 #endif
-    default: TLLM_THROW("Unsupported dataType for allreduce2_userbuff_inplace_rmsnorm_quant_impl");
+    default:
+        TLLM_THROW(
+            "Unsupported dataType for "
+            "allreduce2_userbuff_inplace_rmsnorm_quant_impl");
     }
 }
-} // namespace kernels::ub
+} // namespace ub
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

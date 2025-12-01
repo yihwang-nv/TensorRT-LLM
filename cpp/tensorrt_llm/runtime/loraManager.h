@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/loraCache.h"
@@ -25,14 +24,13 @@
 #include "tensorrt_llm/runtime/worldConfig.h"
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 /**
  * \brief Manages LoRA tensors.
- * \details Handles formatting input tensors and populating trt engine params related to LoRA.
+ * \details Handles formatting input tensors and populating trt engine params
+ * related to LoRA.
  */
 class LoraManager
 {
@@ -50,7 +48,8 @@ public:
     explicit LoraManager() {}
 
     /**
-     * \brief Sets up and configures LoraManager. Allocates and needed device / host memory
+     * \brief Sets up and configures LoraManager. Allocates and needed device /
+     * host memory
      * \param[in] modelConfig: a ModelConfig.
      * \param[in] worldConfig: a WorldConfig
      * \param[in] manager: and BufferManager used to allocate memory
@@ -65,7 +64,8 @@ public:
         WorldConfig const& worldConfig);
 
     /**
-     * \brief fill batch input tensors for LoRA.  This method fills on batch slot.
+     * \brief fill batch input tensors for LoRA.  This method fills on batch
+     * slot.
      * \param[out] weightsPtrs: the tensor of pointers to lora weights to fill.
      *                          (ie for `*_lora_weights_pointers_*` fields)
      * \param[out] adapterSizes: the adapter sizes tensor to fill
@@ -82,8 +82,10 @@ public:
     /**
      * \brief fill tensor map for trt engine context
      * \param[out] inputTensors: the tensor map to fill
-     * \param[in] weightsPtrs: tensor of weights pointers as filled in fillInputTensors
-     * \param[in] adapterSizes: tensor of adapter sizes as filled in fillInputTensors
+     * \param[in] weightsPtrs: tensor of weights pointers as filled in
+     * fillInputTensors
+     * \param[in] adapterSizes: tensor of adapter sizes as filled in
+     * fillInputTensors
      * \param[in] modelConfig: a ModelConfig
      * \param[in] worldConfig: a WorldConfig
      */
@@ -94,6 +96,4 @@ private:
     std::unordered_map<SizeType32, LoraModule> mModuleIdToModule;
     std::unordered_map<SizeType32, SizeType32> mModuleOffset;
 };
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "quantizeTensorPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/quantization.h"
 
 using namespace nvinfer1;

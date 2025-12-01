@@ -20,36 +20,42 @@
 #include <ATen/cuda/CUDAContext.h>
 #include <torch/extension.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
 
 // Function for fused QK Norm and RoPE
-// This operator applies RMS normalization and RoPE to Q and K tensors in a single CUDA kernel.
+// This operator applies RMS normalization and RoPE to Q and K tensors in a
+// single CUDA kernel.
 // The OP performs operations in-place on the input qkv tensor.
-void fused_qk_norm_rope(
-    torch::Tensor& qkv,          // Combined QKV tensor [num_tokens, (num_heads_q+num_heads_k+num_heads_v)*head_dim]
-    int64_t num_heads_q,         // Number of query heads
-    int64_t num_heads_k,         // Number of key heads
-    int64_t num_heads_v,         // Number of value heads
-    int64_t head_dim,            // Dimension per head
-    double eps,                  // Epsilon for RMS normalization
-    torch::Tensor& q_weight,     // RMSNorm weights for query [head_dim]
-    torch::Tensor& k_weight,     // RMSNorm weights for key [head_dim]
-    double base,                 // Base for RoPE computation
-    bool is_neox,                // Whether RoPE is applied in Neox style
-    torch::Tensor& position_ids, // Position IDs for RoPE [num_tokens]
+void fused_qk_norm_rope(torch::Tensor& qkv, // Combined QKV tensor [num_tokens,
+                                            // (num_heads_q+num_heads_k+num_heads_v)*head_dim]
+    int64_t num_heads_q,                    // Number of query heads
+    int64_t num_heads_k,                    // Number of key heads
+    int64_t num_heads_v,                    // Number of value heads
+    int64_t head_dim,                       // Dimension per head
+    double eps,                             // Epsilon for RMS normalization
+    torch::Tensor& q_weight,                // RMSNorm weights for query [head_dim]
+    torch::Tensor& k_weight,                // RMSNorm weights for key [head_dim]
+    double base,                            // Base for RoPE computation
+    bool is_neox,                           // Whether RoPE is applied in Neox style
+    torch::Tensor& position_ids,            // Position IDs for RoPE [num_tokens]
     // parameters for yarn
-    double factor, // factor in rope_scaling in config.json. When it is not 1.0, it means the model is using yarn.
-    double low,    // threshold for high frequency
-    double high,   // threshold for low frequency
+    double factor,           // factor in rope_scaling in config.json. When it is not 1.0,
+                             // it means the model is using yarn.
+    double low,              // threshold for high frequency
+    double high,             // threshold for low frequency
     double attention_factor, // attention_factor applied on cos and sin
     bool is_qk_norm          // Whether to apply QK norm
 )
 {
     // Input validation
-    TORCH_CHECK(qkv.dim() == 2, "QKV tensor must be 2D: [num_tokens, (num_heads_q+num_heads_k+num_heads_v)*head_dim]");
+    TORCH_CHECK(qkv.dim() == 2,
+        "QKV tensor must be 2D: [num_tokens, "
+        "(num_heads_q+num_heads_k+num_heads_v)*head_"
+        "dim]");
     TORCH_CHECK(position_ids.dim() == 1, "Position IDs must be 1D: [num_tokens]");
     TORCH_CHECK(q_weight.dim() == 1, "Query weights must be 1D: [head_dim]");
     TORCH_CHECK(k_weight.dim() == 1, "Key weights must be 1D: [head_dim]");
@@ -74,8 +80,7 @@ void fused_qk_norm_rope(
         static_cast<int>(num_tokens), static_cast<int>(num_heads_q), static_cast<int>(num_heads_k),
         static_cast<int>(num_heads_v), static_cast<int>(head_dim), static_cast<float>(eps),
         reinterpret_cast<__nv_bfloat16*>(q_weight.data_ptr()), reinterpret_cast<__nv_bfloat16*>(k_weight.data_ptr()),
-        static_cast<float>(base),
-        !is_neox, // interleave
+        static_cast<float>(base), !is_neox, // interleave
         reinterpret_cast<int const*>(position_ids.data_ptr()), static_cast<float>(factor), static_cast<float>(low),
         static_cast<float>(high), static_cast<float>(attention_factor), stream, is_qk_norm);
 }
@@ -84,8 +89,10 @@ void fused_qk_norm_rope(
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "fused_qk_norm_rope(Tensor(a!) qkv, int num_heads_q, int num_heads_k, int num_heads_v, int head_dim, float "
-        "eps, Tensor q_weight, Tensor k_weight, float base, bool is_neox, Tensor position_ids, float factor, float "
+        "fused_qk_norm_rope(Tensor(a!) qkv, int num_heads_q, int num_heads_k, "
+        "int num_heads_v, int head_dim, float "
+        "eps, Tensor q_weight, Tensor k_weight, float base, bool is_neox, "
+        "Tensor position_ids, float factor, float "
         "low, float high, float attention_factor, bool is_qk_norm) -> ()");
 }
 
@@ -97,4 +104,4 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

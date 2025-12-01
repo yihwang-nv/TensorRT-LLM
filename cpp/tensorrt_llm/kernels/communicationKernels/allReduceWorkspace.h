@@ -21,9 +21,9 @@
 #include "tensorrt_llm/kernels/communicationKernels/allReduceFusionKernels.h"
 #include "tensorrt_llm/runtime/ipcUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ar_fusion
+namespace ar_fusion
 {
 
 class Workspace
@@ -44,6 +44,6 @@ private:
 };
 
 void lamport_initialize(void* ptr, int bytes, cudaStream_t stream);
-} // namespace kernels::ar_fusion
+} // namespace ar_fusion
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -34,9 +34,9 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 namespace
 {
@@ -125,7 +125,8 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
         isContextRequest = (prevDraftLen == 0);
         if (isContextRequest)
         {
-            // If context request, number of input and output tokens equal to prompt len.
+            // If context request, number of input and output tokens equal to prompt
+            // len.
             numInputTokens = baseNetContextLengths[bid];
             numDecodingTokens = numInputTokens;
         }
@@ -161,10 +162,12 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
     // if valid request
     if (isValid)
     {
-        // Get next token of the chunk if not the last chunk in chunked context. Otherwise, -1.
+        // Get next token of the chunk if not the last chunk in chunked context.
+        // Otherwise, -1.
         auto const chunkedContextNextToken = chunkedContextNextTokens[bid];
 
-        // Sequence length of the base model (without draft len for gen requests and all prompt tokens for ctx request)
+        // Sequence length of the base model (without draft len for gen requests and
+        // all prompt tokens for ctx request)
         auto const oldSequenceLength = baseNetSequenceLengths[bid] - numInputTokens;
         for (SizeType32 ti = 0; ti < numDecodingTokens; ++ti)
         {
@@ -175,7 +178,8 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
                 {
                     if (chunkedContextNextToken >= 0)
                     {
-                        // Last token is not newly predicted token, but the first token from the next chunk in the
+                        // Last token is not newly predicted token, but the first token from
+                        // the next chunk in the
                         // prompt.
                         token = chunkedContextNextToken;
                     }
@@ -200,10 +204,12 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
             positionIds[outputStartPos + ti] = oldSequenceLength + ti;
         }
         // EagleNet0 expects context or chunked context.
-        // Context len equals to the context len for context req or acceptedLen for gen request.
+        // Context len equals to the context len for context req or acceptedLen for
+        // gen request.
         eagleNetContextLengths[bid] = numDecodingTokens;
         // EagleNet0' sequence length equals to
-        // old sequence len + (context len for context req or acceptedLen for gen request).
+        // old sequence len + (context len for context req or acceptedLen for gen
+        // request).
         eagleNetSequenceLengths[bid] = oldSequenceLength + numDecodingTokens;
 
         auto const bestPathId = bestPathIds[bid];
@@ -218,7 +224,8 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
             }
             else
             {
-                // If generation, take all hidden states of the tokens on the accepted path
+                // If generation, take all hidden states of the tokens on the accepted
+                // path
                 auto const pathIdx = flat_index3(bid, bestPathId, ii, maxDecodingTokens, maxPathLen);
                 auto const lastTokenId = prevPaths[pathIdx];
                 index = inputIndexBase + lastTokenId;
@@ -226,7 +233,8 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
             // Save index.
             hiddenStatesIndices[outputStartPos + ii] = index;
         }
-        // After the first EagleNet we predict exactly one set of logits per request.
+        // After the first EagleNet we predict exactly one set of logits per
+        // request.
         lastTokenIndices[bid] = lastTokenIndex;
 
         // EagleNet0 produces 1 relevant hidden state per request.
@@ -236,7 +244,8 @@ __global__ void prepareCtxEagleNetInputsKernel(SizeType32* eagleNetSequenceLengt
     // The last thread writes number of flattened tokens.
     if (bid == BLOCK_SIZE - 1)
     {
-        // After the first EagleNet we predict exactly one set of logits per request.
+        // After the first EagleNet we predict exactly one set of logits per
+        // request.
         numLastTokenIndices[0] = batchSize;
 
         // Set last hiddenSizeBatchLevelStarts.
@@ -282,7 +291,8 @@ __global__ void buildLeafMask(
         // Get token idx in the flattened draft tokens for the of the current level
         auto const curNodeTokenIdx = paths[tokenCurLevelOffset];
         // If token idx is not -1 (not terminated path) And the next
-        // level token is not -1 -- path is not terminating and token at current level has child.
+        // level token is not -1 -- path is not terminating and token at current
+        // level has child.
         if (curNodeTokenIdx != -1 && paths[tokenNextLevelOffset] != -1)
         {
             // Mark mask to 0.
@@ -382,7 +392,8 @@ __global__ void getNonLeafEndingSubtree(SizeType32* selectedDraftIndices, SizeTy
                 // If node is not leaf
                 if (!isLeafMask[bid * maxDecodingTokens + ti])
                 {
-                    // Save its in-level index for output hidden state indices calculation.
+                    // Save its in-level index for output hidden state indices
+                    // calculation.
                     nonLeavesInLevelOffsets[bid * maxDecodingTokens + ti] = nonLeavesInLevelCounter;
                     nonLeavesInLevelCounter++;
                 }
@@ -537,7 +548,8 @@ __global__ void prepareGenEagleNetInputsKernel(SizeType32* nextSequenceLengths, 
         for (SizeType32 ti = 0; ti < nextDraftLen; ++ti)
         {
             // Copy next draft ids.
-            // Minus -1 here to account for path indexing. 0 is golden token, which is not present in nextDraftIds.
+            // Minus -1 here to account for path indexing. 0 is golden token, which is
+            // not present in nextDraftIds.
             auto const draftIdx = selectedDraftIndices[bid * maxDecodingDraftTokens + ti] - 1;
             outputIds[outputIndexBase + ti] = nextDraftIds[bid * maxDecodingDraftTokens + draftIdx];
 
@@ -546,15 +558,20 @@ __global__ void prepareGenEagleNetInputsKernel(SizeType32* nextSequenceLengths, 
             specDecodingPositionOffsets[bid * maxDecodingTokens + ti] = posOffset;
 
             // hiddenStatesIndex is constructed having hidden states layout in mind.
-            // Hidden states are placed in memory as [maxPathLen - 1, batchSize, numOutputTokens] (this tensor is
-            // flattaned and padding is removed) E.g. with BS=2, r0 and r1 have 1 hidden state at level 0 (golden
-            // token). r0 has 2 hidden states and r1 has 3 hidden states at level 1. [h_0_0_0, h_0_0_1, h_0_1_0,
-            // h_1_1_0, h_0_1_1, h_1_1_1, h_2_1_1], where h_i_j_k means ith hidden state of request k at level j.
+            // Hidden states are placed in memory as [maxPathLen - 1, batchSize,
+            // numOutputTokens] (this tensor is
+            // flattaned and padding is removed) E.g. with BS=2, r0 and r1 have 1
+            // hidden state at level 0 (golden
+            // token). r0 has 2 hidden states and r1 has 3 hidden states at level 1.
+            // [h_0_0_0, h_0_0_1, h_0_1_0,
+            // h_1_1_0, h_0_1_1, h_1_1_1, h_2_1_1], where h_i_j_k means ith hidden
+            // state of request k at level j.
             auto const inLevelTokenOffset = parentNonLeafInLevelOffset[bid * maxDecodingTokens + draftIdx + 1];
             hiddenStatesIndices[outputIndexBase + ti]
                 = inputHiddenSizeBatchStartsPerLevel[posOffset * batchSize + bid] + inLevelTokenOffset;
 
-            // If pos offset is equal to the layer idx, it means that this token is in the last available layer of the
+            // If pos offset is equal to the layer idx, it means that this token is in
+            // the last available layer of the
             // tree. We have never sampled tokens from it and thus we need its logits.
             if (posOffset == levelIdx - 1)
             {
@@ -600,7 +617,8 @@ __device__ SizeType32 positivePowerOfTwo(SizeType32 n)
     return 1 << n;
 }
 
-//! @brief Takes mask of size [maxGenerationLength] filled with 1s and 0s defined in the shared memory
+//! @brief Takes mask of size [maxGenerationLength] filled with 1s and 0s
+// defined in the shared memory
 //! and packs it to bitmask of size [numPackedMasks] written to outputPtr.
 //! numPackedMasks = ceil(maxGenerationLength / 32);
 __device__ __forceinline__ void maskToPackedMask(
@@ -701,7 +719,8 @@ __global__ void getPackedMaskFromPath(SizeType32* __restrict__ packedMask, SizeT
     auto const batchIdx = static_cast<SizeType32>(blockIdx.x);
     auto const batchSlot = batchSlots[batchIdx];
     // Considering that the Eagle-2 tree is dynamically changing,
-    // we need the logits of the newly expanded nodes instead of treating them as leaves.
+    // we need the logits of the newly expanded nodes instead of treating them as
+    // leaves.
     // This value is use to distinguish non-leaf nodes for Eagle-2
     auto const nonLeafSignal = maxDecodingTokens + 1;
 
@@ -738,7 +757,8 @@ __global__ void getPackedMaskFromPath(SizeType32* __restrict__ packedMask, SizeT
             auto const toIndex = curPath[pathOffset + ti];
             if (toIndex == -1 || toIndex == nonLeafSignal)
             {
-                // nonLeafSignal is just an auxiliary value and has no practical meaning.
+                // nonLeafSignal is just an auxiliary value and has no practical
+                // meaning.
                 // There is no need to calculate a mask for this.
                 break;
             }
@@ -774,7 +794,8 @@ void invokePrepareGenEagleNetInputs(PrepareGenEagleNetInputsParams const& params
     // Build mask to distinguish leaf and not-leaf nodes in the tree.
     {
         // TODO: computing it at each layer_idx is redundant.
-        // Mask shape [batchSize, maxDecodingTokens], where 1 means that the node is the leaf, 0 means that node is not
+        // Mask shape [batchSize, maxDecodingTokens], where 1 means that the node is
+        // the leaf, 0 means that node is not
         // leaf.
         dim3 grid(params.batchSize, params.maxPathLen - 1);
         buildLeafMask<<<grid, BLOCK_SIZE, 0, params.stream>>>(
@@ -784,12 +805,18 @@ void invokePrepareGenEagleNetInputs(PrepareGenEagleNetInputsParams const& params
     }
 
     // Select all no-leaf ending paths for given level idx.
-    // E.g. given paths [[0, 1, 4, 6], [0, 1, 4, 7], [0, 2, -1, -1], [0, 3, 5, -1]],
-    // for levelIdx = 0 it returns [0], for levelIdx = 1 it returns [0, 1, 3], for levelIdx = 2 it returns [0, 1, 4],
-    // for levelIdx = 3 [] parentNonLeafInLevelOffset is the index (from left to right) of parent node among all other
-    // non-leaf nodes at parent's level. For the above example it is [0, 0, 0, 0, 1, 0, 0]. Here the first 0, 0, 0 are
-    // for level=1, for tokens 1, 2 and 3 as their parent as 0th at its level (golden token). Next 0, 1, are for tokens
-    // 4, 5 on the level 2. Token 4 depends on the 1 which is 0th non leaf at its level. Token 5 depends on 3 which is
+    // E.g. given paths [[0, 1, 4, 6], [0, 1, 4, 7], [0, 2, -1, -1], [0, 3, 5,
+    // -1]],
+    // for levelIdx = 0 it returns [0], for levelIdx = 1 it returns [0, 1, 3], for
+    // levelIdx = 2 it returns [0, 1, 4],
+    // for levelIdx = 3 [] parentNonLeafInLevelOffset is the index (from left to
+    // right) of parent node among all other
+    // non-leaf nodes at parent's level. For the above example it is [0, 0, 0, 0,
+    // 1, 0, 0]. Here the first 0, 0, 0 are
+    // for level=1, for tokens 1, 2 and 3 as their parent as 0th at its level
+    // (golden token). Next 0, 1, are for tokens
+    // 4, 5 on the level 2. Token 4 depends on the 1 which is 0th non leaf at its
+    // level. Token 5 depends on 3 which is
     // the 1st non leaf at its level, etc.
     {
         auto const smemSize = 4 * params.maxDecodingTokens * sizeof(SizeType32);
@@ -838,9 +865,11 @@ __global__ void assembleDraftLogitsOffsets(T const** logitsPtrs, T const* logits
     TokenIdType* outputIds, bool* skipDecode, runtime::SizeType32 const* numValidLogits, SizeType32 batchSize,
     SizeType32 maxDecodingDraftTokens, SizeType32 vocabSizePadded)
 {
-    // logitsPtrs: shape [numInputLogits], each points to a [vocabSizePadded] buffer
+    // logitsPtrs: shape [numInputLogits], each points to a [vocabSizePadded]
+    // buffer
     // logits: shape [numInputLogits, vocabSizePadded]
-    // outputIdsPtrs: shape [numInputLogits], each points to a [maxDecodingDraftTokens] buffer
+    // outputIdsPtrs: shape [numInputLogits], each points to a
+    // [maxDecodingDraftTokens] buffer
     // outputIds: shape [numInputLogits * maxDecodingDraftTokens]
 
     auto const tix = static_cast<SizeType32>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -917,7 +946,8 @@ __global__ void extractNumSuccessorsFromPath(SizeType32 const* paths, SizeType32
     // Get the offset of the path (tree)
     SizeType32 const* curPath = paths + batchIdx * maxDecodingTokens * maxPathLen;
 
-    // Traverse a specific level (i.e. layerId) of the path and update adjacency matrix
+    // Traverse a specific level (i.e. layerId) of the path and update adjacency
+    // matrix
     while (tix < maxDecodingTokens)
     {
         SizeType32 const* subPath = curPath + tix * maxPathLen + layerId;
@@ -1018,7 +1048,8 @@ void invokeExtractTopKsFromPath(runtime::SizeType32 const* paths, runtime::SizeT
     SizeType32 dynamicSmemSize
         = maxDecodingTokens * maxDecodingTokens * sizeof(bool); // shape: [maxDecodingTokens * maxDecodingTokens]
     // Each thread block corresponds to a request.
-    // The shared memory in a block is the adjacency matrix for this request's path
+    // The shared memory in a block is the adjacency matrix for this request's
+    // path
     extractNumSuccessorsFromPath<<<batchSize, BLOCK_SIZE, dynamicSmemSize, stream>>>(
         paths, numSuccessorsForEachNode, layerId, maxDecodingTokens, maxPathLen);
 
@@ -1097,7 +1128,8 @@ __global__ void copyOutputTokensIds(TokenIdType const* const* tmpOutputIdsPtrs, 
 
 } // namespace
 
-// Copy output draft token ids from temporary buffer to plugin output buffer, also update the draft token length
+// Copy output draft token ids from temporary buffer to plugin output buffer,
+// also update the draft token length
 void invokeCopyOutputTokensIds(runtime::TokenIdType const* const* tmpOutputIdsPtrs, runtime::SizeType32 const* topKs,
     runtime::SizeType32 const* topKOffset, runtime::TokenIdType const* pluginInputDraftIdsPtrs,
     runtime::SizeType32 const* pluginInputDraftLens, runtime::SizeType32 const* numValidLogits,
@@ -1175,7 +1207,8 @@ __global__ void packEagleTensors(PackEagleParams params)
 
     if (isGenerationRequest)
     {
-        // Copy draft tokens. We do it only for gen requests as for ctx requests outputNextDraftLens is 0.
+        // Copy draft tokens. We do it only for gen requests as for ctx requests
+        // outputNextDraftLens is 0.
         auto const maxDecodingDraftTokens = params.maxDecodingTokens - 1;
         auto outputNextDraftTokens = params.outputNextDraftTokens + batchIdx * maxDecodingDraftTokens;
         auto const inputNextDraftTokens = params.inputNextDraftTokens + batchSlot * maxDecodingDraftTokens;
@@ -1193,7 +1226,8 @@ __global__ void packEagleTensors(PackEagleParams params)
             ? params.cumSumGenerationLengths[0]
             : params.cumSumGenerationLengths[genIdx] - params.cumSumGenerationLengths[genIdx - 1];
         // Copy packed masks.
-        // Masks are placed next to each other with offsets of cumSumGenerationLengths[bi-1]
+        // Masks are placed next to each other with offsets of
+        // cumSumGenerationLengths[bi-1]
         auto const inputPackedMask
             = params.inputSpecDecodingPackedMasks + batchSlot * numPackedMasks * params.maxDecodingTokens;
         auto outputPackedMask = params.outputSpecDecodingPackedMasks + outputStartId * numPackedMasks;
@@ -1292,19 +1326,24 @@ __global__ void unpackEagleData(UnpackEagleDataParams params)
         // Set gen request type to 1.
         params.outputEagleNetGenRequestTypes[batchSlot] = 1;
 
-        // EagleNet0 context length is at most the input that we pass to EagleNet0, which is the size of the first chunk
-        // (prompt len) or chunk (max accepted tokens == maxPathLength). As this kernel is called before the generation
+        // EagleNet0 context length is at most the input that we pass to EagleNet0,
+        // which is the size of the first chunk
+        // (prompt len) or chunk (max accepted tokens == maxPathLength). As this
+        // kernel is called before the generation
         // stages, it is always maxPathLength.
         params.outputEagleNetCtxContextLengths[batchSlot] = params.maxPathLength;
 
         auto const nextSequenceLength = currentSequenceLength + acceptedLength + params.maxPathLength;
-        // EagleNetX context length is the same as the base model context length (prompt len) + number of accepted
+        // EagleNetX context length is the same as the base model context length
+        // (prompt len) + number of accepted
         // tokens (at most maxPathLength).
         params.outputEagleNetGenContextLengths[batchSlot] = nextSequenceLength;
 
-        // EagleNet0 past kv length is sequence length, which is at most nextSequenceLength;
+        // EagleNet0 past kv length is sequence length, which is at most
+        // nextSequenceLength;
         params.outputEagleNetCtxPastKeyValueLengths[batchSlot] = nextSequenceLength;
-        // EagleNetX past kv length is sequence length - 1, which is at most nextSequenceLength - 1;
+        // EagleNetX past kv length is sequence length - 1, which is at most
+        // nextSequenceLength - 1;
         params.outputEagleNetGenPastKeyValueLengths[batchSlot] = nextSequenceLength - 1;
 
         // FIXME single thread filling those might be too slow
@@ -1414,13 +1453,17 @@ __global__ void setTopKsFromDyanmicTreeMaxTopK(SizeType32 layerIdx, SizeType32 b
     // Check the value
     if (layerIdx == 0 && !(batchSize == numValidLogits[0]))
     {
-        printf("When layerIdx == 0, batchsize(%d) should be the same as numValidLogits(%d)\n", batchSize,
-            numValidLogits[0]);
+        printf(
+            "When layerIdx == 0, batchsize(%d) should be the same as "
+            "numValidLogits(%d)\n",
+            batchSize, numValidLogits[0]);
         asm volatile("brkpt;\n");
     }
     else if (layerIdx > 0 && !(batchSize * dynamicTreeMaxTopK == numValidLogits[0]))
     {
-        printf("When layerIdx > 0, batchsize(%d) * dynamicTreeMaxTopK(%d) should be the same as numValidLogits(%d)\n",
+        printf(
+            "When layerIdx > 0, batchsize(%d) * dynamicTreeMaxTopK(%d) should "
+            "be the same as numValidLogits(%d)\n",
             batchSize, dynamicTreeMaxTopK, numValidLogits[0]);
         asm volatile("brkpt;\n");
     }
@@ -1465,14 +1508,20 @@ __global__ void copyScoresAndDraftTokenIds(SizeType32 layerIdx, SizeType32 mNumE
 {
     // topKOffset: [batchSize]
     // pluginInputCurrentExpandIndices: [batchSize, maxDecodingDraftTokens]
-    // pluginInputAllLayersScores: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x maxDecodingDraftTokens]
-    // pluginInputAllLayersDraftTokenIds: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x maxDecodingDraftTokens]
-    // pluginInputAllLayersDraftTokenIdsPredecessor: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x
+    // pluginInputAllLayersScores: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x maxDecodingDraftTokens]
+    // pluginInputAllLayersDraftTokenIds: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x maxDecodingDraftTokens]
+    // pluginInputAllLayersDraftTokenIdsPredecessor: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x
     // maxDecodingDraftTokens]
 
-    // pluginOutputAllLayersScores: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x maxDecodingDraftTokens]
-    // pluginOutputAllLayersDraftTokenIds: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x maxDecodingDraftTokens]
-    // pluginOutputAllLayersDraftTokenIdsPredecessor: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x
+    // pluginOutputAllLayersScores: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x maxDecodingDraftTokens]
+    // pluginOutputAllLayersDraftTokenIds: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x maxDecodingDraftTokens]
+    // pluginOutputAllLayersDraftTokenIdsPredecessor: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x
     // maxDecodingDraftTokens]
 
     // firstTopKOutputLogProbs: [numInputLogits, maxDecodingDraftTokens]
@@ -1496,8 +1545,10 @@ __global__ void copyScoresAndDraftTokenIds(SizeType32 layerIdx, SizeType32 mNumE
         auto pluginOutputAllLayersDraftTokenIdsPredecessorPtr = pluginOutputAllLayersDraftTokenIdsPredecessor
             + bix * mNumEagleLayers * maxDecodingDraftTokens * maxDecodingDraftTokens;
 
-        // When layerIdx == 0, firstTopKOutputLogProbs/firstTopKOutputIds shape: [batchSize, maxDecodingDraftTokens]
-        // When layerIdx > 0, firstTopKOutputLogProbs/firstTopKOutputIds shape: [batchSize * dynamicTreeMaxTopK,
+        // When layerIdx == 0, firstTopKOutputLogProbs/firstTopKOutputIds shape:
+        // [batchSize, maxDecodingDraftTokens]
+        // When layerIdx > 0, firstTopKOutputLogProbs/firstTopKOutputIds shape:
+        // [batchSize * dynamicTreeMaxTopK,
         // maxDecodingDraftTokens]
         auto firstTopKOutputOffset = layerIdx == 0 ? 1 : dynamicTreeMaxTopK;
         auto firstTopKOutputLogProbsPtr
@@ -1508,7 +1559,8 @@ __global__ void copyScoresAndDraftTokenIds(SizeType32 layerIdx, SizeType32 mNumE
         auto startOffset
             = layerIdx == 0 ? 0 : (layerIdx - 1) * (dynamicTreeMaxTopK * dynamicTreeMaxTopK) + dynamicTreeMaxTopK;
 
-        // 1) Copy all the previous scores and draft tokenIds from plugin input to plugin output
+        // 1) Copy all the previous scores and draft tokenIds from plugin input to
+        // plugin output
         for (SizeType32 ii = 0; ii < startOffset; ++ii)
         {
             pluginOutputAllLayersScoresPtr[ii] = pluginInputAllLayersScoresPtr[ii];
@@ -1517,8 +1569,10 @@ __global__ void copyScoresAndDraftTokenIds(SizeType32 layerIdx, SizeType32 mNumE
         }
 
         // 2) Copy this layer's scores and draft tokenIds
-        // When layerIdx == 0, we only need to save dynamicTreeMaxTopK scores/draft tokens
-        // When layerIdx > 0, we need to save dynamicTreeMaxTopK * dynamicTreeMaxTopK scores/draft tokens
+        // When layerIdx == 0, we only need to save dynamicTreeMaxTopK scores/draft
+        // tokens
+        // When layerIdx > 0, we need to save dynamicTreeMaxTopK *
+        // dynamicTreeMaxTopK scores/draft tokens
         auto numExpandTokens = layerIdx == 0 ? 1 : dynamicTreeMaxTopK;
         for (SizeType32 ii = 0; ii < numExpandTokens; ++ii)
         {
@@ -1563,14 +1617,18 @@ namespace
 __global__ void updateScores(SizeType32 batchSize, SizeType32 const dynamicTreeMaxTopK,
     SizeType32 maxDecodingDraftTokens, float* curLogProbs, float const* prevLayerScores)
 {
-    // We update the current scores (curLogProbs, shape: [batchSize * dynamicTreeMaxTopK, maxDecodingDraftTokens])
-    // with the previous layer's scores (prevLayerScores, shape: [batchSize, maxDecodingDraftTokens])
+    // We update the current scores (curLogProbs, shape: [batchSize *
+    // dynamicTreeMaxTopK, maxDecodingDraftTokens])
+    // with the previous layer's scores (prevLayerScores, shape: [batchSize,
+    // maxDecodingDraftTokens])
     // 'cu_scores = topk_p + scores[:, None]'
     // Example: when topk_p = [[1, 2], [3, 4]], scores = [10, 20].
     //          cu_scores = [[11, 12], [23, 24]]
 
-    // curLogProbs [numInputLogits(batchSize * dynamicTreeMaxTopK), maxDecodingDraftTokens]
-    // prevLayerScores [batchSize, maxDecodingDraftTokens]. for each request, only top 'dynamicTreeMaxTopK' is valuable.
+    // curLogProbs [numInputLogits(batchSize * dynamicTreeMaxTopK),
+    // maxDecodingDraftTokens]
+    // prevLayerScores [batchSize, maxDecodingDraftTokens]. for each request, only
+    // top 'dynamicTreeMaxTopK' is valuable.
     auto const bix = static_cast<SizeType32>(blockIdx.x * blockDim.x + threadIdx.x);
     if (bix < batchSize)
     {
@@ -1615,7 +1673,8 @@ __global__ void assembleSecondTopKSamplingInputs(SizeType32 batchSize, SizeType3
     SizeType32 maxDecodingDraftTokens, float* firstTopKOutputLogProbs, float** secondTopKInputScoresPtrs,
     TokenIdType* secondTopKOutputIdsFlatten, TokenIdType** secondTopKOutputIdsPtrs)
 {
-    // firstTopKOutputLogProbs: shape [numInputLogits(batchSize * dynamicTreeMaxTopK), maxDecodingDraftTokens]
+    // firstTopKOutputLogProbs: shape [numInputLogits(batchSize *
+    // dynamicTreeMaxTopK), maxDecodingDraftTokens]
     // secondTopKInputScoresPtrs: shape [batchSize]
     // secondTopKOutputIdsFlatten: shape [batchSize, maxDecodingDraftTokens]
     // secondTopKOutputIdsPtrs: shape [batchSize]
@@ -1695,7 +1754,8 @@ __global__ void updatePath(SizeType32 layerIdx, SizeType32 batchSize, SizeType32
     auto const maxDecodingDraftTokens = maxDecodingTokens - 1;
     auto const bix = static_cast<SizeType32>(blockIdx.x * blockDim.x + threadIdx.x);
     // Considering that the Eagle-2 tree is dynamically changing,
-    // we need the logits of the newly expanded nodes instead of treating them as leaves.
+    // we need the logits of the newly expanded nodes instead of treating them as
+    // leaves.
     // This value is use to distinguish non-leaf nodes for Eagle-2.
     auto const nonLeafSignal = maxDecodingTokens + 1;
 
@@ -1714,7 +1774,8 @@ __global__ void updatePath(SizeType32 layerIdx, SizeType32 batchSize, SizeType32
         if (layerIdx == 0)
         {
             // layer 0 is simple
-            // Example new paths: [[0, 1, -1, -1], [0, 2, -1, -1], ..., [0, dynamicTreeMaxTopK, -1, -1]]
+            // Example new paths: [[0, 1, -1, -1], [0, 2, -1, -1], ..., [0,
+            // dynamicTreeMaxTopK, -1, -1]]
             for (SizeType32 ii = 0; ii < dynamicTreeMaxTopK; ++ii)
             {
                 newPathsPtr[ii * maxPathLen + 0] = 0;
@@ -1746,7 +1807,8 @@ __global__ void updatePath(SizeType32 layerIdx, SizeType32 batchSize, SizeType32
 
             auto secondTopKOutputIdsPtr = secondTopKOutputIdsPtrs[bix];
 
-            // For each request, we will generate 'dynamicTreeMaxTopK' new draft tokens
+            // For each request, we will generate 'dynamicTreeMaxTopK' new draft
+            // tokens
             // auto newDraftTokensIdsPtr = secondTopKOutputIdsPtrs[bix];
             // Sort the outputIds, ascending
             insertionSortOutputIds(secondTopKOutputIdsPtr, dynamicTreeMaxTopK);
@@ -1781,24 +1843,30 @@ __global__ void updatePath(SizeType32 layerIdx, SizeType32 batchSize, SizeType32
                 SizeType32 ancestorIndex
                     = secondTopKOutputIdsPtr[ii] / maxDecodingDraftTokens + startIndexOfPreviousLayer;
 
-                // Find the path index in the previous path that take this ancestor node as the leaf node
+                // Find the path index in the previous path that take this ancestor node
+                // as the leaf node
                 SizeType32 ancestorPathIdxInPrevPaths
                     = findAncestorPathIndex(prevPathPtr, ancestorIndex, layerIdx - 1, maxDecodingTokens, maxPathLen);
 
-                // The correct 'ancestorPathIdxInPrevPaths' must be:
-                // 1) ancestorPathIdxInPrevPaths == usedPrevLayerPathsIndex: continue to expand this path
-                // 2) ancestorPathIdxInPrevPaths > usedPrevLayerPathsIndex:
-                //       2.1) ancestorPathIdxInPrevPaths == usedPrevLayerPathsIndex + 1: expand a new path,
-                //            next to the previous one.
-                //       2.2) ancestorPathIdxInPrevPaths > usedPrevLayerPathsIndex + 1: there are multiple
-                //            path that do not have leaf at this layer, but we need to include as well.
+// The correct 'ancestorPathIdxInPrevPaths' must be:
+// 1) ancestorPathIdxInPrevPaths == usedPrevLayerPathsIndex: continue to expand
+// this path
+// 2) ancestorPathIdxInPrevPaths > usedPrevLayerPathsIndex:
+//       2.1) ancestorPathIdxInPrevPaths == usedPrevLayerPathsIndex + 1: expand
+// a new path,
+//            next to the previous one.
+//       2.2) ancestorPathIdxInPrevPaths > usedPrevLayerPathsIndex + 1: there
+// are multiple
+//            path that do not have leaf at this layer, but we need to include
+// as well.
 #ifdef TLLM_DEBUG_MODE
                 if (ancestorPathIdxInPrevPaths == -1 || ancestorPathIdxInPrevPaths < usedPrevLayerPathsIndex)
                 {
                     // Throw error when can not find ancestor's path.
                     // Or ancestorPath had been finish expand.
                     printf(
-                        "Throw error from updatePath kernel: bix: %d can not find the correct ancestorPath of "
+                        "Throw error from updatePath kernel: bix: %d can not find the "
+                        "correct ancestorPath of "
                         "ancestorIndex: %d in layerIdx: %d, usedPrevLayerPathsIndex: %d, "
                         "ancestorPathIdxInPrevPaths:%d\n",
                         bix, ancestorIndex, layerIdx - 1, usedPrevLayerPathsIndex, ancestorPathIdxInPrevPaths);
@@ -1819,9 +1887,11 @@ __global__ void updatePath(SizeType32 layerIdx, SizeType32 batchSize, SizeType32
                     {
                         // Insert the paths that do not have leaf in this layer
                         usedPrevLayerPathsIndex++;
-                        // We do not need to copy the whole paths (i.e., maxPathLen) that do not expand in this layer.
+                        // We do not need to copy the whole paths (i.e., maxPathLen) that do
+                        // not expand in this layer.
                         // We only need to copy top 'layerIdx + 1' value for these path.
-                        // The paths that do not expand will have 'layerIdx + 1' valid steps at most.
+                        // The paths that do not expand will have 'layerIdx + 1' valid steps
+                        // at most.
                         // '+1' is for the root node.
                         // This prevents us from copying nonLeafSignal as well.
                         for (SizeType32 jj = 0; jj <= layerIdx; jj++)
@@ -1831,7 +1901,8 @@ __global__ void updatePath(SizeType32 layerIdx, SizeType32 batchSize, SizeType32
                         }
                         numNewPath++;
                     }
-                    usedPrevLayerPathsIndex++; // Point to the path that we will expand this time.
+                    usedPrevLayerPathsIndex++; // Point to the path that we will expand
+                                               // this time.
                 }
 
                 // Expand the path
@@ -1961,9 +2032,11 @@ __global__ void extractScoresAndRealDraftTokensIds(SizeType32 batchSize, SizeTyp
     SizeType32 maxDecodingDraftTokens, float const* const* secondTopKInputScoresPtrs,
     TokenIdType* const* secondTopKOutputIdsPtrs, TokenIdType* firstTopKOutputIds, float* secondTopKOutputLogProbs)
 {
-    // secondTopKInputScoresPtrs: shape [batchSize][dynamicTreeMaxTopK * maxDecodingDraftTokens]
+    // secondTopKInputScoresPtrs: shape [batchSize][dynamicTreeMaxTopK *
+    // maxDecodingDraftTokens]
     // secondTopKOutputIdsPtrs: shape [batchSize][maxDecodingDraftTokens]
-    // firstTopKOutputIds: shape [batchSize * dynamicTreeMaxTopK * maxDecodingDraftTokens]
+    // firstTopKOutputIds: shape [batchSize * dynamicTreeMaxTopK *
+    // maxDecodingDraftTokens]
     // secondTopKOutputLogProbs: shape [batchSize, maxDecodingDraftTokens]
 
     auto const bix = static_cast<SizeType32>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -2012,7 +2085,8 @@ __global__ void assembleThridTopKSamplingInputs(SizeType32 batchSize, SizeType32
     float* pluginOutputAllLayersScores, float** thirdTopKInputScoresPtrs, TokenIdType* thirdTopKOutputIds,
     TokenIdType** thirdTopKOutputIdsPtrs)
 {
-    // pluginOutputAllLayersScores: [batchSize, mNumEagleLayers, maxDecodingDraftTokens x maxDecodingDraftTokens]
+    // pluginOutputAllLayersScores: [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x maxDecodingDraftTokens]
     // thirdTopKInputScoresPtrs: [batchSize]
     // thirdTopKOutputIds: [batchSize, maxDecodingDraftTokens]
     // thirdTopKOutputIdsPtrs: [batchSize]
@@ -2063,9 +2137,11 @@ __global__ void reconstructFinalPath(SizeType32 batchSize, SizeType32 const dyna
     SizeType32 const maxNodesOnFinalTree, TokenIdType* const* thirdTopKOutputIdsPtrs,
     TokenIdType* pluginOutputAllLayersDraftTokenIdsPredecessor, SizeType32* finalOutputPaths)
 {
-    // thirdTopKOutputIdsPtrs: shape [batchSize], each element points to a [maxDecodingDraftTokens] buffer
+    // thirdTopKOutputIdsPtrs: shape [batchSize], each element points to a
+    // [maxDecodingDraftTokens] buffer
     // pluginOutputAllLayersDraftTokenIdsPredecessor:
-    // [batchSize, mNumEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens]
+    // [batchSize, mNumEagleLayers, maxDecodingDraftTokens *
+    // maxDecodingDraftTokens]
     // finalOutputPaths: [batchSize, maxDecodingTokens, maxPathLen]
 
     auto const bix = static_cast<SizeType32>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -2126,30 +2202,36 @@ __global__ void reconstructFinalPath(SizeType32 batchSize, SizeType32 const dyna
             SizeType32 prevLayerNumPaths = curLayerNumPaths;
 
             curLayerSmemPtrIndex = (curLayerSmemPtrIndex + 1) % 2;            // Update curLayerSmemPtrIndex
-            SizeType32* curLayerPathsPtr = tempSmemPtr[curLayerSmemPtrIndex]; // Point to this layer's path buffer
+            SizeType32* curLayerPathsPtr = tempSmemPtr[curLayerSmemPtrIndex]; // Point to this layer's path
+                                                                              // buffer
             curLayerNumPaths = 0; // Reset the number of path of current layer
 
             // Record the index of path that had been used to expand in this layer
             SizeType32 usedPrevLayerPathsIndex = -1;
 
             // The index boundary of this layer.
-            // The 'index' is the output index after top-maxDecodingDraftTokens sampling.
+            // The 'index' is the output index after top-maxDecodingDraftTokens
+            // sampling.
             SizeType32 curLayerStartIndex
                 = li == 0 ? 0 : (li - 1) * dynamicTreeMaxTopK * dynamicTreeMaxTopK + dynamicTreeMaxTopK;
             SizeType32 curLayerEndIndex = li == 0 ? curLayerStartIndex + dynamicTreeMaxTopK
                                                   : curLayerStartIndex + dynamicTreeMaxTopK * dynamicTreeMaxTopK;
 
-            // curProcessNode is the node index select from top-maxDecodingDraftTokens sampling (i.e., the third
+            // curProcessNode is the node index select from top-maxDecodingDraftTokens
+            // sampling (i.e., the third
             // sampling)
             SizeType32 curProcessNode = thirdTopKOutputIdsPtr[curTopKIndex];
 
             while (curProcessNode < curLayerEndIndex) // This node belong to this layer
             {
-                // The pluginOutputAllLayersDraftTokenIdsPredecessorPtr does not consider root node, so we need to '-1'
-                // Find the ancestor index of the current process node among all the history draft tokens
+                // The pluginOutputAllLayersDraftTokenIdsPredecessorPtr does not
+                // consider root node, so we need to '-1'
+                // Find the ancestor index of the current process node among all the
+                // history draft tokens
                 SizeType32 ancestorIdxAmongAllDraftTokens
                     = pluginOutputAllLayersDraftTokenIdsPredecessorPtr[curProcessNode];
-                // Map the index from the index among all the history draft tokens to the index in path
+                // Map the index from the index among all the history draft tokens to
+                // the index in path
                 SizeType32 ancestorIdxInPath
                     = findIndexInPaths(curIndexMap, maxDecodingTokens, ancestorIdxAmongAllDraftTokens);
 
@@ -2161,8 +2243,10 @@ __global__ void reconstructFinalPath(SizeType32 batchSize, SizeType32 const dyna
                 if (ancestorPathIdxInPrevPaths == -1)
                 {
                     printf(
-                        "Throw error from reconstructFinalPath kernel: bix: %d can not find the correct ancestorPath "
-                        "of ancestorIdxAmongAllDraftTokens: %d, ancestorIdxInPath: %d in layerIdx: %d, "
+                        "Throw error from reconstructFinalPath kernel: bix: %d can not "
+                        "find the correct ancestorPath "
+                        "of ancestorIdxAmongAllDraftTokens: %d, ancestorIdxInPath: %d in "
+                        "layerIdx: %d, "
                         "usedPrevLayerPathsIndex: %d, ancestorPathIdxInPrevPaths: %d\n",
                         bix, ancestorIdxAmongAllDraftTokens, ancestorIdxInPath, li - 1, usedPrevLayerPathsIndex,
                         ancestorPathIdxInPrevPaths);
@@ -2236,7 +2320,8 @@ __global__ void reconstructFinalPath(SizeType32 batchSize, SizeType32 const dyna
         if (curTopKIndex != maxNodesOnFinalTree)
         {
             printf(
-                "Throw error from reconstructFinalPath kernel: curTopKIndex(%d) is not the same as "
+                "Throw error from reconstructFinalPath kernel: curTopKIndex(%d) "
+                "is not the same as "
                 "maxNodesOnFinalTree - 1(%d - 1)",
                 curTopKIndex, maxNodesOnFinalTree - 1);
             asm volatile("brkpt;\n");
@@ -2263,9 +2348,12 @@ void invokeReconstructFinalPath(SizeType32 batchSize, SizeType32 const dynamicTr
     // Use ping-pong temporary buffers to update path
     SizeType32 pingPongBufferSize = 2 * batchSize * maxDecodingTokens * maxPathLen * sizeof(SizeType32);
 
-    // Although we have pluginOutputAllLayersDraftTokenIdsPredecessor, but the indices are correspond to all the history
-    // draft tokens. During we select draft tokens into the path, the tokens' index starts from 1 and increases. We need
-    // a map from the index among all the history to the index in the constructed path.
+    // Although we have pluginOutputAllLayersDraftTokenIdsPredecessor, but the
+    // indices are correspond to all the history
+    // draft tokens. During we select draft tokens into the path, the tokens'
+    // index starts from 1 and increases. We need
+    // a map from the index among all the history to the index in the constructed
+    // path.
     SizeType32 indexMapSize = batchSize * maxDecodingTokens * sizeof(SizeType32);
 
     SizeType32 smemSize = pingPongBufferSize + indexMapSize;
@@ -2284,9 +2372,12 @@ __global__ void copyFinalDraftTokens(SizeType32 batchSize, SizeType32 maxDecodin
     TokenIdType* pluginOutputAllLayersDraftTokenIds, TokenIdType* pluginOutputDraftTokenIds,
     SizeType32* pluginOutputDraftLens)
 {
-    // thirdTopKOutputIdsPtrs: shape [batchSize], each points to [maxDecodingDraftTokens]
-    // pluginOutputAllLayersDraftTokenIds: shape [batchSize, mNumEagleLayers, maxDecodingDraftTokens x
-    // maxDecodingDraftTokens] pluginOutputDraftTokenIds: [batchSize, maxDecodingDraftTokens] pluginOutputDraftLens:
+    // thirdTopKOutputIdsPtrs: shape [batchSize], each points to
+    // [maxDecodingDraftTokens]
+    // pluginOutputAllLayersDraftTokenIds: shape [batchSize, mNumEagleLayers,
+    // maxDecodingDraftTokens x
+    // maxDecodingDraftTokens] pluginOutputDraftTokenIds: [batchSize,
+    // maxDecodingDraftTokens] pluginOutputDraftLens:
     // [batchSize]
     auto const bix = static_cast<SizeType32>(blockIdx.x * blockDim.x + threadIdx.x);
 
@@ -2325,6 +2416,6 @@ void invokeCopyFinalDraftTokens(SizeType32 batchSize, SizeType32 maxDecodingDraf
     sync_check_cuda_error(stream);
 }
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

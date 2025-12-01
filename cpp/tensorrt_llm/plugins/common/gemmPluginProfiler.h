@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 #pragma once
 
 #include "pluginUtils.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <cuda_runtime.h>
 
@@ -31,9 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 struct GemmDims
@@ -174,7 +172,8 @@ template <typename Config, typename RunnerPtr, typename GemmIdType, typename Gem
 class GemmPluginProfiler
 {
 public:
-    // Map for single GEMM for different Ms (GEMM dimension) to the best config for particular M
+    // Map for single GEMM for different Ms (GEMM dimension) to the best config
+    // for particular M
     using MProfileMap = std::unordered_map<int, std::optional<Config>>;
     using MProfileMapPtr = std::shared_ptr<MProfileMap>;
 
@@ -319,7 +318,8 @@ public:
         auto profiler = std::make_shared<GemmPluginProfilerType>();
         profiler->setSkip(skip);
         // If the profiler is created during the engine build,
-        // mMNKProfileMap is shared between different profilers to minimize the time spent on the profiling
+        // mMNKProfileMap is shared between different profilers to minimize the
+        // time spent on the profiling
         // and do not repeat profiling for the GEMMs of the same shape.
         if (!inference)
         {
@@ -332,6 +332,4 @@ private:
     MNKProfileMapPtr mMNKProfileMap{};
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

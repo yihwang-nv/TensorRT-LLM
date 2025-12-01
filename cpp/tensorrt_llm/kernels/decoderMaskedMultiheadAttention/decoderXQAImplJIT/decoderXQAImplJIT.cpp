@@ -44,10 +44,7 @@ XQAKernelRuntimeHashKey getRuntimeHashKeyFromKernelMeta(XQAKernelMetaInfo const&
 
 } // anonymous namespace
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 DecoderXQAImplJIT::DecoderXQAImplJIT(DecoderXQARunner* runner)
     : DecoderXQAImpl(runner)
@@ -112,7 +109,9 @@ bool DecoderXQAImplJIT::shouldUse(XQAParams const& umbrellaXQAParams, bool forCo
                 return true;
             }
         }
-        TLLM_LOG_DEBUG("JIT XQA is not used: no supported configuration found for any beam_width");
+        TLLM_LOG_DEBUG(
+            "JIT XQA is not used: no supported configuration found for "
+            "any beam_width");
         return false;
     }
     else
@@ -131,7 +130,8 @@ bool DecoderXQAImplJIT::shouldUse(XQAParams const& umbrellaXQAParams, bool forCo
                 && (xqaParams.data_type == DATA_TYPE_BF16 || xqaParams.data_type == DATA_TYPE_FP16))
             {
                 TLLM_LOG_DEBUG(
-                    "JIT XQA is selected in the generation phase for fp16/bf16 input and e4m3 kv cache because MMHA "
+                    "JIT XQA is selected in the generation phase for "
+                    "fp16/bf16 input and e4m3 kv cache because MMHA "
                     "does not support this combination.");
                 return true;
             }
@@ -163,7 +163,8 @@ void DecoderXQAImplJIT::prepareForActualXQAParams(XQAParams const& xqaParams)
     if (supportConfig(xqaParams, true))
     {
         jit::CubinObjKey key = getCubinObjKeyFromXQAParams(xqaParams);
-        registryGlobal->insertCubinIfNotExists(key, &compileEngine, /*initialize=*/true);
+        registryGlobal->insertCubinIfNotExists(key, &compileEngine,
+            /*initialize=*/true);
     }
 }
 
@@ -220,7 +221,8 @@ struct SpecDecParams
     uint32_t qSeqLen;
     uint32_t const* qCuSeqLens; // [nbReq + 1]
     using MaskType = uint32_t;
-    MaskType const* mask;       // [nbReq][qSeqLen][divUp(qSeqLen, 32)] or [qCuSeqLen[nbReq]][divUp(qSeqLen, 32)]
+    MaskType const* mask;       // [nbReq][qSeqLen][divUp(qSeqLen, 32)] or
+                                // [qCuSeqLen[nbReq]][divUp(qSeqLen, 32)]
 };
 } // namespace
 
@@ -237,15 +239,19 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
     bool const isMLAKernel = (cubinObj->getKernelType() == XQAKernelType::kSM120_MLA);
     TLLM_CHECK_WITH_INFO(!isSpecDec || isGMMAKernel || isHMMAKernel
             || (isMLAKernel && !xqaParams.spec_decoding_is_generation_length_variable),
-        "speculative decoding is available for GMMA/MLA kernel only in JIT path for now. For MLA, the input sequence "
+        "speculative decoding is available for GMMA/MLA kernel only in JIT path "
+        "for now. For MLA, the input sequence "
         "length must be uniform and draft tokens must be linear.");
     TLLM_CHECK_DEBUG(isGMMAKernel == jit::supportConfigQGMMA(xqaParams, mSM, false));
     // @fixme: also embed these compile-time flags in cubin directly
     // Whether RoPE is fused into the XQA kernel.
-    //  * If applyRoPEInXqaKernel is true, XQA kernel applies RoPE AND performs SDPA.
-    //  * If applyRoPEInXqaKernel is false, a separate kernel applies RoPE (see invokeQKVPreprocessing), then XQA kernel
+    //  * If applyRoPEInXqaKernel is true, XQA kernel applies RoPE AND performs
+    // SDPA.
+    //  * If applyRoPEInXqaKernel is false, a separate kernel applies RoPE (see
+    // invokeQKVPreprocessing), then XQA kernel
     //  performs SDPA.
-    //    In this case, xqa_q_input_ptr (see below) serves as the scratch space to store intermediate RoPE output.
+    //    In this case, xqa_q_input_ptr (see below) serves as the scratch space to
+    // store intermediate RoPE output.
     bool const applyRoPEInXqaKernel = isGMMAKernel && !isSpecDec
         && tensorrt_llm::common::contains({PositionEmbeddingType::kLONG_ROPE, PositionEmbeddingType::kROPE_GPT_NEOX,
                                               PositionEmbeddingType::kROPE_GPTJ},
@@ -274,7 +280,8 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
         launchParams.output = inputScratch;
     }
 
-    // NOTE: MHA kernels should read kv cache that has already been appended with new tokens' kv cache.
+    // NOTE: MHA kernels should read kv cache that has already been appended with
+    // new tokens' kv cache.
     void* xqa_q_input_ptr = (applyRoPEInXqaKernel ? nullptr : inputScratch);
     if (!applyRoPEInXqaKernel)
     {
@@ -301,7 +308,8 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
             decoder_params.rotaryEmbeddingInvFreqCache = xqaParams.rotary_embedding_inv_freq_cache;
             decoder_params.rotaryEmbeddingMaxPositions = xqaParams.rotary_embedding_max_positions;
             // The rotary_embedding_inv_freq_cache for QKVPreprocessing.
-            // Use the xqaParams.rotary_embedding_inv_freq_cache input when the buildDecoderInfoKernel is skipped.
+            // Use the xqaParams.rotary_embedding_inv_freq_cache input when the
+            // buildDecoderInfoKernel is skipped.
             float const* rotary_inv_freq_buf = xqaParams.rotary_embedding_inv_freq_cache;
             if (decoder_params.isBuildDecoderInfoKernelNeeded() || xqaParams.multi_query_tokens)
             {
@@ -416,7 +424,8 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
     }
     else if (isSpecDec && isHMMAKernel)
     {
-        // MultiQueryTokens (generation_input_length > 1) need extra parameters (like qSeqLen, headGrpSize, and
+        // MultiQueryTokens (generation_input_length > 1) need extra parameters
+        // (like qSeqLen, headGrpSize, and
         // mask). Input parameters for MultiQueryTokens kernels.
         unsigned int headGrpSize = num_q_heads_over_kv;
         // Use mTileSize = 16 kernels when qSeqLen <= 16.
@@ -431,9 +440,10 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
         appendParam(&launchParams.num_k_heads);
         appendParam(&headGrpSize);
         appendParam(&launchParams.cu_seq_lens);
-        bool const allowSlidingWindow
-            = !(isSpecDec && xqaParams.is_spec_dec_tree); // sliding windows does not support spec dec with tree-based
-                                                          // token, only chained tokens
+        bool const allowSlidingWindow = !(isSpecDec && xqaParams.is_spec_dec_tree); // sliding windows does not
+                                                                                    // support spec dec with
+                                                                                    // tree-based
+        // token, only chained tokens
         if (allowSlidingWindow)
         {
             appendParam(&launchParams.slidingWindowSize);
@@ -460,7 +470,8 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
         uint32_t multi_block = 1;
         // if (xqaParams.multi_block_mode)
         // {
-        //     multi_block = computeMultiBlockCount(xqaParams, xqaParams.batch_size, multiprocessor_count);
+        //     multi_block = computeMultiBlockCount(xqaParams, xqaParams.batch_size,
+        // multiprocessor_count);
         // }
         auto const gridDim = (dim3{multi_block, xqaParams.num_kv_heads * nbTokenBlocksPerGrp, xqaParams.batch_size});
         dim3 const blockDim(128, 1, 2);
@@ -470,9 +481,10 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
     else
     {
         appendParam(&launchParams.num_k_heads);
-        bool const allowSlidingWindow
-            = !(isSpecDec && xqaParams.is_spec_dec_tree); // sliding windows does not support spec dec with tree-based
-                                                          // token, only chained tokens
+        bool const allowSlidingWindow = !(isSpecDec && xqaParams.is_spec_dec_tree); // sliding windows does not
+                                                                                    // support spec dec with
+                                                                                    // tree-based
+        // token, only chained tokens
         if (allowSlidingWindow)
         {
             appendParam(&launchParams.slidingWindowSize);
@@ -506,10 +518,13 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
         SpecDecParams specDecParams{};
         if (isSpecDec)
         {
-            TLLM_CHECK_WITH_INFO(
-                isGMMAKernel, "speculative decoding is available for GMMA kernel only in JIT path for now.");
+            TLLM_CHECK_WITH_INFO(isGMMAKernel,
+                "speculative decoding is available "
+                "for GMMA kernel only in JIT path for "
+                "now.");
             TLLM_CHECK_DEBUG_WITH_INFO(xqaParams.max_past_kv_length + 1 <= xqaParams.cyclic_attention_window_size,
-                "SWA and speculative decoding cannot be used at the same time for now.");
+                "SWA and speculative decoding cannot be used "
+                "at the same time for now.");
             specDecParams = makeSpecDecParams();
             appendParam(&specDecParams);
             specDecBlocks = divUp(specDecParams.qSeqLen, 64 / num_q_heads_over_kv);
@@ -548,6 +563,4 @@ void DecoderXQAImplJIT::runImpl(XQAParams const& xqaParams, KVCacheBuffer const&
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

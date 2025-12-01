@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/opUtils.h"
 #include "tensorrt_llm/plugins/api/tllmPlugin.h"
 #include "tensorrt_llm/plugins/common/checkMacrosPlugin.h"
@@ -32,9 +32,7 @@
 #include <string>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 using namespace tensorrt_llm::common::op;
@@ -110,9 +108,7 @@ protected:
     std::string mNamespace{api::kDefaultNamespace};
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins
 
 // Init with O(n) and retrieve with O(1)
 class PluginFieldParser
@@ -120,7 +116,8 @@ class PluginFieldParser
 public:
     // field array must remain valid when calling getScalar() later.
     PluginFieldParser(int32_t nbFields, nvinfer1::PluginField const* fields);
-    // delete to remind accidental mis-use (copy) which may result in false-alarm warnings about unused fields.
+    // delete to remind accidental mis-use (copy) which may result in false-alarm
+    // warnings about unused fields.
     PluginFieldParser(PluginFieldParser const&) = delete;
     PluginFieldParser& operator=(PluginFieldParser const&) = delete;
     // check if all fields are retrieved and emit warning if some of them are not.

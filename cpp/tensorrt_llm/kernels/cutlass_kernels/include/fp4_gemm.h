@@ -24,12 +24,10 @@
 #include "tensorrt_llm/common/quantization.h"
 
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -97,6 +95,5 @@ private:
 };
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

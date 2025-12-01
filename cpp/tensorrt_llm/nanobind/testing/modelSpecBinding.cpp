@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "modelSpecBinding.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/nanobind/common/customCasters.h"
 #include "tensorrt_llm/testing/modelSpec.h"
 
@@ -28,9 +28,7 @@ using tensorrt_llm::testing::KVCacheType;
 using tensorrt_llm::testing::QuantMethod;
 using tensorrt_llm::testing::OutputContentType;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::testing
+namespace tensorrt_llm::nanobind::testing
 {
 
 void initBindings(nb::module_& m)
@@ -87,6 +85,4 @@ void initBindings(nb::module_& m)
         .def("__copy__", [](ModelSpec const& self) { return ModelSpec(self); });
 }
 
-} // namespace nanobind::testing
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::testing

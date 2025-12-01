@@ -1,6 +1,7 @@
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,23 +17,22 @@
  * limitations under the License.
  */
 
-// we have blockNums Block, which is 3D  [PPs,TPs,(BlockIDs in one rank) tokens/tokens_per_block]
+// we have blockNums Block, which is 3D  [PPs,TPs,(BlockIDs in one rank)
+// tokens/tokens_per_block]
 
 // input [PPs,TPs, BlockS] Block
-// output [Blocks]Block. but each block has same tokens_per_block. so we can ignore tokens_per_block
+// output [Blocks]Block. but each block has same tokens_per_block. so we can
+// ignore tokens_per_block
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
 #include <NvInferRuntimeBase.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 struct TargetRanksInfo
@@ -44,7 +44,8 @@ struct TargetRanksInfo
     int mDupHeadFactor;
     int mPeerDupHeadFactor;
 
-    // the size of the vector is equal to the mDomainPPSize. the value of the vector is the layer num should be fetched
+    // the size of the vector is equal to the mDomainPPSize. the value of the
+    // vector is the layer num should be fetched
     // from each target PP rank in domain PP.
     std::vector<int> mPeerAttentionLayerNumInDomainPP;
 
@@ -62,30 +63,40 @@ TargetRanksInfo TargetRanksInfoForDP(
     kv_cache::CacheState const& peerCacheState, kv_cache::CacheState const& selfCacheState, int selfRank);
 
 /**
- * @brief Calculate the number of blocks allocated to a specific Context Parallelism (CP) rank.
+ * @brief Calculate the number of blocks allocated to a specific Context
+ *Parallelism (CP) rank.
  *
- * This function determines how many blocks should be allocated to a given CP rank when
+ * This function determines how many blocks should be allocated to a given CP
+ *rank when
  * distributing a total number of blocks across multiple CP ranks.
  *
- * @param cpRank The rank (index) of the current CP process. Must be in range [0, cpSize).
+ * @param cpRank The rank (index) of the current CP process. Must be in range
+ *[0, cpSize).
  * @param cpSize The total number of CP ranks/processes in the parallel group.
- * @param numTotalBlocks The total number of blocks to be distributed across all CP ranks.
+ * @param numTotalBlocks The total number of blocks to be distributed across
+ *all CP ranks.
  *
  * @return The number of blocks allocated to the specified CP rank.
  */
 int getBlockNumAccountingForCP(int cpRank, int cpSize, int numTotalBlocks);
 
 /**
- * @brief Convert a local block index to a global block ID when Context Parallelism (CP) is enabled.
+ * @brief Convert a local block index to a global block ID when Context
+ *Parallelism (CP) is enabled.
  *
- * This function maps a local block index (within a specific CP rank) to its corresponding
- * global block ID across all CP ranks. It supports two distribution strategies controlled
+ * This function maps a local block index (within a specific CP rank) to its
+ *corresponding
+ * global block ID across all CP ranks. It supports two distribution
+ *strategies controlled
  * by the environment variable TRTLLM_USE_ROUND_ROBIN_BLOCK_DIST_FOR_CP.
  *
- * @param localBlockIdx The local block index within the current CP rank (0-based).
+ * @param localBlockIdx The local block index within the current CP rank
+ *(0-based).
  * @param cpSize The total number of CP ranks in the parallel group.
- * @param cpRank The rank of the current CP process. Must be in range [0, cpSize).
- * @param numTotalBlocks The total number of blocks distributed across all CP ranks.
+ * @param cpRank The rank of the current CP process. Must be in range [0,
+ *cpSize).
+ * @param numTotalBlocks The total number of blocks distributed across all CP
+ *ranks.
  *
  * @return The global block ID corresponding to the local block index.
  */
@@ -108,6 +119,4 @@ void concatKvCacheV2Dispatch(std::vector<runtime::ITensor::SharedPtr> const& inp
     kv_cache::CacheState const& peerCacheState, kv_cache::CacheState const& selfCacheState, int selfIdx,
     runtime::BufferManager const& bufferManager, bool isIndexerKCache = false);
 
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

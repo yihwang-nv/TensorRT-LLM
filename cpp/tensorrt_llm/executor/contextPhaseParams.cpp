@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +16,6 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/serialization.h"
@@ -25,9 +25,7 @@
 
 namespace su = tensorrt_llm::executor::serialize_utils;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 ContextPhaseParams::ContextPhaseParams(
@@ -64,7 +62,8 @@ ContextPhaseParams::ContextPhaseParams(VecTokens firstGenTokens, RequestIdType r
 
 ContextPhaseParams::ContextPhaseParams(ContextPhaseParams const& other)
 {
-    // Since the internal header files implement the destructor while using the declaration of this
+    // Since the internal header files implement the destructor while using the
+    // declaration of this
     // type, a `unique_ptr` with a custom destructor member is used here.
     mReqId = other.mReqId;
     mFirstGenTokens = other.mFirstGenTokens;
@@ -146,6 +145,4 @@ bool ContextPhaseParams::operator==(ContextPhaseParams const& other) const noexc
         == *static_cast<DataTransceiverState const*>(other.mState.get());
 }
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

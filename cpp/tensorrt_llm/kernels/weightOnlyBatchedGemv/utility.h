@@ -20,10 +20,8 @@
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/converter.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/details.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 template <typename Details>
@@ -64,7 +62,6 @@ struct MathWrapper<FP16DetailsA>
 
 template <>
 struct MathWrapper<BF16DetailsA>
-
 {
     using Type = typename BF16DetailsA::Type;
     using Type2 = typename BF16DetailsA::Type2;
@@ -330,6 +327,5 @@ private:
     int stride_;
 };
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

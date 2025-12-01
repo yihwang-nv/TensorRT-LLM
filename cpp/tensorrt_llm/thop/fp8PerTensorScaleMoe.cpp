@@ -19,7 +19,8 @@
 #include "tensorrt_llm/thop/thUtils.h"
 #include <ATen/cuda/EmptyTensor.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -86,7 +87,8 @@ torch::Tensor fp8_per_tensor_scale_moe_runner(torch::optional<torch::Tensor> con
     if (topk_ids.has_value() && topk_weights.has_value() && routing_logits.has_value())
     {
         TLLM_LOG_WARNING(
-            "When logits and (topk_ids and topk_weights) are both provided, we only use (topk_ids and topk_weights).");
+            "When logits and (topk_ids and topk_weights) are both "
+            "provided, we only use (topk_ids and topk_weights).");
     }
 
     if (topk_ids.has_value())
@@ -97,7 +99,8 @@ torch::Tensor fp8_per_tensor_scale_moe_runner(torch::optional<torch::Tensor> con
     else
     {
         TORCH_CHECK(routing_logits.value().sizes()[0] == hidden_states.sizes()[0],
-            "routing_logits and hidden_states must have the same number of tokens.");
+            "routing_logits and hidden_states must have the same number of "
+            "tokens.");
     }
 
     if (routing_bias.has_value())
@@ -113,11 +116,15 @@ torch::Tensor fp8_per_tensor_scale_moe_runner(torch::optional<torch::Tensor> con
             "Routing kernel with groups implies DeepSeekV3 routing method.");
         TORCH_CHECK(topk_group.has_value(), "if n_group is given, topk_group must be given");
         TORCH_CHECK(num_experts % n_group.value() == 0, "num_experts must be divisible by n_group");
-        TORCH_CHECK(top_k <= 8 && top_k > 0, "Current routing kernel (with groups) only supports top_k<=8 && top_k>0.");
+        TORCH_CHECK(top_k <= 8 && top_k > 0,
+            "Current routing kernel (with groups) "
+            "only supports top_k<=8 && top_k>0.");
         TORCH_CHECK(topk_group.value() <= 4 && topk_group.value() > 0,
-            "Current routing kernel only (with groups) supports topk_group<=4 && topk_group > 0.");
+            "Current routing kernel only (with groups) supports "
+            "topk_group<=4 && topk_group > 0.");
         TORCH_CHECK(topk_group.value() <= n_group.value(), "n_group must not be smaller than topk_group.");
-        // This check ensures we have enough experts in the selected groups to handle the top_k routing
+        // This check ensures we have enough experts in the selected groups to
+        // handle the top_k routing
         TORCH_CHECK(top_k < (topk_group.value() * num_experts / n_group.value()),
             "top_k must be less than total number of experts in selected groups");
     }
@@ -272,10 +279,12 @@ torch::Tensor fp8_per_tensor_scale_moe_runner(torch::optional<torch::Tensor> con
     workspace.ProjUpTileN = tile_tokens_dim;
     workspace.routing_expert_indexes = expert_indexes.data_ptr<int>();
     workspace.permuted_idx_size = total_num_padded_tokens.data_ptr<int>();
-    workspace.expanded_idx_to_permuted_idx
-        = expanded_idx_to_permuted_idx.data_ptr<int>(); // Needed by activation/finalize kernels
-    workspace.permuted_idx_to_token_idx = permuted_idx_to_token_idx.data_ptr<int>(); // Needed by permuteGemm1 kernel
-    workspace.expert_weights = expert_weights_ptr;                                   // Consumed by finalize kernel
+    workspace.expanded_idx_to_permuted_idx = expanded_idx_to_permuted_idx.data_ptr<int>(); // Needed by
+                                                                                           // activation/finalize
+                                                                                           // kernels
+    workspace.permuted_idx_to_token_idx = permuted_idx_to_token_idx.data_ptr<int>();       // Needed by permuteGemm1
+                                                                                           // kernel
+    workspace.expert_weights = expert_weights_ptr; // Consumed by finalize kernel
 
     workspace.cta_idx_xy_to_batch_idx = cta_idx_xy_to_batch_idx.data_ptr<int>();
     workspace.cta_idx_xy_to_mn_limit = cta_idx_xy_to_mn_limit.data_ptr<int>();
@@ -312,7 +321,7 @@ torch::Tensor fp8_per_tensor_scale_moe_runner(torch::optional<torch::Tensor> con
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

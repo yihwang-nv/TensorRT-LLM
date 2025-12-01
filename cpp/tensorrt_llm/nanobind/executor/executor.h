@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/types.h"
 #include <nanobind/nanobind.h>
@@ -25,9 +25,7 @@
 namespace nb = nanobind;
 namespace tle = tensorrt_llm::executor;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::executor
+namespace tensorrt_llm::nanobind::executor
 {
 
 class Executor
@@ -64,7 +62,8 @@ public:
     [[nodiscard]] std::vector<tle::Response> awaitResponses(
         std::optional<std::chrono::milliseconds> const& timeout = std::nullopt)
     {
-        // Await responses blocks until a response is received. Release GIL so that it can be ran in a background
+        // Await responses blocks until a response is received. Release GIL so
+        // that it can be ran in a background
         // thread.
         nb::gil_scoped_release release;
         return mExecutor->awaitResponses(timeout);
@@ -73,7 +72,8 @@ public:
     [[nodiscard]] std::vector<tle::Response> awaitResponses(
         tle::IdType const& requestId, std::optional<std::chrono::milliseconds> const& timeout = std::nullopt)
     {
-        // Await responses blocks until a response is received. Release GIL so that it can be ran in a background
+        // Await responses blocks until a response is received. Release GIL so
+        // that it can be ran in a background
         // thread.
         nb::gil_scoped_release release;
         return mExecutor->awaitResponses(requestId, timeout);
@@ -82,7 +82,8 @@ public:
     [[nodiscard]] std::vector<std::vector<tle::Response>> awaitResponses(std::vector<tle::IdType> const& requestIds,
         std::optional<std::chrono::milliseconds> const& timeout = std::nullopt)
     {
-        // Await responses blocks until a response is received. Release GIL so that it can be ran in a background
+        // Await responses blocks until a response is received. Release GIL so
+        // that it can be ran in a background
         // thread.
         nb::gil_scoped_release release;
         return mExecutor->awaitResponses(requestIds, timeout);
@@ -129,6 +130,4 @@ private:
     std::unique_ptr<tle::Executor> mExecutor;
 };
 
-} // namespace nanobind::executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::executor

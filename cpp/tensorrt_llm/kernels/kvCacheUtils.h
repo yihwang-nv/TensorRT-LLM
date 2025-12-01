@@ -25,10 +25,7 @@
 #include <cuda_runtime.h>
 #include <limits>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // Internal for K and V cache indexing
 enum class KVIdxType : int32_t
@@ -88,8 +85,10 @@ struct KVBlockArrayForContextFMHA
         float const tokensPerBlockSeqLog2 = log2(mTokensPerBlock);
         TLLM_CHECK_WITH_INFO(
             ceil(tokensPerBlockSeqLog2) == floor(tokensPerBlockSeqLog2), "tokensPerBlock must be power of 2");
-        // NOTE: pointer offset arithmetic offset is performed on int32_t (see this.getRowPtr).
-        // If needed, we could do it on uint32_t or even uint64_t, but that might have performance implications
+        // NOTE: pointer offset arithmetic offset is performed on int32_t (see
+        // this.getRowPtr).
+        // If needed, we could do it on uint32_t or even uint64_t, but that might
+        // have performance implications
         TLLM_CHECK_WITH_INFO(static_cast<int64_t>(mMaxSeqs - 1) * mMaxBlocksPerSeq * 2 + maxBlocksPerSeq
                 <= std::numeric_limits<int32_t>::max(),
             "kv cache is too large for gpt_attention_plugin");
@@ -164,7 +163,8 @@ struct KVBlockArray : public KVBlockArrayForContextFMHA
 
     __host__ __device__ [[nodiscard]] inline DataType const* getRowPtr(KVIdxType kvIdx, int32_t seqIdx) const
     {
-        // Returns pointer to array of offsets to K or V cache for one specific sequence seqIdx.
+        // Returns pointer to array of offsets to K or V cache for one specific
+        // sequence seqIdx.
         // seqIdx is in range [0; B]
         return data + (seqIdx * mMaxBlocksPerSeq * 2 + static_cast<int32_t>(kvIdx) * mMaxBlocksPerSeq);
     }
@@ -199,7 +199,8 @@ struct KVBlockArray : public KVBlockArrayForContextFMHA
     __host__ __device__ [[nodiscard]] inline int32_t getKVLocalIdx(
         int32_t globalTokenIdx, int32_t headIdx, int32_t dimsPerHead, int32_t channelIdx) const
     {
-        // For K or V, the hidden dimension per head is *not* decomposed. The layout of each block of K or V is:
+        // For K or V, the hidden dimension per head is *not* decomposed. The layout
+        // of each block of K or V is:
         // [numHeads, tokensPerBlock, hiddenSizePerHead].
         // This member function computes the corresponding linear index.
         // NOTE: we have remapped K layout as the same of V.
@@ -271,8 +272,10 @@ struct KVLinearBuffer
         , mSinkTokens(sinkTokenLen)
         , data(data)
     {
-        // NOTE: pointer offset arithmetic offset is performed on int32_t (see this.getRowPtr).
-        // If needed, we could do it on uint32_t or even uint64_t, but that might have performance implications
+        // NOTE: pointer offset arithmetic offset is performed on int32_t (see
+        // this.getRowPtr).
+        // If needed, we could do it on uint32_t or even uint64_t, but that might
+        // have performance implications
         TLLM_CHECK_WITH_INFO(
             static_cast<int64_t>(mMaxSeqs - 1) * mBytesPerSeq * 2 + mBytesPerSeq <= std::numeric_limits<int32_t>::max(),
             "kv cache is too large for gpt_attention_plugin");
@@ -325,6 +328,4 @@ struct KVLinearBuffer
     }
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

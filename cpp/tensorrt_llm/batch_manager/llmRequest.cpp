@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +17,10 @@
  */
 
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/serializeUtils.h"
 #include "tensorrt_llm/kernels/beamSearchKernels.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 template <typename TTensor, typename TStream>
@@ -69,7 +67,8 @@ void LlmRequest::createSerializedResult(
     }
 }
 
-/// Note that there is some dependency on the order of operations in this method. Modify with care!
+/// Note that there is some dependency on the order of operations in this
+/// method. Modify with care!
 std::optional<executor::Result> LlmRequest::createResult(bool useFastLogits, int32_t mpiWorldRank)
 {
     auto const streamingInProgress = mIsStreaming
@@ -261,12 +260,14 @@ void LlmRequest::validate(SizeType32 maxInputLen, SizeType32 maxSequenceLen, Siz
     if (mPromptLen > maxInputLen)
     {
         TLLM_THROW(
-            "Prompt length (%d) exceeds maximum input length (%d). Set log level to info and check "
+            "Prompt length (%d) exceeds maximum input length (%d). Set "
+            "log level to info and check "
             "TRTGptModel logs for how maximum input length is set",
             mPromptLen, maxInputLen);
     }
 
-    // Maximum number of draft tokens per request we pass to the engine for single runtime iteration.
+    // Maximum number of draft tokens per request we pass to the engine for
+    // single runtime iteration.
     // It depends on the speculative decoding mode.
     auto draftLenPerEngineStep = maxDraftLen;
     auto const& draftTokens = getDraftTokens();
@@ -276,7 +277,9 @@ void LlmRequest::validate(SizeType32 maxInputLen, SizeType32 maxSequenceLen, Siz
         if (inputDraftTokensLen > maxDraftLen)
         {
             TLLM_THROW(
-                "Draft tokens length (%d) exceeds maximum draft tokens length (%d).", inputDraftTokensLen, maxDraftLen);
+                "Draft tokens length (%d) exceeds maximum draft tokens "
+                "length (%d).",
+                inputDraftTokensLen, maxDraftLen);
         }
         draftLenPerEngineStep = inputDraftTokensLen;
 
@@ -284,7 +287,8 @@ void LlmRequest::validate(SizeType32 maxInputLen, SizeType32 maxSequenceLen, Siz
         {
             auto const newDraftLenPerEngineStep = maxInputLen - mPromptLen;
             TLLM_LOG_WARNING(
-                "Prompt length + number of draft tokens (%d + %d) exceeds maximum input length (%d)."
+                "Prompt length + number of draft tokens (%d + %d) "
+                "exceeds maximum input length (%d)."
                 "Number of draft tokens is changed to (%d)",
                 mPromptLen, draftLenPerEngineStep, maxInputLen, newDraftLenPerEngineStep);
             draftLenPerEngineStep = newDraftLenPerEngineStep;
@@ -296,7 +300,8 @@ void LlmRequest::validate(SizeType32 maxInputLen, SizeType32 maxSequenceLen, Siz
     {
         auto const maxNewTokens = maxSequenceLen - mPromptLen - draftLenPerEngineStep;
         TLLM_LOG_WARNING(
-            "Prompt length + number of requested output tokens + draft tokens per step (%d + %d + %d) exceeds "
+            "Prompt length + number of requested output tokens + "
+            "draft tokens per step (%d + %d + %d) exceeds "
             "maximum sequence length (%d). "
             "Number of requested output tokens is changed to (%d).",
             mPromptLen, mMaxNewTokens, draftLenPerEngineStep, maxSequenceLen, maxNewTokens);
@@ -309,9 +314,11 @@ void LlmRequest::validate(SizeType32 maxInputLen, SizeType32 maxSequenceLen, Siz
     if (enableKVCacheReuse && mPromptEmbeddingTable.has_value() && mPromptVocabSize.has_value())
     {
         TLLM_CHECK_WITH_INFO(mInputTokenExtraIds.has_value() && mInputTokenExtraIds.value(),
-            "Input token extra ids must be provided when enabling kv cache reuse with prompt table");
+            "Input token extra ids must be provided when "
+            "enabling kv cache reuse with prompt table");
         TLLM_CHECK_WITH_INFO(mInputTokenExtraIds.value()->size() == static_cast<size_t>(mOrigPromptLen),
-            "inputTokenExtraIds vector size (%lu) must be the same as input token vector size (%lu).",
+            "inputTokenExtraIds vector size (%lu) must be the "
+            "same as input token vector size (%lu).",
             mInputTokenExtraIds.value()->size(), static_cast<size_t>(mOrigPromptLen));
     }
 }
@@ -320,7 +327,9 @@ std::shared_ptr<LlmRequest> LlmRequest::createChildRequest(RequestIdType request
 {
     TLLM_CHECK_WITH_INFO(!isChild(), "A child request cannot create its own child.");
     TLLM_CHECK_WITH_INFO(mChildRequests.size() + 1 < static_cast<size_t>(getNumSubRequests()),
-        "Cannot create child requests more than the number of return sequences (%d)", getNumSubRequests());
+        "Cannot create child requests more than the number of "
+        "return sequences (%d)",
+        getNumSubRequests());
     auto childReq = std::make_shared<LlmRequest>(*this);
     childReq->mRequestId = requestId;
     childReq->mSequenceIndex = mChildRequests.size() + 1;
@@ -328,8 +337,10 @@ std::shared_ptr<LlmRequest> LlmRequest::createChildRequest(RequestIdType request
     childReq->mSequenceFinalVec = this->mSequenceFinalVec;
     childReq->mSeqSlot.reset();
 
-    // To ensure different randomness across children, assign a unique random seed to each child
-    // by adding its sequence index to the base seed. If no seed is provided, the parent's seed defaults to 0.
+    // To ensure different randomness across children, assign a unique random
+    // seed to each child
+    // by adding its sequence index to the base seed. If no seed is provided,
+    // the parent's seed defaults to 0.
     using RandomSeedType = tensorrt_llm::executor::RandomSeedType;
     if (childReq->mSamplingConfig.randomSeed.has_value())
     {
@@ -365,7 +376,8 @@ void LlmRequest::moveLoraWeightsToGpu(runtime::BufferManager const& manager)
     {
         return;
     }
-    // TODO for tp / pp models we only need to move the bit that belong on the local device
+    // TODO for tp / pp models we only need to move the bit that belong on the
+    // local device
     TensorPtr gpuLoraWeights = manager.copyFrom(*mLoraWeights.value(), runtime::MemoryType::kGPU);
     mLoraWeights = gpuLoraWeights;
 }
@@ -376,6 +388,4 @@ void LlmRequest::removeLoraTensors()
     mLoraConfig.reset();
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

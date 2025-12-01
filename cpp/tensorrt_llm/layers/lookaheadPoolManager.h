@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <list>
 #include <unordered_map>
 
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 //! @brief A helper class for managing key-ngram pool.
@@ -57,8 +54,10 @@ public:
     std::list<TensorConstPtr> guess(Key lastToken, runtime::SizeType32 guessSize) const;
 
     //! @brief update token map with new generated tokens
-    //! @param keyTokens the new shifted out tokens from each window, as the key, [window] on cpu
-    //! @param ngramTokens the new shifted lookahead window, as the ngrams, [window, ngramLen] on cpu
+    //! @param keyTokens the new shifted out tokens from each window, as the
+    // key, [window] on cpu
+    //! @param ngramTokens the new shifted lookahead window, as the ngrams,
+    //[window, ngramLen] on cpu
     void update(TensorConstPtr const& keyTokens, TensorConstPtr const& ngramTokens);
 
     std::unordered_map<Key, std::list<TensorConstPtr>> const& getMap() const
@@ -77,6 +76,4 @@ private:
     runtime::SizeType32 mGuessSetSize;
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

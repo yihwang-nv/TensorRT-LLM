@@ -18,9 +18,9 @@
 #include "tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Bf16Bf16Gemm.h"
 #include "tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_bf16_bf16_gemm
+namespace llama4_min_latency::llama4_bf16_bf16_gemm
 {
 
 struct __align__(8) aligned_bf16x4
@@ -62,7 +62,7 @@ __global__ void llama4_bf16_bf16_gemm_kernel(int num_tokens,
 
     asm volatile("griddepcontrol.wait;" ::: "memory");
 
-    // Process 5 chunks of 4 elements each
+// Process 5 chunks of 4 elements each
 #pragma unroll
     for (int chunk = 0; chunk < GEMM_K / BLOCK_SIZE / VEC_SIZE; chunk++)
     {
@@ -128,6 +128,6 @@ void llama4_bf16_bf16_gemm_op(int num_tokens, void const* A, void const* B, void
     llama4_bf16_bf16_gemm_launcher(num_tokens, A_bf16, B_bf16, C_bf16, stream);
 }
 
-} // namespace kernels::llama4_min_latency::llama4_bf16_bf16_gemm
+} // namespace llama4_min_latency::llama4_bf16_bf16_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

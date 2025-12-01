@@ -36,10 +36,8 @@
 #include <cuda_runtime_api.h>
 #include <iostream>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cuda_core_gemm
 {
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
@@ -95,6 +93,5 @@ struct Params
 
 bool cudaCoreGemmDispatcher(Params const& params, cudaStream_t stream);
 } // namespace cuda_core_gemm
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

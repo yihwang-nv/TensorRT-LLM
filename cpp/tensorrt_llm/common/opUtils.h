@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +41,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common::op
+namespace op
 {
 
 // Write values into buffer
@@ -73,10 +74,14 @@ inline cudaDataType_t trtToCublasDtype(nvinfer1::DataType type)
     }
 }
 
-// Like std::unique_ptr, but does not prevent generation of default copy constructor when used as class members.
-// The copy constructor produces nullptr. So the plugin default copy constructor will not really copy this, and
-// your clone() implementation is responsible for initializing such data members.
-// With this we can simplify clone() implementation when there are many data members including at least one unique_ptr.
+// Like std::unique_ptr, but does not prevent generation of default copy
+// constructor when used as class members.
+// The copy constructor produces nullptr. So the plugin default copy constructor
+// will not really copy this, and
+// your clone() implementation is responsible for initializing such data
+// members.
+// With this we can simplify clone() implementation when there are many data
+// members including at least one unique_ptr.
 template <typename T, typename Del = std::default_delete<T>>
 class UniqPtrWNullCopy : public std::unique_ptr<T, Del>
 {
@@ -181,7 +186,7 @@ struct hash
 
 // for testing only
 void const* getCommSessionHandle();
-} // namespace common::op
+} // namespace op
 
 inline bool isBuilding()
 {
@@ -218,7 +223,8 @@ std::shared_ptr<ncclComm_t> getComm(std::set<int> const& group);
 
 #endif // ENABLE_MULTI_DEVICE
 
-//! To save GPU memory, all the plugins share the same cublas and cublasLt handle globally.
+//! To save GPU memory, all the plugins share the same cublas and cublasLt
+// handle globally.
 //! Get cublas and cublasLt handle for current cuda context
 std::shared_ptr<cublasHandle_t> getCublasHandle();
 std::shared_ptr<cublasLtHandle_t> getCublasLtHandle();

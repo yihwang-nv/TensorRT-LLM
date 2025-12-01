@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fp8_rowwise_gemm/fp8_rowwise_gemm.h"
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
@@ -25,20 +25,18 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 using Fp8RowwiseGemmRunnerPtr
     = std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFp8RowwiseGemmRunnerInterface>;
 
-class Fp8RowwiseGemmPluginProfiler : public GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
-                                         Fp8RowwiseGemmRunnerPtr, GemmIdCore, GemmIdCoreHash>
-
+class Fp8RowwiseGemmPluginProfiler
+    : public GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig, Fp8RowwiseGemmRunnerPtr,
+          GemmIdCore, GemmIdCoreHash>
 {
 public:
-    using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
 
     void setQuantMode(tensorrt_llm::common::QuantMode const& quantMode);
 
@@ -140,6 +138,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

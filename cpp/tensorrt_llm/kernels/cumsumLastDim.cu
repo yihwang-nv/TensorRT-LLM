@@ -21,10 +21,7 @@
 
 #include <cub/cub.cuh>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ///////////////
 
@@ -170,6 +167,4 @@ INSTANTIATE_CUMSUM_LastDim_DATA_TYPE(__nv_bfloat16);
 #endif
 #undef INSTANTIATE_CUMSUM_LastDim_DATA_TYPE
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

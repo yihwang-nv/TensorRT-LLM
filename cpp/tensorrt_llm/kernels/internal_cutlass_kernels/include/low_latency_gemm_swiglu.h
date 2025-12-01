@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,12 +22,10 @@
 
 // namespace tk = tensorrt_llm::common;
 
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace internal_cutlass_kernels
 {
 
@@ -73,6 +72,5 @@ private:
 };
 
 }; // namespace internal_cutlass_kernels
-}; // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

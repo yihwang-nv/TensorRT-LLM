@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #include "bindings.h"
 #include "hostfunc.h"
 #include "moeBindings.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/communicationKernels/allReduceWorkspace.h"
 #include "tensorrt_llm/kernels/communicationKernels/customLowPrecisionAllReduceKernels.h"
 #include "tensorrt_llm/kernels/customAllReduceKernels.h"
@@ -98,9 +98,7 @@ public:
     }
 };
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::runtime
+namespace tensorrt_llm::nanobind::runtime
 {
 
 void initBindings(nb::module_& m)
@@ -321,7 +319,8 @@ void initBindings(nb::module_& m)
     m.def(
         "max_workspace_size_lowprecision",
         [](int32_t tp_size) { return tensorrt_llm::kernels::max_workspace_size_lowprecision(tp_size); },
-        "Calculate the maximum workspace size needed for low precision all-reduce operations",
+        "Calculate the maximum workspace size needed for low precision "
+        "all-reduce operations",
         nb::call_guard<nb::gil_scoped_release>());
 
     nb::enum_<tr::CudaVirtualMemoryAllocator::RestoreMode>(m, "CudaVirtualMemoryAllocatorRestoreMode")
@@ -342,11 +341,13 @@ void initBindings(nb::module_& m)
                 std::make_shared<tr::CudaStream>(
                     reinterpret_cast<cudaStream_t>(stream), tensorrt_llm::common::getDevice(), false));
         },
-        "Set the virtual memory allocator and start allocating virtual memory for CUDA allocations",
+        "Set the virtual memory allocator and start allocating virtual "
+        "memory for CUDA allocations",
         nb::call_guard<nb::gil_scoped_release>());
 
     m.def("clear_virtual_memory_allocator", &tr::clearVirtualMemoryAllocator,
-        "Reset the current virtual memory allocator and stop allocating virtual memory for CUDA allocations",
+        "Reset the current virtual memory allocator and stop allocating "
+        "virtual memory for CUDA allocations",
         nb::call_guard<nb::gil_scoped_release>());
 
     nb::class_<tensorrt_llm::runtime::McastGPUBuffer>(m, "McastGPUBuffer")
@@ -413,6 +414,4 @@ void initBindingsEarly(nb::module_& m)
         .def_prop_ro("has_draft_logits", &tr::SpeculativeDecodingMode::hasDraftLogits)
         .def_prop_ro("needs_decoder_prologue", &tr::SpeculativeDecodingMode::needsDecoderPrologue);
 }
-} // namespace nanobind::runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::runtime

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,13 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
 #include <set>
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class EaglePrepareDrafterInputsPlugin : public nvinfer1::IPluginV3,
@@ -122,13 +120,16 @@ private:
         //! [batchSize, maxDecodingTokens, ceil(maxDecodingTokens / 32)]
         SPEC_DECODING_PACKED_MASK,
         //! [batchSize * mMaxNonLeavesPerLayer * layerIdx] for layerIdx > 0
-        //! [num_tokens - numGenTokens + numGenRequests * (mNumLayers + 1)] for layerIdx == 0
+        //! [num_tokens - numGenTokens + numGenRequests * (mNumLayers + 1)] for
+        // layerIdx == 0
         OUTPUT_IDS,
         //! [batchSize] for layerIdx > 0
-        //! [num_tokens - numGenTokens + numGenRequests * (mNumLayers + 1)] for layerIdx == 0
+        //! [num_tokens - numGenTokens + numGenRequests * (mNumLayers + 1)] for
+        // layerIdx == 0
         POSITION_IDS,
         //! [batchSize * mMaxNonLeavesPerLayer * layerIdx] for layerIdx > 0
-        //! [num_tokens - numGenTokens + numGenRequests * (mNumLayers + 1)] for layerIdx == 0
+        //! [num_tokens - numGenTokens + numGenRequests * (mNumLayers + 1)] for
+        // layerIdx == 0
         HIDDEN_STATES_INDICES,
         //! [batchSize * mMaxNonLeavesPerLayer]
         LAST_TOKEN_INDICES,
@@ -186,6 +187,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

@@ -19,8 +19,8 @@
 #include <set>
 #include <stdexcept>
 
-TRTLLM_NAMESPACE_BEGIN
-
+namespace tensorrt_llm
+{
 namespace runtime::ub
 {
 UserBufferAllocator& UserBufferAllocator::Instance()
@@ -96,7 +96,7 @@ void NCCLUserBufferAllocator::initialize(tensorrt_llm::runtime::WorldConfig cons
         {
             group.insert(i);
         }
-        mComm = getComm(group);
+        mComm = common::getComm(group);
         mIsInitialized = true;
     }
 }
@@ -191,7 +191,9 @@ void NCCLHelper::loadNCCLLibrary()
 
         if (mNCCLCommWindowRegister == nullptr)
         {
-            TLLM_LOG_WARNING("Failed to load ncclCommWindowRegister symbol, NCCL symmetric will not be supported.");
+            TLLM_LOG_WARNING(
+                "Failed to load ncclCommWindowRegister symbol, NCCL "
+                "symmetric will not be supported.");
         }
 
         if (mNCCLMemAlloc)
@@ -251,4 +253,4 @@ bool UserBufferAllocator::use_nccl_symmetric = false;
 
 }; // namespace runtime::ub
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

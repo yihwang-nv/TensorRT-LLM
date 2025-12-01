@@ -40,9 +40,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 std::shared_ptr<CUDADriverWrapper> CUDADriverWrapper::getInstance()
 {
     static std::mutex mutex;
@@ -298,7 +295,5 @@ CUresult CUDADriverWrapper::cuOccupancyMaxActiveClusters(
 {
     return (*_cuOccupancyMaxActiveClusters)(maxActiveClusters, f, config);
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

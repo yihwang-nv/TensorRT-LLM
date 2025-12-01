@@ -32,9 +32,9 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 size_t invokeScanGenerationLengths(void* __restrict__ scanTempStorage, size_t scanTempStorageBytes,
     SizeType32 const* __restrict__ generationLengths, SizeType32* __restrict__ scannedGenerationLengths,
@@ -236,7 +236,8 @@ template void invokeFillContextBuffers(
 namespace
 {
 // params.skipVerification == true must be similar to fillContextBuffers
-// params.skipVerification == false must be similar to extractExplicitDraftTokens
+// params.skipVerification == false must be similar to
+// extractExplicitDraftTokens
 template <typename T>
 __global__ void fillRandData(FillRandDataExplicitDraftTokensParams<T> const params)
 {
@@ -353,7 +354,8 @@ __global__ void extractExplicitDraftTokens(ExtractExplicitDraftTokensParams<T> p
     for (auto ti = static_cast<SizeType32>(threadIdx.x); ti < numNextDraftTokens - 1;
          ti += static_cast<SizeType32>(blockDim.x))
     {
-        // Extract per request draft tokens from packed flat tokens where the 1st token is the "golden" token from
+        // Extract per request draft tokens from packed flat tokens where the 1st
+        // token is the "golden" token from
         // primary head.
         params.outputNextDraftTokens[batchSlot * params.numPaths * (params.maxPathLength - 1) + ti]
             = params.nextFlatTokens[startId + 1 + ti];
@@ -382,7 +384,8 @@ __global__ void extractExplicitDraftTokens(ExtractExplicitDraftTokensParams<T> p
         // Set number of draft tokens for the next iteration.
         params.nextDraftLengths[batchSlot] = numNextDraftTokens - 1;
 
-        // Set number of tokens passed to the engine per request for the next iteration.
+        // Set number of tokens passed to the engine per request for the next
+        // iteration.
         params.outputGenerationLengths[batchSlot] = numNextDraftTokens;
 
         auto curandState = params.curandState[batchSlot];
@@ -581,7 +584,8 @@ __global__ void packExplicitDraftTokens(PackExplicitDraftTokensParams<T> params)
             ? params.cumSumGenerationLengths[0]
             : params.cumSumGenerationLengths[genIdx] - params.cumSumGenerationLengths[genIdx - 1];
         // Copy packed masks.
-        // Masks are placed next to each other with offsets of cumSumGenerationLengths[bi-1]
+        // Masks are placed next to each other with offsets of
+        // cumSumGenerationLengths[bi-1]
         auto const inputPackedMask = params.inputPackedMask + batchSlot * numPackedMasks * maxDecodingTokens;
         auto outputPackedMask = params.outputPackedMask + outputStartId * numPackedMasks;
         for (auto ti = static_cast<SizeType32>(threadIdx.x); ti < numTokens * numPackedMasks;
@@ -640,6 +644,6 @@ template void invokeCopyProbs(PackExplicitDraftTokensParams<half> const& params,
 template void invokeCopyProbs(PackExplicitDraftTokensParams<__nv_bfloat16> const& params, cudaStream_t stream);
 #endif // ENABLE_BF16
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

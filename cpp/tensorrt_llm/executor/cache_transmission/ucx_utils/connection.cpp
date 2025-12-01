@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,18 +17,14 @@
  */
 
 #include "ucxCacheCommunicator.h"
-
 #if ENABLE_UCX
 
 #include "tensorrt_llm/batch_manager/dataTransceiver.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/tllmException.h"
 #include "tensorrt_llm/executor/cache_transmission/ucx_utils/connection.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 // Using declarations to shorten the code
@@ -47,8 +44,10 @@ UcxConnection::UcxConnection(ConnectionIdType connectionId, std::shared_ptr<ucxx
         if (mFromRequester)
         {
 
-            // since the tag don't contain the information of the connection id or mConnectionIdInPeer, we need to
-            // lock the mutex ,to ensure only one tagRecv is called in the same time.
+            // since the tag don't contain the information of the connection id or
+            // mConnectionIdInPeer, we need to
+            // lock the mutex ,to ensure only one tagRecv is called in the same
+            // time.
             std::shared_ptr<ucxx::Request> recvRequest
                 = mEndpoint->tagRecv(reinterpret_cast<void*>(&mConnectionIdInPeer), sizeof(mConnectionIdInPeer),
                     ucxx::Tag(ResponserTag), ucxx::TagMaskFull);
@@ -67,8 +66,10 @@ UcxConnection::UcxConnection(ConnectionIdType connectionId, std::shared_ptr<ucxx
         else
         {
 
-            // Since Responder may recv from multiple Requesters, we need to send the mConnectionId to the Reqester
-            // first and use ConnectionId as the tag to recv the mConnectionIdInPeer from the Requester
+            // Since Responder may recv from multiple Requesters, we need to send
+            // the mConnectionId to the Reqester
+            // first and use ConnectionId as the tag to recv the mConnectionIdInPeer
+            // from the Requester
             std::shared_ptr<ucxx::Request> sendRequest = mEndpoint->tagSend(
                 reinterpret_cast<void*>(&mConnectionId), sizeof(mConnectionId), ucxx::Tag(ResponserTag));
             while (!sendRequest->isCompleted())
@@ -94,23 +95,26 @@ UcxConnection::UcxConnection(ConnectionIdType connectionId, std::shared_ptr<ucxx
     mRecvTagPrefix = mConnectionId;
 
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "UcxConnection::UcxConnection, mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d", mConnectionId,
-        mConnectionIdInPeer, mFromRequester);
+        "UcxConnection::UcxConnection, mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
+        mConnectionId, mConnectionIdInPeer, mFromRequester);
 }
 
 UcxConnection::~UcxConnection()
 {
 
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "UcxConnection::~UcxConnection, mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d", mConnectionId,
-        mConnectionIdInPeer, mFromRequester);
+        "UcxConnection::~UcxConnection, mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
+        mConnectionId, mConnectionIdInPeer, mFromRequester);
     // TODO: how to close the endpoint safely?
 }
 
 void UcxConnection::sendConnectionId(DataContext const& ctx, void const* data, size_t size) const
 {
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "start UcxConnection::sendConnectionId , mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d",
+        "start UcxConnection::sendConnectionId , mConnectionId: "
+        "%lu, mConnectionIdInPeer: %lu,fromRequester: %d",
         mConnectionId, mConnectionIdInPeer, mFromRequester);
 
     std::promise<void> promise;
@@ -131,7 +135,8 @@ void UcxConnection::sendConnectionId(DataContext const& ctx, void const* data, s
     TLLM_CHECK_WITH_INFO(req->isCompleted(), "sendConnectionId should be completed");
     req->checkError();
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "end UcxConnection::sendConnectionId , mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d",
+        "end UcxConnection::sendConnectionId , mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
         mConnectionId, mConnectionIdInPeer, mFromRequester);
 }
 
@@ -143,8 +148,9 @@ void UcxConnection::send(DataContext const& ctx, void const* data, size_t size) 
         return;
     }
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "start UcxConnection::send , mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d", mConnectionId,
-        mConnectionIdInPeer, mFromRequester);
+        "start UcxConnection::send , mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
+        mConnectionId, mConnectionIdInPeer, mFromRequester);
 
     TLLM_CHECK_WITH_INFO((mEndpoint), "sendBuffer called without established communicator channel.");
     std::promise<void> promise;
@@ -162,16 +168,18 @@ void UcxConnection::send(DataContext const& ctx, void const* data, size_t size) 
     req->checkError();
 
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "end UcxConnection::send , mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d", mConnectionId,
-        mConnectionIdInPeer, mFromRequester);
+        "end UcxConnection::send , mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
+        mConnectionId, mConnectionIdInPeer, mFromRequester);
 }
 
 void UcxConnection::recv(DataContext const& ctx, void* data, size_t size) const
 {
     // Guard to ensure CUDA context is initialized for UCX ops
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "start UcxConnection::recv , mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d", mConnectionId,
-        mConnectionIdInPeer, mFromRequester);
+        "start UcxConnection::recv , mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
+        mConnectionId, mConnectionIdInPeer, mFromRequester);
     TLLM_CHECK_WITH_INFO((mEndpoint), "recvBuffer called without established communicator channel.");
     std::promise<void> promise;
     std::future<void> future = promise.get_future();
@@ -187,11 +195,11 @@ void UcxConnection::recv(DataContext const& ctx, void* data, size_t size) const
     req->checkError();
 
     TLLM_LOG_DEBUG(mManager->getRank(),
-        "end UcxConnection::recv , mConnectionId: %lu, mConnectionIdInPeer: %lu,fromRequester: %d", mConnectionId,
-        mConnectionIdInPeer, mFromRequester);
+        "end UcxConnection::recv , mConnectionId: %lu, "
+        "mConnectionIdInPeer: %lu,fromRequester: %d",
+        mConnectionId, mConnectionIdInPeer, mFromRequester);
 }
 
-} // namespace executor::kv_cache
+} // namespace tensorrt_llm::executor::kv_cache
 
-TRTLLM_NAMESPACE_END
 #endif

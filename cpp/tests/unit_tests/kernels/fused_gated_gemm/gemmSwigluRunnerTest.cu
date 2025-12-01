@@ -76,14 +76,15 @@ Result run(std::string description, Options& options, Buffers<ElementT, LayoutB,
     std::shared_ptr<CutlassFusedGatedGemmRunnerInterface> runner
         = std::make_shared<CutlassFusedGatedGemmRunner<typename CutlassToTllmTypeAdapter<ElementT>::type>>();
 
-    // Using the arguments, query for extra workspace required for matrix multiplication computation
+    // Using the arguments, query for extra workspace required for matrix
+    // multiplication computation
     size_t workspace_size
         = runner->getWorkspaceSize(options.problem_size.m(), options.problem_size.n(), options.problem_size.k());
 
     // Allocate workspace memory
     cutlass::device_memory::allocation<char> workspace(workspace_size);
 
-    std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> configs = runner->getConfigs();
+    std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> configs = runner->getConfigs();
 
     cudaEvent_t start;
     cudaEvent_t stop;
@@ -91,7 +92,7 @@ Result run(std::string description, Options& options, Buffers<ElementT, LayoutB,
     cudaEventCreate(&stop);
 
     float bestTime = std::numeric_limits<float>::max();
-    tensorrt_llm::cutlass_extensions::CutlassGemmConfig bestConfig;
+    tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig bestConfig;
     for (auto const& config : configs)
     {
         std::cout << config << std::endl;
@@ -105,7 +106,8 @@ Result run(std::string description, Options& options, Buffers<ElementT, LayoutB,
         }
         catch (std::runtime_error& e)
         {
-            // We can ignore these error because most are related to SMEM oversubscription
+            // We can ignore these error because most are related to SMEM
+            // oversubscription
             std::cout << e.what() << std::endl;
             continue;
         }
@@ -214,16 +216,25 @@ TEST(GemmSwigluRunner, Sm90FP8)
     // Initialize tensors using CUTLASS helper functions
     buffers.tensor_a.resize(options.problem_size.mk());          // <- Create matrix A with dimensions M x K
     buffers.tensor_b.resize(options.problem_size.kn());          // <- Create matrix B with dimensions K x N
-    buffers.tensor_c_bias.resize({1, options.problem_size.n()}); // <- Create broadcast vector with dimensions 1 x N
-    buffers.tensor_d.resize(
-        options.problem_size_out
-            .mn()); // <- Create matrix D with dimensions M x N/2 used to store output from CUTLASS kernel
-    buffers.tensor_ref_d_2x.resize(
-        options.problem_size
-            .mn()); // <- Create temp matrix D with dimensions M x N used to store output from reference kernel
-    buffers.tensor_ref_d.resize(
-        options.problem_size_out
-            .mn()); // <- Create matrix D with dimensions M x N/2 used to store output from reference kernel
+    buffers.tensor_c_bias.resize({1, options.problem_size.n()}); // <- Create
+                                                                 // broadcast
+                                                                 // vector with
+                                                                 // dimensions 1
+                                                                 // x N
+    buffers.tensor_d.resize(options.problem_size_out.mn());      // <- Create matrix D
+                                                                 // with dimensions M x
+                                                                 // N/2 used to store
+                                                                 // output from CUTLASS
+                                                                 // kernel
+    buffers.tensor_ref_d_2x.resize(options.problem_size.mn());   // <- Create temp
+                                                                 // matrix D with
+                                                                 // dimensions M x N
+                                                                 // used to store
+                                                                 // output from
+                                                                 // reference kernel
+    buffers.tensor_ref_d.resize(options.problem_size_out.mn());  // <- Create matrix D with dimensions M x
+                                                                 // N/2 used to store output from reference
+                                                                 // kernel
 
     int _init_bits = options.real ? -1 : 0;
 
@@ -305,7 +316,8 @@ TEST(GemmSwigluRunner, Sm90FP8)
     // {
     //     for (int j = 0; j < options.problem_size.n(); ++j)
     //     {
-    //         buffers.tensor_ref_d_2x.host_view().ref().at({i, j}) += buffers.tensor_c_bias.host_view().ref().at({0,
+    //         buffers.tensor_ref_d_2x.host_view().ref().at({i, j}) +=
+    // buffers.tensor_c_bias.host_view().ref().at({0,
     //         j});
     //     }
     // }
@@ -338,7 +350,8 @@ TEST(GemmSwigluRunner, Sm90FP8)
     Result hopperFp8 = run("SM90 FP8 WS GEMM", options, buffers);
     EXPECT_TRUE(hopperFp8.passed);
 #else  // COMPILE_HOPPER_TMA_GEMMS
-    std::cout << "[TensorRT LLM Error][GemmSwigluRunnerTest] Please recompile with support for hopper by passing "
+    std::cout << "[TensorRT LLM Error][GemmSwigluRunnerTest] Please recompile "
+                 "with support for hopper by passing "
                  "90-real as an arch to build_wheel.py."
               << std::endl;
 #endif // COMPILE_HOPPER_TMA_GEMMS

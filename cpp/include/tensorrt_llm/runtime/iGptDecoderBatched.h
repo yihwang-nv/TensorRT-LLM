@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
 #include "tensorrt_llm/runtime/iTensor.h"
@@ -26,15 +25,13 @@
 #include <memory>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class DecoderInputBuffers;
 class LlmRequest;
-} // namespace batch_manager
+} // namespace tensorrt_llm::batch_manager
 
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class SamplingConfig;
 
@@ -60,12 +57,14 @@ public:
     //! @brief Disable Lookahead decoding.
     virtual void disableLookahead(RequestVector const& genRequests, TensorPtr const& batchSlots) = 0;
 
-    //! @brief Run one step for all requests without blocking the host process and return the token for synchronization.
+    //! @brief Run one step for all requests without blocking the host process
+    // and return the token for synchronization.
     virtual CudaEvent forwardAsync(
         decoder::DecoderState const& decoderState, batch_manager::DecoderInputBuffers const& input)
         = 0;
 
-    //! @brief Run one step for all requests and wait for completion on the host.
+    //! @brief Run one step for all requests and wait for completion on the
+    // host.
     virtual void forward(decoder::DecoderState const& decoderState, batch_manager::DecoderInputBuffers const& input)
         = 0;
 
@@ -80,6 +79,4 @@ protected:
     virtual ~IGptDecoderBatched() = default;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +17,13 @@
  */
 
 #include "tensorrt_llm/batch_manager/handleGenerationLogits.h"
-#include "tensorrt_llm/batch_manager/decoderBuffers.h"
 
+#include "tensorrt_llm/batch_manager/decoderBuffers.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/batch_manager/medusaBuffers.h"
 #include "tensorrt_llm/batch_manager/runtimeBuffers.h"
 #include "tensorrt_llm/batch_manager/utils/inflightBatchingUtils.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/utils/debugUtils.h"
@@ -31,9 +31,7 @@
 namespace tr = tensorrt_llm::runtime;
 namespace tru = tensorrt_llm::runtime::utils;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using BufferManager = tensorrt_llm::runtime::BufferManager;
@@ -53,11 +51,11 @@ void copyStreamingGenerationLogits(BufferManager const& bufferManager, LlmReques
     TLLM_CHECK(llmReq.getGenerationLogitsFragmentsSize() == 1);
 
     SizeType32 numGenerationToken = llmReq.getMaxBeamNumTokens() - llmReq.mPromptLen;
-    TensorPtr const& generationLogitsHost
-        = llmReq.getGenerationLogitsHost(); // [mMaxNewTokens (or 1), beamWidth, vocabSizePadded]
+    TensorPtr const& generationLogitsHost = llmReq.getGenerationLogitsHost(); // [mMaxNewTokens (or 1), beamWidth,
+                                                                              // vocabSizePadded]
 
-    TensorPtr hostTensorPtr
-        = ITensor::slice(generationLogitsHost, numGenerationToken, 1); // [1, beamWidth, vocabSizePadded]
+    TensorPtr hostTensorPtr = ITensor::slice(generationLogitsHost, numGenerationToken,
+        1); // [1, beamWidth, vocabSizePadded]
     TensorPtr deviceTensorPtr = *(llmReq.getGenerationLogitsFragments().begin());
 
     bufferManager.copy(*deviceTensorPtr, *hostTensorPtr);
@@ -130,7 +128,8 @@ void HandleGenerationLogits::operator()(DecoderInputBuffers& inputBuffers, Reque
         {
             TLLM_CHECK_WITH_INFO(modelConfig.getSpeculativeDecodingMode().isNone()
                     || modelConfig.getSpeculativeDecodingMode().isDraftTokensExternal(),
-                "Only speculative decoding with external draft tokens supports returning generation logits");
+                "Only speculative decoding with external draft tokens supports "
+                "returning generation logits");
 
             // Push into fragments vector
             llmReq->addGenerationLogitsFragment(logitsView);
@@ -140,7 +139,8 @@ void HandleGenerationLogits::operator()(DecoderInputBuffers& inputBuffers, Reque
             {
                 copyStreamingGenerationLogits(manager, *llmReq);
             }
-            // Copy back to host for every kCACHE_LENGTH steps to mitigate GPU memory pressure
+            // Copy back to host for every kCACHE_LENGTH steps to mitigate GPU
+            // memory pressure
             else if (llmReq->getGenerationLogitsFragmentsSize() == RuntimeBuffers::GenerationLogitsCache::kCACHE_LENGTH)
             {
                 TLLM_CHECK(genRuntimeBuffers);
@@ -161,6 +161,4 @@ void HandleGenerationLogits::operator()(DecoderInputBuffers& inputBuffers, Reque
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

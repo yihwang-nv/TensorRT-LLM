@@ -21,14 +21,15 @@
 
 #include <stdexcept>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
+namespace llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
 {
 
 // Grid size is num_tokens / TILE_TOKEN * hidden_out / TILE_OUT.
 // Each block processes TILE_TOKEN tokens and TILE_OUT rows.
-// within each block, it steps through hidden_in in steps of BLOCK_SIZE * VEC_SIZE.
+// within each block, it steps through hidden_in in steps of BLOCK_SIZE *
+// VEC_SIZE.
 template <int HIDDEN_IN, int TILE_TOKEN, int TILE_OUT, bool ALIGNED = true>
 __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_fp8_gemm_swiglu_per_block_kernel(
     __nv_fp8_e4m3 const* __restrict__ A, // Input tensor [num_tokens][hidden_in]
@@ -130,7 +131,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_fp8_gemm_swiglu_per_blo
                 = reinterpret_cast<aligned_fp8x8 const*>(A)[current_token * hidden_in / VEC_SIZE + base_idx];
         }
 
-        // Compute partial sum
+// Compute partial sum
 #pragma unroll
         for (int tile_out_idx = 0; tile_out_idx < TILE_OUT; tile_out_idx++)
         {
@@ -188,7 +189,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_fp8_gemm_swiglu_per_blo
                     = reinterpret_cast<aligned_fp8x8 const*>(A)[current_token * hidden_in / VEC_SIZE + base_idx];
             }
 
-            // Compute partial sum
+// Compute partial sum
 #pragma unroll
             for (int tile_out_idx = 0; tile_out_idx < TILE_OUT; tile_out_idx++)
             {
@@ -221,7 +222,7 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_fp8_gemm_swiglu_per_blo
         }
     }
 
-    // Reduce partial sums using warp-level reduction.
+// Reduce partial sums using warp-level reduction.
 #pragma unroll
     for (int tile_out_idx = 0; tile_out_idx < TILE_OUT; tile_out_idx++)
     {
@@ -340,6 +341,6 @@ __launch_bounds__(BLOCK_SIZE) __global__ void llama4_fp8_fp8_gemm_swiglu_per_blo
         DISPATCH_FC_FP8_BF16_TILE_OUT(HIDDEN_IN, tile_token, tile_out, ALIGNED);                                       \
     }
 
-} // namespace kernels::llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
+} // namespace llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

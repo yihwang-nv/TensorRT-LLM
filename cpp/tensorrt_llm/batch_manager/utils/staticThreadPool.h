@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include <atomic>
 #include <functional>
 #include <future>
@@ -29,12 +29,11 @@
 
 #include <iostream>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::utils
+namespace tensorrt_llm::batch_manager::utils
 {
 
-// A simple static thread pool to avoid the overhead caused by having too many threads.
+// A simple static thread pool to avoid the overhead caused by having too many
+// threads.
 class StaticThreadPool
 {
 public:
@@ -73,6 +72,4 @@ private:
     std::vector<std::thread> mThreads;
 };
 
-} // namespace batch_manager::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::utils

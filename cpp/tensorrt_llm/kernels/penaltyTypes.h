@@ -23,10 +23,7 @@
 #include <string>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 enum class DecodingPenaltyType
 {
@@ -56,6 +53,5 @@ inline std::pair<float, float> getLimitsPenalty(DecodingPenaltyType penaltyType)
     TLLM_CHECK_WITH_INFO(false, "Unknown penalty type %d", static_cast<int32_t>(penaltyType));
     return std::make_pair(fltMin, fltMax);
 }
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -32,10 +32,7 @@ using tensorrt_llm::common::float22bf162;
 using tensorrt_llm::common::hsub2;
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace mmha
 {
@@ -3500,17 +3497,14 @@ inline __device__ float4 float_from_int8(int32_t u)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-inline __device__ Float8_ float_from_int8(int64_t u)
-{
-    union {
-        int64_t int64;
-        int16_t int16[4];
-    };
-    int64 = u;
-    return Float8_ {float_from_int8(int16[0]),
-                    float_from_int8(int16[1]),
-                    float_from_int8(int16[2]),
-                    float_from_int8(int16[3])};
+inline __device__ Float8_ float_from_int8(int64_t u) {
+  union {
+    int64_t int64;
+    int16_t int16[4];
+  };
+  int64 = u;
+  return Float8_{ float_from_int8(int16[0]), float_from_int8(int16[1]),
+                  float_from_int8(int16[2]), float_from_int8(int16[3]) };
 }
 
 // clang-format on
@@ -4066,7 +4060,9 @@ template <>
 __device__ __inline__ void vec_from_smem_transpose(float4& vec, __nv_fp8_e4m3* smem, int transpose_idx, int smem_pitch)
 {
     // TODO
-    printf("[ERROR] still no have implementation for vec_from_smem_transpose under __nv_fp8_e4m3 \n");
+    printf(
+        "[ERROR] still no have implementation for vec_from_smem_transpose "
+        "under __nv_fp8_e4m3 \n");
 }
 #endif // ENABLE_FP8
 
@@ -4190,7 +4186,9 @@ template <>
 __device__ __inline__ void write_smem_transpose(
     float4 const& vec, __nv_fp8_e4m3* smem, int transpose_idx, int smem_pitch)
 {
-    printf("[ERROR] still no have implementation for vec_from_smem_transpose under __nv_fp8_e4m3 \n");
+    printf(
+        "[ERROR] still no have implementation for vec_from_smem_transpose "
+        "under __nv_fp8_e4m3 \n");
 }
 #endif // ENABLE_FP8
 
@@ -4256,6 +4254,5 @@ __device__ __host__ constexpr inline T const& const_max(T const& a, T const& b)
 }
 
 } // namespace mmha
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

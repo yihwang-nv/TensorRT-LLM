@@ -23,9 +23,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 #ifdef ENABLE_BF16
 inline __device__ float2 bf1622float2(const __nv_bfloat162 val)
 {
@@ -290,8 +287,6 @@ inline __device__ __nv_bfloat162 bf16hfma2(__nv_bfloat162 a, __nv_bfloat162 b, _
 }
 
 #endif // ENABLE_BF16
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END
 

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,37 +18,44 @@
 
 #ifndef TRT_LRU_PLUGIN_H
 #define TRT_LRU_PLUGIN_H
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/lruKernel.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 // batch_size = num_ctx_requests or num_gen_requests
-// num_ctx_requests = number of context requests (single sequence per request).
-// num_gen_requests = number of generation requests (single sequences per request).
+// num_ctx_requests = number of context requests (single sequence per
+// request).
+// num_gen_requests = number of generation requests (single sequences per
+// request).
 // can not support beam search
 
 // inputs
-//     0.  x [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     0.  x [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     1.  A [dim]
-//     2.  state [batch_size, dim] or host [1] containing only pointer for paged_state
-//     3.  host_request_types [batch_size] int32. 0: context; 1: generation; 2: none.
+//     2.  state [batch_size, dim] or host [1] containing only pointer for
+// paged_state
+//     3.  host_request_types [batch_size] int32. 0: context; 1: generation;
+// 2: none.
 //     4.  last_token_ids [batch_size] int32
 //     5.  state_slot_mapping [batch_size] int32, optional for paged state
-//     6.  y [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     6.  y [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     7.  y_bias [dim]
-//     8.  gate [batch_size, seq_len, 2 * dim] or [num_tokens, 2 * dim] for remove_input_padding
+//     8.  gate [batch_size, seq_len, 2 * dim] or [num_tokens, 2 * dim] for
+// remove_input_padding
 //     9.  gate_bias [2 * dim]
-//    10.  gate_x [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-//    11.  gate_a [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//    10.  gate_x [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
+//    11.  gate_a [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //    12.  gate_x_bias [2 * dim]
 //    13.  gate_a_bias [2 * dim]
 // outputs
-//     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     1. state [batch_size, dim]
 
 class lruPlugin : public BasePlugin
@@ -237,7 +245,6 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
+} // namespace tensorrt_llm::plugins
 
-TRTLLM_NAMESPACE_END
 #endif // TRT_LRU_PLUGIN_H

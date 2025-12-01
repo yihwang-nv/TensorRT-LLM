@@ -24,10 +24,8 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -145,18 +143,23 @@ LayoutDetails getLayoutDetailsForTransform(QuantType quant_type, int arch)
     }
 }
 
-// Permutes the rows of B in a way that is compatible with Turing+ architectures.
+// Permutes the rows of B in a way that is compatible with Turing+
+// architectures.
 //
 // Throws an error for other architectures.
 // The data is permuted such that:
 // For W8_A16, each group of 16 rows is permuted using the map below:
 //  0 1 8 9 2 3 10 11 4 5 12 13 6 7 14 15
 // For W4_A16, each group of 32 rows is permuted using the map below:
-//  0 1 8 9 16 17 24 25 2 3 10 11 18 19 26 27 4 5 12 13 20 21 28 29 6 7 14 15 22 23 30 31
+//  0 1 8 9 16 17 24 25 2 3 10 11 18 19 26 27 4 5 12 13 20 21 28 29 6 7 14 15 22
+// 23 30 31
 // For W4_A8, see the map in the code. The idea is similar to above.
-// The goal of this permutation is to ensure data ends up in the correct threads after
-// we execute LDSM. It counteracts the effect of the data being of different widths.
-// For more information about the expected layouts, see the MMA section in the PTX docs.
+// The goal of this permutation is to ensure data ends up in the correct threads
+// after
+// we execute LDSM. It counteracts the effect of the data being of different
+// widths.
+// For more information about the expected layouts, see the MMA section in the
+// PTX docs.
 std::vector<int> get_permutation_map(QuantType quant_type)
 {
 
@@ -207,10 +210,12 @@ void permute_B_rows_for_mixed_gemm(int8_t* permuted_quantized_tensor, int8_t con
     int const num_vec_cols = num_cols / elts_in_int32;
 
     TLLM_CHECK_WITH_INFO(num_rows % B_ROWS_PER_MMA == 0,
-        fmtstr("Invalid shape for quantized tensor. Number of rows of quantized matrix must be a multiple of %d",
+        fmtstr("Invalid shape for quantized tensor. Number of rows of quantized "
+               "matrix must be a multiple of %d",
             B_ROWS_PER_MMA));
     TLLM_CHECK_WITH_INFO(num_cols % MMA_SHAPE_N == 0,
-        fmtstr("Invalid shape for quantized tensor. On turing/Ampere, the number of cols must be a multiple of %d.",
+        fmtstr("Invalid shape for quantized tensor. On turing/Ampere, the number "
+               "of cols must be a multiple of %d.",
             MMA_SHAPE_N));
 
     TLLM_CHECK_WITH_INFO(size_t(B_ROWS_PER_MMA) == row_permutation.size(), "Unexpected number of LDSM rows permuted.");
@@ -241,8 +246,10 @@ void permute_B_rows_for_mixed_gemm(int8_t* permuted_quantized_tensor, int8_t con
 }
 
 // We need to use this transpose to correctly handle packed int4 and int8 data
-// The reason this code is relatively complex is that the "trivial" loops took a substantial
-// amount of time to transpose leading to long preprocessing times. This seemed to be a big
+// The reason this code is relatively complex is that the "trivial" loops took a
+// substantial
+// amount of time to transpose leading to long preprocessing times. This seemed
+// to be a big
 // issue for relatively large models.
 template <QuantType quant_type>
 void subbyte_transpose_impl(
@@ -271,11 +278,14 @@ void subbyte_transpose_impl(
 
     static constexpr int VECTOR_WIDTH = std::min(32, N_TILE_L1);
 
-    // We assume the dims are a multiple of vector width. Our kernels only handle dims which are multiples
-    // of 64 for weight-only quantization. As a result, this seemed like a reasonable tradeoff because it
+    // We assume the dims are a multiple of vector width. Our kernels only handle
+    // dims which are multiples
+    // of 64 for weight-only quantization. As a result, this seemed like a
+    // reasonable tradeoff because it
     // allows GCC to emit vector instructions.
     TLLM_CHECK_WITH_INFO(!(col_bytes_trans % VECTOR_WIDTH) && !(col_bytes % VECTOR_WIDTH),
-        fmtstr("Number of bytes for rows and cols must be a multiple of %d. However, num_rows_bytes = %ld and "
+        fmtstr("Number of bytes for rows and cols must be a multiple of %d. "
+               "However, num_rows_bytes = %ld and "
                "num_col_bytes = %ld.",
             VECTOR_WIDTH, col_bytes_trans, col_bytes));
 
@@ -328,8 +338,10 @@ void subbyte_transpose_impl(
 
                     for (int ii = 0; ii < M_TILE_L1; ++ii)
                     {
-                        // Using M_TILE_L1 here is deliberate since we assume that the cache tile
-                        // is square in the number of elements (not necessarily the number of bytes).
+                        // Using M_TILE_L1 here is deliberate since we assume that the
+                        // cache tile
+                        // is square in the number of elements (not necessarily the number
+                        // of bytes).
                         for (int jj = ii + 1; jj < M_TILE_L1; ++jj)
                         {
                             int const ii_byte = ii / ELTS_PER_BYTE;
@@ -413,8 +425,10 @@ void add_bias_and_interleave_int8s_inplace(int8_t* int8_tensor, const size_t num
         int8_tensor[ii] = int8_t(int(int8_tensor[ii]) + 128);
     }
 
-    // Step 2 will transform the layout of a 32-bit register in CUDA in order to match the int4 layout. This has no
-    // performance benefit and is purely so that int4 and int8 have the same layout.
+    // Step 2 will transform the layout of a 32-bit register in CUDA in order to
+    // match the int4 layout. This has no
+    // performance benefit and is purely so that int4 and int8 have the same
+    // layout.
     // Pictorially, this does the following:
     // bit 32                                                      0
     //      [elt_3  elt_2  elt_1  elt_0] (each elt occupies 8 bits)
@@ -423,7 +437,10 @@ void add_bias_and_interleave_int8s_inplace(int8_t* int8_tensor, const size_t num
     // bit 32                                                      0
     //      [elt_3  elt_1  elt_2  elt_0] (each elt occupies 8 bits)
 
-    TLLM_CHECK_WITH_INFO(num_elts % 4 == 0, "Dimensions of int8 tensor must be a multiple of 4 for register relayout");
+    TLLM_CHECK_WITH_INFO(num_elts % 4 == 0,
+        "Dimensions of int8 tensor must be a "
+        "multiple of 4 for register "
+        "relayout");
     for (size_t base = 0; base < num_elts; base += 4)
     {
         std::swap(int8_tensor[base + 1], int8_tensor[base + 2]);
@@ -434,7 +451,8 @@ void add_bias_and_interleave_int4s_inplace(int8_t* packed_int4_tensor, const siz
 {
     int const num_bytes = num_elts / 2;
 
-    // Step 1 will be to transform all the int4s to unsigned in order to make the dequantize take as little
+    // Step 1 will be to transform all the int4s to unsigned in order to make the
+    // dequantize take as little
     // instructions as possible in the CUDA code.
     for (size_t ii = 0; ii < num_bytes; ++ii)
     {
@@ -448,22 +466,30 @@ void add_bias_and_interleave_int4s_inplace(int8_t* packed_int4_tensor, const siz
         TLLM_CHECK_WITH_INFO(transformed_second_elt >= 0 && transformed_second_elt <= 15,
             "Illegal result for int4 transform (second elt)");
 
-        // We don't need to mask in these ops since everything should be in the range 0-15
+        // We don't need to mask in these ops since everything should be in the
+        // range 0-15
         transformed_packed_int4s |= transformed_first_elt;
         transformed_packed_int4s |= (transformed_second_elt << 4);
         packed_int4_tensor[ii] = transformed_packed_int4s;
     }
 
-    // Step 2 will transform the layout of a 32-bit register in CUDA in order to minimize the number of shift & logical
-    // instructions That are needed to extract the int4s in the GEMM main loop. Pictorially, the loop below will do the
+    // Step 2 will transform the layout of a 32-bit register in CUDA in order to
+    // minimize the number of shift & logical
+    // instructions That are needed to extract the int4s in the GEMM main loop.
+    // Pictorially, the loop below will do the
     // following: Take as input a 32 bit register with layout: bit 32 0
-    //      [elt_7  elt_6  elt_5  elt_4  elt_3  elt_2  elt_1  elt_0] (each elt occupies 4 bits)
+    //      [elt_7  elt_6  elt_5  elt_4  elt_3  elt_2  elt_1  elt_0] (each elt
+    // occupies 4 bits)
     //
     // And it will rearrange the output 32 bit register to be the following:
     // bit 32                                                      0
-    //      [elt_7  elt_5  elt_3  elt_1  elt_6  elt_4  elt_2  elt_0] (each elt occupies 4 bits)
+    //      [elt_7  elt_5  elt_3  elt_1  elt_6  elt_4  elt_2  elt_0] (each elt
+    // occupies 4 bits)
 
-    TLLM_CHECK_WITH_INFO(num_bytes % 4 == 0, "Dimensions of int4 tensor must be a multiple of 8 for register relayout");
+    TLLM_CHECK_WITH_INFO(num_bytes % 4 == 0,
+        "Dimensions of int4 tensor must be "
+        "a multiple of 8 for register "
+        "relayout");
     const size_t num_registers = num_bytes / 4;
 
     uint32_t* register_ptr = reinterpret_cast<uint32_t*>(packed_int4_tensor);
@@ -522,13 +548,17 @@ void interleave_column_major_tensor(int8_t* interleaved_quantized_tensor, int8_t
     int const rows_per_tile = details.rows_per_column_tile;
 
     TLLM_CHECK_WITH_INFO(!(num_rows % elts_in_int32),
-        fmtstr("The number of rows must be a multiple of %d but the number of rows is %ld.", elts_in_int32, num_rows));
+        fmtstr("The number of rows must be a multiple of %d but "
+               "the number of rows is %ld.",
+            elts_in_int32, num_rows));
 
     uint32_t const* input_byte_ptr = reinterpret_cast<uint32_t const*>(quantized_tensor);
     uint32_t* output_byte_ptr = reinterpret_cast<uint32_t*>(interleaved_quantized_tensor);
 
     TLLM_CHECK_WITH_INFO(!(num_rows % rows_per_tile),
-        fmtstr("The number of rows must be a multiple of %d but the number of rows is %ld.", rows_per_tile, num_rows));
+        fmtstr("The number of rows must be a multiple of %d but "
+               "the number of rows is %ld.",
+            rows_per_tile, num_rows));
 
     int const num_vec_rows = num_rows / elts_in_int32;
     int const vec_rows_per_tile = rows_per_tile / elts_in_int32;
@@ -564,7 +594,8 @@ void preprocess_weights_for_mixed_gemm(int8_t* preprocessed_quantized_weight, in
     int arch = getSMVersion();
     if (force_interleave && arch >= 90)
     {
-        // Workaround for MOE which doesn't have specialized Hopper/Blackwell kernels yet
+        // Workaround for MOE which doesn't have specialized Hopper/Blackwell
+        // kernels yet
         arch = 80;
     }
     // Force use sm80 kernel for GB20x.
@@ -613,37 +644,52 @@ void preprocess_weights_for_mixed_gemm(int8_t* preprocessed_quantized_weight, in
 
 /*
     Arguments:
-      input_weight_ptr - the weight tensor to be quantized. Must be 2-D or 3-D and of type FP16.
+      input_weight_ptr - the weight tensor to be quantized. Must be 2-D or 3-D
+and of type FP16.
 
       quant_type - the type of the output quantization weight.
 
-    This function does symmetric quantization on 2-D or 3-D tensors. It uses the full int range and assumes the
+    This function does symmetric quantization on 2-D or 3-D tensors. It uses the
+full int range and assumes the
     zero-point is zero and will automatically construct the scales.
 
-    It always quantizes the last axis of the tensor. For 3-D tensors, it operates in "batched" mode where the tensor is
-    viewed as a stack of matrices and a scale is produced for each column of every matrix.
+    It always quantizes the last axis of the tensor. For 3-D tensors, it
+operates in "batched" mode where the tensor is
+    viewed as a stack of matrices and a scale is produced for each column of
+every matrix.
 
 Outputs
-    processed_quantized_weight - quantized AND processed weight for GEMM. This MUST be used with the CUTLASS GEMM
-    unprocessed_quantized_weight - quantized but unprocessed weights. Useful for reference checking.
+    processed_quantized_weight - quantized AND processed weight for GEMM. This
+MUST be used with the CUTLASS GEMM
+    unprocessed_quantized_weight - quantized but unprocessed weights. Useful for
+reference checking.
     scale_ptr - scales for the quantized weight.
 
-    Note that the returned quantized_weights will be preprocessed in a way to accelerate the mixed type GEMM. The data
+    Note that the returned quantized_weights will be preprocessed in a way to
+accelerate the mixed type GEMM. The data
     layout may not make sense if printed.
 
     Shapes:
       quant_type == int8:
-        If weight is a [m,n] matrix, quantized_weights will have shape [m,n] and scales of shape [n]
-        If weight is a [b,m,n] tensor, unprocessed_quantized_weight will have shape [b,m,n] and scales of shape [b,n]
+        If weight is a [m,n] matrix, quantized_weights will have shape [m,n] and
+scales of shape [n]
+        If weight is a [b,m,n] tensor, unprocessed_quantized_weight will have
+shape [b,m,n] and scales of shape [b,n]
       quant_type == int4:
-        If weight is a [m,n] matrix, quantized_weights will have shape [m, ceil(n/2)] and scales of shape [n]
-        If weight is a [b,m,n] tensor, unprocessed_quantized_weight will have shape [b,m, ceil(n/2)] and scales of shape
+        If weight is a [m,n] matrix, quantized_weights will have shape [m,
+ceil(n/2)] and scales of shape [n]
+        If weight is a [b,m,n] tensor, unprocessed_quantized_weight will have
+shape [b,m, ceil(n/2)] and scales of shape
           [b,n]
 
-      The quantized_weight will be of type torch.int8 and have two int4 values packed in a single byte. This is the
-      reason for halving the shape. At the time of writing this code, there was not an elegant way to handle this kind
-      of batched quantization using torch's quantized tensors (to the best of the author's knowledge). Scale tensors
-      must have a dimension of 1, which breaks the semantics we need for batched weights.
+      The quantized_weight will be of type torch.int8 and have two int4 values
+packed in a single byte. This is the
+      reason for halving the shape. At the time of writing this code, there was
+not an elegant way to handle this kind
+      of batched quantization using torch's quantized tensors (to the best of
+the author's knowledge). Scale tensors
+      must have a dimension of 1, which breaks the semantics we need for batched
+weights.
   */
 
 template <typename ComputeType, typename WeightType>
@@ -739,8 +785,10 @@ void symmetric_quantize(int8_t* processed_quantized_weight, int8_t* unprocessed_
                             int int_weight = int(scaled_weight);
                             const int8_t clipped_weight = std::max(-8, std::min(7, int_weight));
 
-                            // Kill the sign extension bits (hence 0x0F mask) then shift to upper bits
-                            // if packing the second int4 and or the bits into the final result.
+                            // Kill the sign extension bits (hence 0x0F mask) then shift to
+                            // upper bits
+                            // if packing the second int4 and or the bits into the final
+                            // result.
                             packed_int4s |= ((clipped_weight & 0x0F) << (4 * packed_idx));
                         }
                     }
@@ -803,6 +851,5 @@ template void symmetric_quantize<__nv_bfloat16, float>(
 #endif
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

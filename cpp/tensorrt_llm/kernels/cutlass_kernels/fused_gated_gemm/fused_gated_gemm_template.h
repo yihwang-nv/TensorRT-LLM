@@ -24,7 +24,8 @@
 
 #include "cute/tensor.hpp"
 #include "cutlass/conv/convolution.h"
-// Order matters here, packed_stride.hpp is missing cute and convolution includes
+// Order matters here, packed_stride.hpp is missing cute and convolution
+// includes
 #include "cutlass/util/packed_stride.hpp"
 #include "cutlass_extensions/gemm_configs.h"
 
@@ -42,14 +43,12 @@
 #include <algorithm>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
 using namespace cute;
 
@@ -87,7 +86,9 @@ size_t typedGemmGatedKernelLauncher(Gemm gemm, typename Gemm::Arguments args, vo
     auto can_implement = gemm.can_implement(args);
     if (can_implement != cutlass::Status::kSuccess)
     {
-        std::string errMsg = "fusedGatedGemm cutlass kernel not implemented given the params. Error: "
+        std::string errMsg
+            = "fusedGatedGemm cutlass kernel not implemented given "
+              "the params. Error: "
             + std::string(cutlassGetStatusString(can_implement));
         throw std::runtime_error("[TensorRT LLM Error][fusedGatedGemm Runner] " + errMsg);
     }
@@ -166,7 +167,9 @@ size_t genericGemmGatedKernelLauncherSm90(void* D, void const* A, void const* B,
     return typedGemmGatedKernelLauncher(Gemm{}, args, D, A, B, C_bias, workspace, workspaceBytes, stream, occupancy);
 #else  // COMPILE_HOPPER_TMA_GEMMS
     throw std::runtime_error(
-        "[TensorRT LLM Error][GemmGatedKernelLauncherSm90] Please recompile with support for hopper by passing 90-real "
+        "[TensorRT LLM Error][GemmGatedKernelLauncherSm90] "
+        "Please recompile with support for hopper by "
+        "passing 90-real "
         "as an arch to build_wheel.py.");
 #endif // COMPILE_HOPPER_TMA_GEMMS
 }
@@ -205,7 +208,10 @@ size_t dispatchGemmConfigSm90(void* D, void const* A, void const* B, void const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][dispatchGemmConfigSm90] Config is invalid for fused "
+            "[TensorRT LLM "
+            "Error][CutlassFusedGatedGemmRunner]["
+            "dispatchGemmConfigSm90] Config is invalid for "
+            "fused "
             "gated GEMM.");
         break;
     }
@@ -256,17 +262,26 @@ size_t dispatchGemmToCutlassSm90(void* D, void const* A, void const* B, void con
         break;
     case tkc::CutlassTileConfigSM90::Undefined:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][dispatchGemmToCutlassSm90] gemm config undefined.");
+            "[TensorRT LLM "
+            "Error][CutlassFusedGatedGemmRunner]["
+            "dispatchGemmToCutlassSm90] gemm config "
+            "undefined.");
         break;
     case tkc::CutlassTileConfigSM90::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][dispatchGemmToCutlassSm90] gemm config should have "
+            "[TensorRT LLM "
+            "Error][CutlassFusedGatedGemmRunner]["
+            "dispatchGemmToCutlassSm90] gemm config should "
+            "have "
             "already been set by "
             "heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][dispatchGemmToCutlassSm90] Config is invalid for fused "
+            "[TensorRT LLM "
+            "Error][CutlassFusedGatedGemmRunner]["
+            "dispatchGemmToCutlassSm90] Config is invalid for "
+            "fused "
             "gated GEMM.");
         break;
     }
@@ -303,14 +318,18 @@ size_t CutlassFusedGatedGemmRunner<T>::dispatchToArch(void* D, void const* A, vo
 #endif
         {
             throw std::runtime_error(
-                "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS fused "
+                "[TensorRT LLM "
+                "Error][CutlassFusedGatedGemmRunner][GEMM "
+                "Dispatch] Arch unsupported for CUTLASS fused "
                 "gated GEMM");
         }
     }
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][GEMM Dispatch] dtype unsupported for CUTLASS fused "
+            "[TensorRT LLM "
+            "Error][CutlassFusedGatedGemmRunner][GEMM "
+            "Dispatch] dtype unsupported for CUTLASS fused "
             "gated "
             "GEMM");
     }
@@ -341,7 +360,9 @@ std::vector<tkc::CutlassGemmConfig> CutlassFusedGatedGemmRunner<T>::getConfigs()
         if (mSm != 90)
         {
             throw std::runtime_error(
-                "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS fused "
+                "[TensorRT LLM "
+                "Error][CutlassFusedGatedGemmRunner][GEMM "
+                "Dispatch] Arch unsupported for CUTLASS fused "
                 "gated GEMM");
         }
         tkc::CutlassGemmConfig::CandidateConfigTypeParam config_type_param
@@ -379,7 +400,9 @@ std::vector<tkc::CutlassGemmConfig> CutlassFusedGatedGemmRunner<T>::getConfigs()
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFusedGatedGemmRunner][GEMM Dispatch] dtype unsupported for CUTLASS fused "
+            "[TensorRT LLM "
+            "Error][CutlassFusedGatedGemmRunner][GEMM "
+            "Dispatch] dtype unsupported for CUTLASS fused "
             "gated "
             "GEMM");
     }
@@ -446,6 +469,5 @@ size_t CutlassFusedGatedGemmRunner<T>::getWorkspaceSize(int const m, int const n
 }
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -24,7 +24,8 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -35,7 +36,8 @@ namespace torch_ext
 // alignment: sfVecSize
 // returns self_fp4, self_block_scale_factors
 // self_fp4: [B, M, K / 2], FLOAT4_E2M1X2
-// self_block_scale_factors: [B, ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4], SF_DTYPE (UE4M3 or UE8M0)
+// self_block_scale_factors: [B, ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) *
+// 4], SF_DTYPE (UE4M3 or UE8M0)
 std::tuple<at::Tensor, at::Tensor> fp4_batched_quantize(
     at::Tensor const& self, at::Tensor const& globalScale, int64_t sfVecSize, bool sfUseUE8M0)
 {
@@ -101,12 +103,13 @@ std::tuple<at::Tensor, at::Tensor> fp4_batched_quantize(
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "fp4_batched_quantize(Tensor input, Tensor globalScale, int sfVecSize, bool sfUseUE8M0=False) -> (Tensor, "
+        "fp4_batched_quantize(Tensor input, Tensor globalScale, int sfVecSize, "
+        "bool sfUseUE8M0=False) -> (Tensor, "
         "Tensor)");
 }
 

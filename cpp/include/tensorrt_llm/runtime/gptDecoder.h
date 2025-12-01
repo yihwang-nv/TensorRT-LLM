@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/decodingInput.h"
@@ -28,7 +27,8 @@
 
 #include <memory>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace layers
 {
@@ -52,7 +52,8 @@ public:
 
     virtual ~IGptDecoder() = default;
 
-    /// @param explicitDraftTokensDType is only used by ExplicitDraftTokens model to WAR the lack of bf16 decoder.
+    /// @param explicitDraftTokensDType is only used by ExplicitDraftTokens model
+    /// to WAR the lack of bf16 decoder.
     virtual void setup(SamplingConfig const& samplingConfig, size_t batchSize, TensorConstPtr const& batchSlots,
         std::optional<DecodingOutput> const& output = std::nullopt,
         std::optional<nvinfer1::DataType> explicitDraftTokensDType = std::nullopt,
@@ -140,7 +141,8 @@ inline std::unique_ptr<IGptDecoder> IGptDecoder::create(executor::DecodingMode c
     }
 }
 
-/// @brief Helper function to produce batch slots [0, 1, ..., batchSize - 1] for paths that do not explicitly provide
+/// @brief Helper function to produce batch slots [0, 1, ..., batchSize - 1] for
+/// paths that do not explicitly provide
 /// batch slots to the decoder.
 inline runtime::ITensor::SharedConstPtr getDefaultBatchSlots(runtime::SizeType32 batchSize)
 {
@@ -151,5 +153,4 @@ inline runtime::ITensor::SharedConstPtr getDefaultBatchSlots(runtime::SizeType32
     return defaultBatchSlots;
 }
 } // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

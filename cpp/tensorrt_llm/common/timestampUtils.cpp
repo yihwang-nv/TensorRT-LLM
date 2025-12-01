@@ -23,9 +23,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 std::string getCurrentTimestamp()
 {
     auto now = std::chrono::system_clock::now();
@@ -41,7 +38,5 @@ std::string getCurrentTimestamp()
     stream << "." << std::setfill('0') << std::setw(6) << us.count();
     return stream.str();
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

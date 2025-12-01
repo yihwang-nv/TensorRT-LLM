@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "tensorrt_llm/executor/cache_transmission/ucx_utils/ucxCacheCommunicator.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/executor/serializeUtils.h"
@@ -46,9 +46,7 @@
 using tensorrt_llm::pg_utils::get_world_pg;
 using tensorrt_llm::pg_utils::PgHelper;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 class UcxCmMessage
@@ -99,7 +97,9 @@ std::string getLocalIpByNic(std::string const& interface, int rank)
     if (getifaddrs(&ifaddr) == -1)
     {
         TLLM_LOG_ERROR(rank,
-            "getLocalIpByNic: Can't get local ip from NIC Interface. Please check whether TRTLLM_UCX_INTERFACE is set "
+            "getLocalIpByNic: Can't get local ip from NIC "
+            "Interface. Please check whether "
+            "TRTLLM_UCX_INTERFACE is set "
             "correctly.");
         return std::string{};
     }
@@ -138,8 +138,9 @@ std::string getLocalIpByNic(std::string const& interface, int rank)
     }
 
     freeifaddrs(ifaddr);
-    TLLM_LOG_ERROR(
-        rank, "Can't get local ip from NIC Interface. Please check whether TRTLLM_UCX_INTERFACE is set correctly.");
+    TLLM_LOG_ERROR(rank,
+        "Can't get local ip from NIC Interface. Please check "
+        "whether TRTLLM_UCX_INTERFACE is set correctly.");
     return std::string{};
 }
 
@@ -208,7 +209,8 @@ std::string getLocalIpByRemoteOrHostName(int rank)
 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(80);
-    // using google's public dns server to get the local ip which can be accessed from remote
+    // using google's public dns server to get the local ip which can be
+    // accessed from remote
     char const* dns_ip_v4 = "8.8.8.8";
     inet_pton(AF_INET, dns_ip_v4, &addr.sin_addr);
 
@@ -283,8 +285,8 @@ static std::string getLocalIp(int rank)
 
 std::optional<std::pair<std::string, int>> parse_zmq_endpoint(std::string const& endpoint)
 {
-    std::regex ipv4_regex(R"(tcp://([\d\.]+):(\d+))");
-    std::regex ipv6_regex(R"(tcp://\[([0-9a-fA-F:%\w]+)\]:(\d+))");
+    std::regex ipv4_regex(R "(tcp://([\d\.]+):(\d+))");
+    std::regex ipv6_regex(R "(tcp://\[([0-9a-fA-F:%\w]+)\]:(\d+))");
     std::smatch match;
     if (std::regex_match(endpoint, match, ipv4_regex))
     {
@@ -545,7 +547,7 @@ std::string build_zmq_endpoint(std::string const& ip, uint16_t port)
 {
     std::ostringstream oss;
 
-    std::regex ipv6_regex(R"([0-9a-fA-F]*:[0-9a-fA-F]*:[0-9a-fA-F]*.*)");
+    std::regex ipv6_regex(R "([0-9a-fA-F]*:[0-9a-fA-F]*:[0-9a-fA-F]*.*)");
     if (std::regex_match(ip, ipv6_regex) && ip.find(':') != std::string::npos)
     {
         oss << "tcp://[" << ip << "]:" << port;
@@ -567,8 +569,10 @@ UcxConnection::ConnectionIdType UcxConnectionManager::addConnection(std::string 
         UcxConnection::ConnectionIdType connectionId = 0;
         {
             std::scoped_lock addConnectionIPLock(sAddConnectionIPMutex);
-            // This lock ensures that only one thread can create an endpoint from hostname and establish a UCX
-            // connection at a time, guaranteeing that the only one listener will send connectionId to requester in the
+            // This lock ensures that only one thread can create an endpoint from
+            // hostname and establish a UCX
+            // connection at a time, guaranteeing that the only one listener will
+            // send connectionId to requester in the
             // same time.
             auto reqSocket = zmq::socket_t(mZmqContext, zmq::socket_type::req);
             reqSocket.set(zmq::sockopt::ipv6, 1);
@@ -633,7 +637,9 @@ Connection const* UcxConnectionManager::recvConnect(DataContext const& ctx, void
         = *reinterpret_cast<UcxConnection::ConnectionIdType*>(buffer.data() + size);
     std::scoped_lock lock(mConnectionsMutex, mConnectionFuturesMutex);
     TLLM_CHECK_WITH_INFO(mConnectionFutures.find(connectionId) != mConnectionFutures.end(),
-        "connectionFuture not found In recvConnect connectionId : %lu , worldRank: %d", connectionId, mRank);
+        "connectionFuture not found In recvConnect "
+        "connectionId : %lu , worldRank: %d",
+        connectionId, mRank);
     if (mConnectionFutures.at(connectionId).valid())
     {
         // wait for the connection to be created
@@ -701,6 +707,4 @@ std::unique_ptr<tensorrt_llm::executor::kv_cache::ConnectionManager> makeUcxConn
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

@@ -18,10 +18,7 @@
 #include "tensorrt_llm/common/cudaDriverWrapper.h"
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/xqaParams.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename KVCacheBuffer>
 CUtensorMap makeTensorMapForHopperXqaKVCache(std::shared_ptr<tensorrt_llm::common::CUDADriverWrapper> const& driver,
@@ -34,6 +31,4 @@ CUtensorMap makeTensorMapForXqaMlaKVCache(std::shared_ptr<tensorrt_llm::common::
 CUtensorMap makeTensorMapForXqaMlaQ(
     std::shared_ptr<tensorrt_llm::common::CUDADriverWrapper> const& driver, XQAParams const& xqaParams, void const* q);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

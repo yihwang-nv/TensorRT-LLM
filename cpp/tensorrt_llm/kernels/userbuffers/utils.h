@@ -20,7 +20,8 @@
 #include <cuda_fp16.h>
 #include <cuda_fp8.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -663,5 +664,4 @@ __inline__ __device__ T blockReduceSumV2(T* val)
 static bool const kDISABLE_FP32_ACCUMULATION = getenv("TRTLLM_UB_AR_DISABLE_FP32_ACCUMULATION") != nullptr;
 
 } // namespace runtime::ub
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

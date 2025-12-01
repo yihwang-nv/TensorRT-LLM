@@ -20,11 +20,11 @@
 
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
+namespace tensorrt_llm
+{
 namespace executor
 {
 static auto constexpr kTensorRtLlmVersion = "@TRTLLM_VERSION@";
 }
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

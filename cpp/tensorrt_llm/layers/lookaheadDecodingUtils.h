@@ -16,13 +16,10 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -432,6 +429,4 @@ private:
 #define PRINT_VALUES(x) D(x).print_values()
 #define PRINT_SHAPE(x) D(x).print_shape()
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

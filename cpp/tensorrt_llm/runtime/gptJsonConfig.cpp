@@ -15,10 +15,10 @@
  */
 
 #include "tensorrt_llm/runtime/gptJsonConfig.h"
+
 #include "common.h"
 #include "modelConfig.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/eagleModule.h"
 #include "tensorrt_llm/runtime/explicitDraftTokensModule.h"
@@ -107,10 +107,13 @@ std::vector<ModelConfig::LayerType> buildLayerTypes(
     auto constexpr layerNameLinear = "linear";
     auto constexpr layerNameNoop = "no_op";
 
-    // The json field specifies a "group" of layers, which gets repeated multiple times
-    // Note that the total number of layers does not need to be a multiple of a layer
+    // The json field specifies a "group" of layers, which gets repeated multiple
+    // times
+    // Note that the total number of layers does not need to be a multiple of a
+    // layer
     // group size (i.e. the last group will be incomplete).
-    // For instance, Griffin has groups of 3 layers (2 recurrent + 1 attention) and 26
+    // For instance, Griffin has groups of 3 layers (2 recurrent + 1 attention)
+    // and 26
     // layers total (the last group has no attention layer)
     auto const groupSize = layerStringTypes.size();
     for (std::size_t i = 0; i < numLayers; ++i)
@@ -142,8 +145,12 @@ std::vector<ModelConfig::LayerType> buildLayerTypes(
 
 ModelConfig parseMultimodalConfig(Json const& json, nvinfer1::DataType dataType)
 {
-    return ModelConfig{128, 10, 10, 0, 1, 128,
-        dataType}; // use dummy values because vision engines of multimodal models does not record this info in config
+    return ModelConfig{128, 10, 10, 0, 1, 128, dataType}; // use dummy values
+                                                          // because vision
+                                                          // engines of
+                                                          // multimodal models
+                                                          // does not record
+                                                          // this info in config
 }
 
 ModelConfig createModelConfig(Json const& json, bool engineVersionNone, SizeType32 tensorParallelism,
@@ -198,7 +205,8 @@ ModelConfig createModelConfig(Json const& json, bool engineVersionNone, SizeType
     auto const logitsDtypeStr = parseJsonFieldOr(config, "logits_dtype", std::string("float32"));
 
     // TODO:
-    // Code crashes when numKvHeads <= 0. Clamping downwards to 1 prevents that, make sure this is best fix.
+    // Code crashes when numKvHeads <= 0. Clamping downwards to 1 prevents that,
+    // make sure this is best fix.
     auto const numKvHeads
         = std::max(parseJsonFieldOr(config, numKvHeadsField, numHeads * tensorParallelism * contextParallelism)
                 / (tensorParallelism * contextParallelism),
@@ -264,14 +272,19 @@ ModelConfig createModelConfig(Json const& json, bool engineVersionNone, SizeType
     modelConfig.setLogitsDtype(logitsDtype);
 
     // only enable cross attention for the decoder in encoder-decoder model
-    // TODO: add cross_attention and has_token_type_embedding as fields in pretrained config
+    // TODO: add cross_attention and has_token_type_embedding as fields in
+    // pretrained config
     auto const useCrossAttention
         = arch == std::string("DecoderModel") || parseJsonFieldOr(config, "cross_attention", false);
     if (useCrossAttention)
     {
-        // For an encoder-decoder model, this would be overwritten in executorImpl.cpp with correct encoder config
-        // The parameters set here will only be used when encoder model is skipped for enc-dec models
-        TLLM_LOG_INFO("Setting encoder max input length and hidden size for accepting visual features.");
+        // For an encoder-decoder model, this would be overwritten in
+        // executorImpl.cpp with correct encoder config
+        // The parameters set here will only be used when encoder model is skipped
+        // for enc-dec models
+        TLLM_LOG_INFO(
+            "Setting encoder max input length and hidden size for "
+            "accepting visual features.");
         auto const maxEncoderLen = parseJsonFieldOr<SizeType32>(json.at("build_config"), "max_encoder_input_len", 0);
         modelConfig.setMaxEncoderLen(maxEncoderLen);
         modelConfig.setEncoderHiddenSize(hiddenSize * tensorParallelism);
@@ -317,9 +330,11 @@ void parseBuilderConfig(ModelConfig& modelConfig, Json const& builderConfig)
     auto const maxBatchSize = parseJsonFieldOr(builderConfig, "max_batch_size", 0);
     auto const maxBeamWidth = parseJsonFieldOr(builderConfig, "max_beam_width", 0);
     auto const maxInputLen = parseJsonFieldOr(builderConfig, "max_input_len",
-        modelConfig.isMultiModal()
-            ? maxBatchSize
-            : 0); // For multimodal model, used by microbatch scheduler to limit the number requests to schedule
+        modelConfig.isMultiModal() ? maxBatchSize : 0); // For multimodal model,
+                                                        // used by microbatch
+                                                        // scheduler to limit the
+                                                        // number requests to
+                                                        // schedule
     auto const maxSequenceLen = parseJsonFieldOr(builderConfig, "max_seq_len", 0);
     auto const maxNumTokens = parseJsonFieldOptional<SizeType32>(builderConfig, "max_num_tokens");
     auto const maxPromptEmbeddingTableSize
@@ -336,7 +351,8 @@ void parseBuilderConfig(ModelConfig& modelConfig, Json const& builderConfig)
     if (it == builderConfig.end())
     {
         TLLM_LOG_ERROR(
-            "Missing kv_cache_type field in builder_config, you need to rebuild engine. Default to continuous kv "
+            "Missing kv_cache_type field in builder_config, you need to "
+            "rebuild engine. Default to continuous kv "
             "cache.");
     }
 
@@ -416,7 +432,8 @@ void parseLora(ModelConfig& modelConfig, Json const& json, Json const& pluginCon
                                      { return numKvHeads == firstNumKvHeads; }),
                 "LORA with a VGQA model is not supported");
         }
-        // TODO(oargov): don't assume all layers have the same num_kv_heads to support VGQA
+        // TODO(oargov): don't assume all layers have the same num_kv_heads to
+        // support VGQA
         auto const numKvHeads = numKvHeadsPerLayer.empty() ? modelConfig.getNbHeads() : numKvHeadsPerLayer[0];
         bool hasMoE = !engineVersionNone && json.at("pretrained_config").contains("moe");
         auto const numExperts = hasMoE
@@ -435,7 +452,9 @@ void parseLora(ModelConfig& modelConfig, Json const& json, Json const& pluginCon
 
         if (modelConfig.getLoraModules().empty() || modelConfig.getMaxLoraRank() == 0)
         {
-            TLLM_LOG_WARNING("lora_plugin enabled, but no lora module enabled: setting useLoraPlugin to false");
+            TLLM_LOG_WARNING(
+                "lora_plugin enabled, but no lora module enabled: "
+                "setting useLoraPlugin to false");
             useLoraPlugin = false;
         }
     }
@@ -454,11 +473,15 @@ GptJsonConfig parseJson(InputType&& input)
     auto const engineVersionNone = engineVersion == std::string("none");
     if (engineVersionNone)
     {
-        TLLM_LOG_INFO("No engine version found in the config file, assuming engine(s) built by old builder API.");
+        TLLM_LOG_INFO(
+            "No engine version found in the config file, assuming "
+            "engine(s) built by old builder API.");
     }
     else
     {
-        TLLM_LOG_INFO("Engine version %s found in the config file, assuming engine(s) built by new builder API.",
+        TLLM_LOG_INFO(
+            "Engine version %s found in the config file, assuming "
+            "engine(s) built by new builder API.",
             engineVersion.c_str());
     }
 
@@ -589,7 +612,8 @@ GptJsonConfig parseJson(InputType&& input)
             auto const maxDraftLen = parseJsonFieldOr(pretrainedConfig, "max_draft_len", 0);
             auto const medusaHeads = parseJsonFieldOptional<SizeType32>(pretrainedConfig, "num_medusa_heads");
             TLLM_CHECK_WITH_INFO(medusaHeads.has_value() && maxDraftLen > 0,
-                "Both num_medusa_heads and max_draft_len have to be provided for Medusa model");
+                "Both num_medusa_heads and max_draft_len have to be "
+                "provided for Medusa model");
 
             auto medusaModule = std::make_shared<MedusaModule>(medusaHeads.value(), maxDraftLen);
             modelConfig.setSpeculativeDecodingModule(medusaModule);
@@ -599,15 +623,19 @@ GptJsonConfig parseJson(InputType&& input)
             auto const maxDraftLen = parseJsonFieldOr(builderConfig, "max_draft_len", 0);
             if (modelConfig.getSpeculativeDecodingMode().isLookaheadDecoding())
             {
-                TLLM_CHECK_WITH_INFO(
-                    maxDraftLen > 0, "max_draft_len has to be larger than 0 for Lookahead decoding model");
+                TLLM_CHECK_WITH_INFO(maxDraftLen > 0,
+                    "max_draft_len has to be larger "
+                    "than 0 for Lookahead decoding "
+                    "model");
                 auto lookaheadDecodingModule = std::make_shared<LookaheadModule>(maxDraftLen, maxDraftLen);
                 modelConfig.setSpeculativeDecodingModule(lookaheadDecodingModule);
             }
             else if (modelConfig.getSpeculativeDecodingMode().isDraftTokensExternal())
             {
-                TLLM_CHECK_WITH_INFO(
-                    maxDraftLen > 0, "max_draft_len has to be larger than 0 for decoding with external draft tokens");
+                TLLM_CHECK_WITH_INFO(maxDraftLen > 0,
+                    "max_draft_len has to be larger "
+                    "than 0 for decoding with "
+                    "external draft tokens");
                 auto speculativeDecodingModule
                     = std::make_shared<SpeculativeDecodingModule>(maxDraftLen, maxDraftLen, 1);
                 modelConfig.setSpeculativeDecodingModule(speculativeDecodingModule);
@@ -624,8 +652,9 @@ GptJsonConfig parseJson(InputType&& input)
 
                 TLLM_CHECK_WITH_INFO(maxDraftLen > 0, "max_draft_len has to be larger than 0 for eagle decoding");
                 TLLM_CHECK_WITH_INFO(numEagleLayers > 0, "num_eagle_layers has to be larger than 0 for eagle decoding");
-                TLLM_CHECK_WITH_INFO(
-                    maxNonLeafNodesPerLayer > 0, "max_non_leaves_per_layer has to be larger than 0 for eagle decoding");
+                TLLM_CHECK_WITH_INFO(maxNonLeafNodesPerLayer > 0,
+                    "max_non_leaves_per_layer has to be larger than 0 "
+                    "for eagle decoding");
                 auto eagleModule = std::make_shared<EagleModule>(
                     numEagleLayers, maxDraftLen, numEagleNetLayers, maxNonLeafNodesPerLayer);
                 modelConfig.setSpeculativeDecodingModule(eagleModule);

@@ -22,10 +22,7 @@
 #include <cstring>
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // TMA desc type.
 typedef enum
@@ -505,6 +502,4 @@ private:
     int batch_size = 0;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

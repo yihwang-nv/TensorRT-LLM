@@ -24,13 +24,13 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 /**
- * @brief Wrapper that holds an optional reference and integrates with std containers.
- * @details The wrapper uses a std::optional<std::reference_wrapper<T>> at its core.
-            When constructed with a unique or shared ptr with a nullptr value, it is interpreted as not holding a value,
+ * @brief Wrapper that holds an optional reference and integrates with std
+ containers.
+ * @details The wrapper uses a std::optional<std::reference_wrapper<T>> at its
+ core.
+            When constructed with a unique or shared ptr with a nullptr value,
+ it is interpreted as not holding a value,
             meaning the std::optional of the wrapper object will be false.
  *
  * @tparam T
@@ -59,7 +59,8 @@ public:
     {
     }
 
-    // Constructor for std::shared_ptr<std::remove_const_t<T>> when T is const-qualified
+    // Constructor for std::shared_ptr<std::remove_const_t<T>> when T is
+    // const-qualified
     template <typename U = T, typename = std::enable_if_t<std::is_const_v<U>>>
     OptionalRef(std::shared_ptr<std::remove_const_t<T>> const& ptr)
         : opt(ptr ? std::optional<std::reference_wrapper<T>>(std::ref(*ptr)) : std::nullopt)
@@ -71,7 +72,8 @@ public:
     {
     }
 
-    // Constructor for std::unique_ptr<std::remove_const_t<T>> when T is const-qualified
+    // Constructor for std::unique_ptr<std::remove_const_t<T>> when T is
+    // const-qualified
     template <typename U = T, typename = std::enable_if_t<std::is_const_v<U>>>
     OptionalRef(std::unique_ptr<std::remove_const_t<T>> const& ptr)
         : opt(ptr ? std::optional<std::reference_wrapper<T>>(std::ref(*ptr)) : std::nullopt)
@@ -103,7 +105,5 @@ public:
         return opt->get();
     }
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

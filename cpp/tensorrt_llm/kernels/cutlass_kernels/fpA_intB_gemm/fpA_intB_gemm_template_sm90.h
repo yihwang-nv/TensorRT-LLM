@@ -27,19 +27,19 @@
 
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/launchers/fpA_intB_launcher_sm90.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels_oss
 {
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
 using namespace cute;
 
-// This filters out invalid template combinations that we DON'T want instantiated in CUTLASS. For example,
-// instantiating SM=75, Stages=3 is invalid so we would need to filter that out. Fine grained
+// This filters out invalid template combinations that we DON'T want
+// instantiated in CUTLASS. For example,
+// instantiating SM=75, Stages=3 is invalid so we would need to filter that out.
+// Fine grained
 // quanitzation is only supported on Ampere+ GPUs.
 template <typename ActivationType, typename WeightType, typename ScaleZeroType, typename BiasType, typename OutputType,
     cutlass::WeightOnlyQuantOp QuantOp, typename EpilogueTag, typename CTAShape, typename ClusterShape,
@@ -63,7 +63,8 @@ void sm90_dispatch_epilogue_schedules(ActivationType const* A, WeightType const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_epilogue_schedules] epilogue schedule config is invalid for "
+            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_epilogue_schedules] "
+            "epilogue schedule config is invalid for "
             "mixed "
             "type GEMM.");
         break;
@@ -77,9 +78,11 @@ void sm90_dispatch_epilogue_schedules(ActivationType const* A, WeightType const*
 
     1x2x1 cluster shape is only supported when the N tile is at least 128.
 
-    2x2x1 cluster shape is only supported when both the M and N tiles are at least 128.
+    2x2x1 cluster shape is only supported when both the M and N tiles are at
+   least 128.
 
-    We make the above restrictions to improve compilation speed in TRT-LLM, by pruning kernels
+    We make the above restrictions to improve compilation speed in TRT-LLM, by
+   pruning kernels
     that may not be very useful in practice.
  */
 template <typename CTAShape, typename ClusterShape>
@@ -136,7 +139,8 @@ void sm90_dispatch_mainloop_schedules(ActivationType const* A, WeightType const*
             break;
         default:
             throw std::runtime_error(
-                "[TensorRT LLM Error][fpA_intB][sm90_dispatch_mainloop_schedules] mainloop schedule config is invalid "
+                "[TensorRT LLM Error][fpA_intB][sm90_dispatch_mainloop_schedules] "
+                "mainloop schedule config is invalid "
                 "for "
                 "mixed type GEMM.");
             break;
@@ -145,7 +149,8 @@ void sm90_dispatch_mainloop_schedules(ActivationType const* A, WeightType const*
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_mainloop_schedules] Unsupported CTA and Cluster shapes for "
+            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_mainloop_schedules] "
+            "Unsupported CTA and Cluster shapes for "
             "mixed type GEMM.");
     }
 }
@@ -182,7 +187,9 @@ void sm90_dispatch_gemm_config(ActivationType const* A, WeightType const* B, Sca
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][fpA_intB][dispatch_CGA_config] Config is invalid for mixed type GEMM.");
+            "[TensorRT LLM "
+            "Error][fpA_intB][dispatch_CGA_config] Config is "
+            "invalid for mixed type GEMM.");
         break;
     }
 }
@@ -195,8 +202,10 @@ void sm90_dispatch_gemm_to_cutlass(ActivationType const* A, WeightType const* B,
     cudaStream_t stream, int* occupancy = nullptr)
 {
     TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
-    // Note that SIMT configs are omitted here since they are not supported for fpA_intB.
-    // We also only instantiate configs here where threadblockShapeM == warpShapeM since those usually perform the best
+    // Note that SIMT configs are omitted here since they are not supported for
+    // fpA_intB.
+    // We also only instantiate configs here where threadblockShapeM == warpShapeM
+    // since those usually perform the best
     // for mixed type gemms.
 
     constexpr int Ktile = 128 / sizeof(ActivationType);
@@ -255,21 +264,26 @@ void sm90_dispatch_gemm_to_cutlass(ActivationType const* A, WeightType const* B,
         break;
     case tkc::CutlassTileConfigSM90::Undefined:
         throw std::runtime_error(
-            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_gemm_to_cutlass] gemm config undefined.");
+            "[TensorRT LLM "
+            "Error][fpA_intB][sm90_dispatch_gemm_to_cutlass] "
+            "gemm config undefined.");
         break;
     case tkc::CutlassTileConfigSM90::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_gemm_to_cutlass] gemm config should have already been set by "
+            "[TensorRT LLM "
+            "Error][fpA_intB][sm90_dispatch_gemm_to_cutlass] "
+            "gemm config should have already been set by "
             "heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][fpA_intB][sm90_dispatch_gemm_to_cutlass] Config is invalid for mixed type GEMM.");
+            "[TensorRT LLM "
+            "Error][fpA_intB][sm90_dispatch_gemm_to_cutlass] "
+            "Config is invalid for mixed type GEMM.");
         break;
     }
 }
 
 } // namespace cutlass_kernels_oss
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

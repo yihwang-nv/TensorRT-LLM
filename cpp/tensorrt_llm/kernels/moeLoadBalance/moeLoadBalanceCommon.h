@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +18,7 @@
 #pragma once
 
 #include "tensorrt_llm/common/config.h"
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct MoeLoadBalanceSingleLayerSignal
 {
@@ -29,11 +27,16 @@ struct MoeLoadBalanceSingleLayerSignal
     static constexpr unsigned long long kDevice = 1ULL;
     static constexpr unsigned long long kSkipStep = 1ULL << 1U;
     static constexpr unsigned long long kDisabled = 1ULL << 63U;
-    // Bit 0 means the current owner of this layer, 0: gpu, 1: cpu, updated by cpu and gpu alternately
-    // Bit 1 means whether skip statistic for current step, cpu set that at one iteration start,
-    //  maybe with or without ownership, but since forward is not started, so no conflict.
-    // Bits 2-62 means the current step, updated by cpu after one iteration with cpu ownership
-    // Bit 63 means if step update is disabled, 0: not disabled, 1: disabled, updated by cpu
+    // Bit 0 means the current owner of this layer, 0: gpu, 1: cpu, updated by cpu
+    // and gpu alternately
+    // Bit 1 means whether skip statistic for current step, cpu set that at one
+    // iteration start,
+    //  maybe with or without ownership, but since forward is not started, so no
+    // conflict.
+    // Bits 2-62 means the current step, updated by cpu after one iteration with
+    // cpu ownership
+    // Bit 63 means if step update is disabled, 0: not disabled, 1: disabled,
+    // updated by cpu
     unsigned long long int volatile stepAndOwner;
 };
 
@@ -64,11 +67,13 @@ struct MoeLoadBalanceStatisticInfo
 
     // rawDataWindowSize means the size of the raw data window.
     // e.g. how many steps of raw data are kept in the memory.
-    // current we keep only the data in current iteration, previous should sum to expertLoadFactor.
+    // current we keep only the data in current iteration, previous should sum to
+    // expertLoadFactor.
     static constexpr int rawDataWindowSize = 1;
 
     // decayFactor means the decay factor of the raw data per step.
-    // e.g. if decayFactor is 0.95, then the raw data of expert i will be decayed by 0.95 for each step.
+    // e.g. if decayFactor is 0.95, then the raw data of expert i will be decayed
+    // by 0.95 for each step.
     float decayFactor = 0.95f;
 };
 
@@ -79,9 +84,12 @@ struct MoePlacementInfo
     // expertReplicaCount[i] means the number of replicas of expert i
     int* expertReplicaCount = nullptr;
 
-    // expertReplicaStartOffset[i] means the start offset of expert i's replicas in globalSlotIds
-    // and the values of globalSlotIds[expertReplicaStartOffset[i]] ~ globalSlotIds[expertReplicaStartOffset[i] +
-    // expertReplicaCount[i] - 1] are possible globalSlotId for expert i, and can be dispatched to any one.
+    // expertReplicaStartOffset[i] means the start offset of expert i's replicas
+    // in globalSlotIds
+    // and the values of globalSlotIds[expertReplicaStartOffset[i]] ~
+    // globalSlotIds[expertReplicaStartOffset[i] +
+    // expertReplicaCount[i] - 1] are possible globalSlotId for expert i, and can
+    // be dispatched to any one.
     int* expertReplicaStartOffset = nullptr;
 
     // globalSlotIds[i] means the global slot id for expert i
@@ -89,6 +97,4 @@ struct MoePlacementInfo
     int* globalSlotIds = nullptr;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

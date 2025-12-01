@@ -19,30 +19,29 @@
 #include "common.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/runtime/common.h"
 #include <variant>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 namespace kv_cache_manager
 {
 class BaseKVCacheManager;
 }
 class BasePeftCacheManager;
-} // namespace batch_manager
+} // namespace tensorrt_llm::batch_manager
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using tensorrt_llm::runtime::SizeType32;
 using common::OptionalRef;
 
-/// @brief This scheduler takes into account the given request capacity and the KV cache capacity.
-///        Depending on the CapacitySchedulerPolicy it will schedule already started and new requests,
+/// @brief This scheduler takes into account the given request capacity and
+/// the KV cache capacity.
+///        Depending on the CapacitySchedulerPolicy it will schedule already
+/// started and new requests,
 ///        or even pause previously started requests.
 class BaseCapacityScheduler
 {
@@ -77,8 +76,10 @@ public:
         LlmRequestState noScheduleUntilState = LlmRequestState::kCONTEXT_INIT,
         LlmRequestState noScheduleAfterState = LlmRequestState::kGENERATION_COMPLETE);
 
-    /// @brief Takes as input a sorted list of requests and outputs a sorted lists of requests
-    ///        to update for this current iteration, and a map of requests to pause
+    /// @brief Takes as input a sorted list of requests and outputs a sorted
+    /// lists of requests
+    ///        to update for this current iteration, and a map of requests to
+    /// pause
     [[nodiscard]] std::tuple<RequestVector, RequestVector> operator()(RequestList const& activeRequests) const;
 
 private:
@@ -143,7 +144,7 @@ public:
         OptionalRef<BasePeftCacheManager const> peftCacheManager, RequestList const& activeRequests) const;
 };
 
-class CapacityScheduler : public Algorithm
+class CapacityScheduler : public tensorrt_llm::common::Algorithm
 {
 public:
     constexpr static auto name{"CapacityScheduler"};
@@ -156,13 +157,17 @@ public:
     /**
      * @brief Schedules requests following the selected policy.
      *
-     * @param kvCacheManager Required in MaxUtilizationScheduler (as a ref) and in GuaranteedNoEvictScheduler and
+     * @param kvCacheManager Required in MaxUtilizationScheduler (as a ref) and
+     *in GuaranteedNoEvictScheduler and
      * StaticBatchScheduler (as a const ref).
-     * @param crossKvCacheManager Optional used in GuaranteedNoEvictScheduler and StaticBatchScheduler.
-     * @param peftCacheManager Optional used in MaxUtilizationScheduler, GuaranteedNoEvictScheduler and
+     * @param crossKvCacheManager Optional used in GuaranteedNoEvictScheduler
+     *and StaticBatchScheduler.
+     * @param peftCacheManager Optional used in MaxUtilizationScheduler,
+     *GuaranteedNoEvictScheduler and
      * StaticBatchScheduler.
      * @param activeRequests
-     * @return std::tuple<RequestVector, RequestVector, RequestVector>, fittingRequests, fittingDisaggInitRequests and
+     * @return std::tuple<RequestVector, RequestVector, RequestVector>,
+     *fittingRequests, fittingDisaggInitRequests and
      * pausedRequests respectively.
      */
     [[nodiscard]] std::tuple<RequestVector, RequestVector, RequestVector> operator()(RequestList const& activeRequests,
@@ -176,6 +181,4 @@ private:
         mScheduler;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

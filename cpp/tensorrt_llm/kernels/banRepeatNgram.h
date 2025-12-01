@@ -22,10 +22,7 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 void invokeBanRepeatNgram(T* logits, runtime::TokenIdType const** output_ids_buf, FinishedState const* finished_buf,
@@ -34,6 +31,4 @@ void invokeBanRepeatNgram(T* logits, runtime::TokenIdType const** output_ids_buf
     runtime::SizeType32 max_seq_len, runtime::SizeType32 const* no_repeat_ngram_size_buf,
     runtime::SizeType32 vocab_size_padded, runtime::SizeType32 max_step, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

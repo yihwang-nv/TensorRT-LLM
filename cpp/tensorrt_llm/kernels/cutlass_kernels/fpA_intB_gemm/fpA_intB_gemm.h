@@ -23,12 +23,10 @@
 #include <cuda_runtime_api.h>
 #include <vector>
 
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -38,9 +36,12 @@ namespace cutlass_kernels
 
   Activations, biases, scales and outputs are all assumed to be row-major.
 
-  However, it is assumed that B is in a special format governed by cutlass_extensions/gemm/kernel/mixed_gemm_B_layout.
-  In this case, B must be preprocessed using the cutlass weight only quant preprocessors. The weight preprocessor
-  will instantiate the layout and preprocess based on the instantiation, so layout changes should only require
+  However, it is assumed that B is in a special format governed by
+  cutlass_extensions/gemm/kernel/mixed_gemm_B_layout.
+  In this case, B must be preprocessed using the cutlass weight only quant
+  preprocessors. The weight preprocessor
+  will instantiate the layout and preprocess based on the instantiation, so
+  layout changes should only require
   modifications to mix_gemm_B_layout.h.
 */
 
@@ -111,8 +112,10 @@ public:
 
     // Disabled since the fused GEMM, activation kernels will not be used in v1.
 
-    // void gemm_bias_act(const T* A, const WeightType* B, const T* weight_scales, const T* biases, T* C, int m, int n,
-    //     int k, ActivationType activation_type, char* workspace_ptr, const size_t workspace_bytes, cudaStream_t
+    // void gemm_bias_act(const T* A, const WeightType* B, const T* weight_scales,
+    // const T* biases, T* C, int m, int n,
+    //     int k, ActivationType activation_type, char* workspace_ptr, const
+    // size_t workspace_bytes, cudaStream_t
     //     stream);
 
     // Returns desired workspace size in bytes.
@@ -133,6 +136,5 @@ private:
 };
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

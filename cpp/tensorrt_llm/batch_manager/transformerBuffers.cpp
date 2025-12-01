@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,10 +17,9 @@
  */
 
 #include "tensorrt_llm/batch_manager/transformerBuffers.h"
-#include "tensorrt_llm/batch_manager/kvCacheManager.h"
 
+#include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/attentionMask.h"
@@ -36,9 +36,7 @@
 using namespace tensorrt_llm::runtime;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 TransformerBuffers::TransformerBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth,
@@ -167,8 +165,9 @@ void TransformerBuffers::reshape(SizeType32 numSequences, SizeType32 numInputTok
 
     if (crossKvCacheBlockOffsetsHost)
     {
-        TLLM_CHECK_WITH_INFO(
-            crossKvCacheBlockOffsetsDevice, "crossKvCacheBlockOffsetsDevice is empty for model with cross attention!");
+        TLLM_CHECK_WITH_INFO(crossKvCacheBlockOffsetsDevice,
+            "crossKvCacheBlockOffsetsDevice is empty for model "
+            "with cross attention!");
         auto crossCacheBlockOffsetsShape = crossKvCacheBlockOffsetsHost->getShape();
         if (crossCacheBlockOffsetsShape.nbDims > 0)
         {
@@ -249,7 +248,8 @@ void TransformerBuffers::reshapeKvTensors(SizeType32 maxBatchSize, SizeType32 ma
         manager.setZero(*crossAttentionMaskDevice);
         manager.setZero(*crossAttentionMaskPinnedHost);
 
-        // Only context attention needs this, so allocate it by shape [maxBatchSize, maxInputLen, maxEncoderOutputLen].
+        // Only context attention needs this, so allocate it by shape
+        // [maxBatchSize, maxInputLen, maxEncoderOutputLen].
         auto [packedMaskM, packedMaskN] = tk::roundUpPackedMaskMNDims(maxInputLen, maxEncoderOutputLen);
         crossAttentionPackedMaskDevice->reshape(ITensor::makeShape({maxBatchSize * packedMaskM, packedMaskN}));
         manager.setZero(*crossAttentionPackedMaskDevice);
@@ -373,7 +373,8 @@ void TransformerBuffers::copyKvBlockOffsets(RequestVector const& contextRequests
         }
     }
 
-    // requests' block offsets collected as [totalNumSequences, 2, maxBlocksPerSeq], copy to device
+    // requests' block offsets collected as [totalNumSequences, 2,
+    // maxBlocksPerSeq], copy to device
     auto copyOffsetsToDevice = [&cudaStream](TensorPtr& offsetsHost, TensorPtr& offsetsDevice, SizeType32 maxBlockCount)
     {
         // shape should be [totalNumSequences, 2, maxBlocksPerSeq]
@@ -413,15 +414,20 @@ void TransformerBuffers::copyCacheIndirection(
 
     auto cacheIndirShape = decoderCacheIndirectionOutput->getShape();
 
-    // At present, all requests of a batch must have the same beam width in one generation step (or they will not
-    // be batched together). So, the beam width of the first request is taken here to reshape the buffer.
-    // Corresponding changes must be done if Diverse-Beam-Width-Search (DBWS, requests with diverse beam width in
+    // At present, all requests of a batch must have the same beam width in one
+    // generation step (or they will not
+    // be batched together). So, the beam width of the first request is taken
+    // here to reshape the buffer.
+    // Corresponding changes must be done if Diverse-Beam-Width-Search (DBWS,
+    // requests with diverse beam width in
     // a batch in one generation step) is supported in the future.
     auto reqBeamWidth = genRequests[0]->getBeamWidthByIter();
 
     // Get size of copying from shape of `CacheIndirectionOutput`
     cacheIndirShape.d[0] = 1;
-    cacheIndirShape.d[1] = reqBeamWidth; // Use beam width of current step rather than max beam width as dst offset
+    cacheIndirShape.d[1] = reqBeamWidth; // Use beam width of current step
+                                         // rather than max beam width as dst
+                                         // offset
     auto const copySize = static_cast<SizeType64>(ITensor::volume(cacheIndirShape));
 
     std::transform(genRequests.begin(), genRequests.end(), batchedCopySrcOffsets.begin(),
@@ -446,7 +452,8 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
     auto const& manager = runtime.getBufferManager();
 
-    // Reshape the tensor to make sure the dim1 matches maxEncoderInputLengthInBatch.
+    // Reshape the tensor to make sure the dim1 matches
+    // maxEncoderInputLengthInBatch.
     auto crossAttentionMaskShape = crossAttentionMaskDevice->getShape();
     crossAttentionMaskShape.d[1] = maxEncoderInputLengthInBatch;
     crossAttentionMaskDevice->reshape(crossAttentionMaskShape);
@@ -464,11 +471,14 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
             break;
         }
     }
-    // If not all requests have cross attention mask, let us create the default ones.
+    // If not all requests have cross attention mask, let us create the default
+    // ones.
     auto const& stream = runtime.getStream();
     if (!allContextCrossAttentionMaskProvided)
     {
-        TLLM_LOG_WARNING("Default padding attention mask will be used as not all requests have cross attention mask.");
+        TLLM_LOG_WARNING(
+            "Default padding attention mask will be used as not all "
+            "requests have cross attention mask.");
         tk::AttentionMaskParams<bool> attentionMaskParams;
         memset((void*) &attentionMaskParams, 0, sizeof(attentionMaskParams));
         // Set parameters.
@@ -484,7 +494,8 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
         tk::invokeBuildAttentionMask(attentionMaskParams, stream.get());
         sync_check_cuda_error(stream.get());
     }
-    // Use the first request's cross attention mask tensor's pointer address as the primary source pointer.
+    // Use the first request's cross attention mask tensor's pointer address as
+    // the primary source pointer.
     auto const& attentionMaskSrc = !contextRequests.empty() ? contextRequests[0]->getCrossAttentionMask()
                                                             : genRequests[0]->getCrossAttentionMask();
     bool const* primarySrcPtr = bufferCastOrNull<bool>(attentionMaskSrc);
@@ -512,12 +523,15 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
                 = static_cast<SizeType64>(crossAttentionMaskRequest->getShape().d[0]);
             auto const crossAttentionMaskRequestDim1
                 = static_cast<SizeType64>(crossAttentionMaskRequest->getShape().d[1]);
-            TLLM_LOG_DEBUG("copyCrossAttentionMasks (shape [%d, %d]) from contextRequests position %d chunkSize %d",
+            TLLM_LOG_DEBUG(
+                "copyCrossAttentionMasks (shape [%d, %d]) from "
+                "contextRequests position %d chunkSize %d",
                 crossAttentionMaskRequestDim0, crossAttentionMaskRequestDim1, position, size);
             if ((position + size - 1) >= crossAttentionMaskRequestDim0)
             {
                 TLLM_LOG_WARNING(
-                    "The provided crossAttentionMask input is not complete for context phases, the last row "
+                    "The provided crossAttentionMask input is not "
+                    "complete for context phases, the last row "
                     "will be "
                     "used by default.");
             }
@@ -568,7 +582,8 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
         {
             numTokens += size;
             TLLM_LOG_WARNING(
-                "CrossAttentionMask is not provided for the request. Default padding attention mask will be "
+                "CrossAttentionMask is not provided for the request. "
+                "Default padding attention mask will be "
                 "created.");
         }
     }
@@ -586,12 +601,15 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
                 = static_cast<SizeType64>(crossAttentionMaskRequest->getShape().d[0]);
             auto const crossAttentionMaskRequestDim1
                 = static_cast<SizeType64>(crossAttentionMaskRequest->getShape().d[1]);
-            TLLM_LOG_DEBUG("copyCrossAttentionMasks (shape [%d, %d]) from genRequests decodingIter %d",
+            TLLM_LOG_DEBUG(
+                "copyCrossAttentionMasks (shape [%d, %d]) from "
+                "genRequests decodingIter %d",
                 crossAttentionMaskRequestDim0, crossAttentionMaskRequestDim1, decodingIter);
             if (promptLen + decodingIter - 1 >= crossAttentionMaskRequestDim0)
             {
                 TLLM_LOG_WARNING(
-                    "The provided crossAttentionMask input is not complete for generation phases, the last row "
+                    "The provided crossAttentionMask input is not "
+                    "complete for generation phases, the last row "
                     "will be "
                     "used by default.");
             }
@@ -629,7 +647,8 @@ void TransformerBuffers::copyCrossAttentionMasks(RequestVector const& contextReq
         {
             numTokens++;
             TLLM_LOG_WARNING(
-                "CrossAttentionMask is not provided for the generation request. Full valid attentionMask will "
+                "CrossAttentionMask is not provided for the "
+                "generation request. Full valid attentionMask will "
                 "be used "
                 "by default.");
         }
@@ -679,6 +698,4 @@ void TransformerBuffers::copySkipCrossAttnBlocks(bool const& _skipCrossAttnBlock
     manager.copy(&_skipCrossAttnBlocks, *skipCrossAttnBlocks);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

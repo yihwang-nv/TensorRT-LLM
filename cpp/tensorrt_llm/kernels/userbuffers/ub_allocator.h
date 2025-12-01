@@ -30,7 +30,8 @@
 using ncclWindow_t = void*;
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -138,4 +139,4 @@ using communicator = void;
 #endif
 }; // namespace runtime::ub
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

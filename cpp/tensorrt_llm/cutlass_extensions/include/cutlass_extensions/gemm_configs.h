@@ -27,12 +27,13 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/tllmException.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace cutlass_extensions
 {
 
-// Note: The shapes are in the format MxNxK. The K shape of the runtime config MUST match the K shape
+// Note: The shapes are in the format MxNxK. The K shape of the runtime config
+// MUST match the K shape
 //       in the kernel layout details when doing weight only quantization.
 enum class CutlassTileConfig
 {
@@ -74,7 +75,6 @@ enum class CutlassTileConfig
 
     // TensorCore config CTA_N = 256, CTA_K = 128
     CtaShape16x256x128_WarpShape16x64x128
-
 };
 
 enum class SplitKStyle
@@ -82,7 +82,7 @@ enum class SplitKStyle
     NO_SPLIT_K,
     SPLIT_K_SERIAL,
     STREAM_K, // Sm80+
-    // SPLIT_K_PARALLEL // Not supported yet
+              // SPLIT_K_PARALLEL // Not supported yet
 };
 
 constexpr static int shape_tuple_to_enum(int m, int n, int k)
@@ -168,7 +168,6 @@ enum class CutlassTileConfigSM120 : int
 
     // Signals that we should run heuristics do choose a config
     ChooseWithHeuristic = 1,
-
     CtaShape128x128x128B = shape_tuple_to_enum(128, 128, 128),
     CtaShape128x128x64B = shape_tuple_to_enum(128, 128, 64),
     CtaShape256x128x64B = shape_tuple_to_enum(256, 128, 64),
@@ -179,7 +178,8 @@ enum class CutlassTileConfigSM120 : int
 
 enum class MainloopScheduleType
 {
-    AUTO, // Automatically selects between pingpong and cooperative schedules on Hopper. On older architectures, this
+    AUTO, // Automatically selects between pingpong and cooperative schedules on
+          // Hopper. On older architectures, this
           // defaults to the "legacy" main loop schedule.
     PINGPONG,
     COOPERATIVE,
@@ -209,9 +209,11 @@ static auto get_mainloop_schedule_name(MainloopScheduleType schedule)
 
 enum class EpilogueScheduleType
 {
-    AUTO, // Automatically chooses an epilogue schedule compatible with the selected main loop schedule for Hopper. For
-          // architectures older than hopper, the epilogue is always performed by the same thread block as the main
-          // loop.
+    AUTO, // Automatically chooses an epilogue schedule compatible with the
+          // selected main loop schedule for Hopper. For
+    // architectures older than hopper, the epilogue is always performed by the
+    // same thread block as the main
+    // loop.
     NO_SMEM,
     TMA
 };
@@ -413,7 +415,8 @@ struct CutlassGemmConfig
     {
     }
 
-    // If dynamic_cluster_shape is provided, dynamic CGA will be enabled and cluster_shape will be interpreted as
+    // If dynamic_cluster_shape is provided, dynamic CGA will be enabled and
+    // cluster_shape will be interpreted as
     // whether to use 1 or 2 SM mode, otherwise static cluster shape is used.
     CutlassGemmConfig(CutlassTileConfigSM100 tile_config_sm100, MainloopScheduleType mainloop_schedule,
         EpilogueScheduleType epilogue_schedule, ClusterShape cluster_shape,
@@ -487,7 +490,7 @@ struct CutlassGemmConfig
                    << "\n\tepilogue fusion type: " << (int) epilogue_fusion_type
                    << "\n\tswap_ab: " << (swap_ab ? "true" : "false");
         }
-        else if (tile_config_sm80 != tensorrt_llm::cutlass_extensions::CutlassTileConfig::ChooseWithHeuristic)
+        else if (tile_config_sm80 != CutlassTileConfig::ChooseWithHeuristic)
         {
             assert(sm_version < 90 && "Invalid cutlass GEMM config");
             tactic << "\n\tstyle=compatible"
@@ -511,30 +514,28 @@ struct CutlassGemmConfig
 inline std::ostream& operator<<(std::ostream& out, CutlassGemmConfig const& config)
 {
     // clang-format off
-    if (config.is_tma_warp_specialized)
-    {
-        out << "tile_config_sm90_enum: " << config.getTileConfigAsInt()
-            << ", mainloop_schedule_enum: " << int(config.mainloop_schedule)
-            << ", epilogue_schedule_enum: " << int(config.epilogue_schedule)
-            << ", cluster_shape_enum: " << int(config.cluster_shape)
-            << ", dynamic_cluster_shape_enum: " << int(config.dynamic_cluster_shape)
-            << ", fallback_cluster_shape_enum: " << int(config.fallback_cluster_shape)
-            << ", enable_cuda_kernel: " << (config.enableCudaKernel ? "true" : "false")
-            << ", epilogue_fusion_type: " << int(config.epilogue_fusion_type)
-            << ", swap_ab: " << (config.swap_ab ? "true" : "false");
-    }
-    else
-    {
-        out << "tile_config_enum: " << config.getTileConfigAsInt()
-            << ", split_k_style_enum: " << int(config.split_k_style)
-            << ", split_k_factor: " << config.split_k_factor
-            << ", stages: " << config.stages
-            << ", enable_cuda_kernel: " << (config.enableCudaKernel ? "true" : "false");
-    }
+  if (config.is_tma_warp_specialized) {
+    out << "tile_config_sm90_enum: " << config.getTileConfigAsInt()
+        << ", mainloop_schedule_enum: " << int(config.mainloop_schedule)
+        << ", epilogue_schedule_enum: " << int(config.epilogue_schedule)
+        << ", cluster_shape_enum: " << int(config.cluster_shape)
+        << ", dynamic_cluster_shape_enum: " << int(config.dynamic_cluster_shape)
+        << ", fallback_cluster_shape_enum: "
+        << int(config.fallback_cluster_shape) << ", enable_cuda_kernel: "
+        << (config.enableCudaKernel ? "true" : "false")
+        << ", epilogue_fusion_type: " << int(config.epilogue_fusion_type)
+        << ", swap_ab: " << (config.swap_ab ? "true" : "false");
+  } else {
+    out << "tile_config_enum: " << config.getTileConfigAsInt()
+        << ", split_k_style_enum: " << int(config.split_k_style)
+        << ", split_k_factor: " << config.split_k_factor
+        << ", stages: " << config.stages << ", enable_cuda_kernel: "
+        << (config.enableCudaKernel ? "true" : "false");
+  }
     // clang-format on
     return out;
 }
 
 } // namespace cutlass_extensions
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

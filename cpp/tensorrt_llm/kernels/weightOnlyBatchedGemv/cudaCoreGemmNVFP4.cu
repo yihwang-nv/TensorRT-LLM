@@ -20,10 +20,8 @@
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/cudaCoreGemmNVFP4.h"
 #include <cub/cub.cuh>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cuda_core_gemm_nvfp4
 {
 template <typename InputType, typename OutputType, typename ScaleType, SizeType32 TILE_M, SizeType32 TILE_N,
@@ -280,7 +278,8 @@ bool cudaCoreGemmDispatcher(Params const& params, cudaStream_t stream)
     if (!dispatched)
     {
         TLLM_LOG_WARNING(
-            "tensorrt_llm::kernels::cuda_core_gemm_nvfp4::cudaCoreGemmDispatcher [NOT DISPATCHED], inputType=%d, "
+            "tensorrt_llm::kernels::cuda_core_gemm_nvfp4::"
+            "cudaCoreGemmDispatcher [NOT DISPATCHED], inputType=%d, "
             "outputType=%d, "
             "m=%d, "
             "n=%d, k=%d",
@@ -290,6 +289,5 @@ bool cudaCoreGemmDispatcher(Params const& params, cudaStream_t stream)
 }
 
 } // namespace cuda_core_gemm_nvfp4
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

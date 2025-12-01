@@ -23,7 +23,8 @@
 #include <string.h>
 
 #if ENABLE_MULTI_DEVICE
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -304,6 +305,5 @@ ipcSocketResult_t ipcSocketSendFd(IpcSocketHandle* handle, int const sendFd, int
     return ipcSocketSendMsg(handle, NULL, 0, sendFd, rank, hash);
 }
 } // namespace runtime::ub
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 #endif

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/eagleModule.h"
@@ -27,14 +26,12 @@
 
 #include <cstddef>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class LlmRequest;
 }
 
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class EagleBuffers
@@ -48,7 +45,8 @@ public:
     using TensorPtr = runtime::ITensor::SharedPtr;
     using TensorMap = runtime::StringPtrMap<runtime::ITensor>;
 
-    // The datastruct is used for runtime buffer that is holding runtime state per request (shape starts with
+    // The datastruct is used for runtime buffer that is holding runtime state
+    // per request (shape starts with
     // maxBatchSize) and for engine inputs (shape starts with numSequences).
     class Inputs
     {
@@ -63,7 +61,8 @@ public:
         TensorPtr randomDataSample;
         //! [maxBatchSize, maxDecodingTokens] or [numSequences, maxDecodingTokens]
         TensorPtr randomDataValidation;
-        //! [maxBatchSize, maxDecodingDraftTokens] or [numSequences, maxDecodingDraftTokens]
+        //! [maxBatchSize, maxDecodingDraftTokens] or [numSequences,
+        // maxDecodingDraftTokens]
         TensorPtr draftTokens;
         //! [maxBatchSize] or [numSequences]
         TensorPtr draftLens;
@@ -94,7 +93,8 @@ public:
         TensorPtr eagleNetGenContextLengthsHost;
         //! [maxBatchSize] or [numSequences]
         TensorPtr eagleNetGenPastKeyValueLengthsHost;
-        //! [maxBatchSize * maxDecodingTokens] or [numSequences * maxDecodingTokens]
+        //! [maxBatchSize * maxDecodingTokens] or [numSequences *
+        // maxDecodingTokens]
         TensorPtr inputGenTokensHost;
         //! [maxBatchSize] or [numSequences]
         TensorPtr chunkedContextNextTokens;
@@ -106,17 +106,22 @@ public:
         TensorPtr useDynamicTreeHost;
         //! [1]
         TensorPtr dynamicTreeMaxTopKHost;
-        //! [maxBatchSize, maxDecodingDraftTokens] or [numSequences, maxDecodingDraftTokens]
+        //! [maxBatchSize, maxDecodingDraftTokens] or [numSequences,
+        // maxDecodingDraftTokens]
         TensorPtr prevScores;
-        //! [maxBatchSize, maxDecodingDraftTokens] or [numSequences, maxDecodingDraftTokens]
+        //! [maxBatchSize, maxDecodingDraftTokens] or [numSequences,
+        // maxDecodingDraftTokens]
         TensorPtr currentExpandIndices;
-        //! [maxBatchSize, numEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens] or [numSequences,
+        //! [maxBatchSize, numEagleLayers, maxDecodingDraftTokens *
+        // maxDecodingDraftTokens] or [numSequences,
         //! numEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens]
         TensorPtr allLayersScores;
-        //! [maxBatchSize, numEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens] or [numSequences,
+        //! [maxBatchSize, numEagleLayers, maxDecodingDraftTokens *
+        // maxDecodingDraftTokens] or [numSequences,
         //! numEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens]
         TensorPtr allLayersDraftTokenIds;
-        //! [maxBatchSize, numEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens] or [numSequences,
+        //! [maxBatchSize, numEagleLayers, maxDecodingDraftTokens *
+        // maxDecodingDraftTokens] or [numSequences,
         //! numEagleLayers, maxDecodingDraftTokens * maxDecodingDraftTokens]
         TensorPtr allLayersDraftTokenIdsPredecessor;
 
@@ -182,6 +187,4 @@ private:
     TensorPtr posteriorThresholdHost;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

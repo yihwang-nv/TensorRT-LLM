@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +33,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -51,10 +53,15 @@ std::tuple<at::Tensor, at::Tensor> noaux_tc_op(th::Tensor const& scores, th::Ten
     TORCH_CHECK(bias.dim() == 1 && bias.numel() == num_experts,
         "bias must be 1D with length == number of experts (%ld)", num_experts);
     TORCH_CHECK(num_experts % n_group == 0, "num_experts should be divisible by n_group");
-    TORCH_CHECK(
-        n_group <= 32, "n_group should be smaller than or equal to 32 for now"); //@todo: remove this restriction later
-    TORCH_CHECK(
-        topk <= 32, "topk should be smaller than or equal to 32 for now");       //@todo: remove this restriction later
+    TORCH_CHECK(n_group <= 32,
+        "n_group should be smaller than or equal to 32 for now"); //@todo: remove
+    // this
+    // restriction
+    // later
+    TORCH_CHECK(topk <= 32,
+        "topk should be smaller than or equal to 32 for now"); //@todo: remove
+    // this restriction
+    // later
 
     th::Tensor topk_values = th::empty({num_tokens, topk}, th::dtype(data_type).device(torch::kCUDA));
     th::Tensor topk_indices = th::empty({num_tokens, topk}, th::dtype(torch::kInt32).device(torch::kCUDA));
@@ -159,12 +166,13 @@ std::tuple<at::Tensor, at::Tensor> noaux_tc_op(th::Tensor const& scores, th::Ten
 
 } // end namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "noaux_tc_op(Tensor scores, Tensor bias, int n_group, int topk_group, int topk, float "
+        "noaux_tc_op(Tensor scores, Tensor bias, int n_group, int topk_group, "
+        "int topk, float "
         "routed_scaling_factor) -> (Tensor, Tensor)");
 }
 

@@ -15,11 +15,8 @@
  */
 
 #include "tensorrt_llm/runtime/promptTuningParams.h"
-#include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 void PromptTuningParams::fillTasksTensor(TensorPtr tasksHost, SizeType32 const batchSize,
@@ -34,14 +31,18 @@ void PromptTuningParams::fillTasksTensor(TensorPtr tasksHost, SizeType32 const b
 
     bool validInput = packedInput || numContextRequests == batchSize || numContextRequests == 0;
     TLLM_CHECK_WITH_INFO(validInput,
-        "fillTasksTensor function with packed inputs must be called with only context requests or only generation "
+        "fillTasksTensor function with packed "
+        "inputs must be called with only context "
+        "requests or only generation "
         "requests.");
 
     bool validShapes = (static_cast<SizeType32>(reqBeamWidths.size()) == batchSize
         && static_cast<SizeType32>(reqPromptLengths.size()) == numContextRequests
         && static_cast<SizeType32>(promptTuningEnabled.size()) == batchSize);
     TLLM_CHECK_WITH_INFO(validShapes,
-        "Invalid inputs to fillTasksTensor function. reqBeamWidths and reqPtuningEnabled size must be batchSize and "
+        "Invalid inputs to fillTasksTensor function. "
+        "reqBeamWidths and reqPtuningEnabled size must be "
+        "batchSize and "
         "propmtLenghts size must be numContextRequests");
 
     SizeType32 totalInputSize = 0;
@@ -92,6 +93,4 @@ void PromptTuningParams::fillTasksTensor(TensorPtr tasksHost, SizeType32 const b
     }
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

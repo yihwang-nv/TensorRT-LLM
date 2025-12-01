@@ -32,10 +32,8 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 __global__ void topPInitialize(TokenIdType* topPIdValBuf, SizeType32* topPOffsetBuf, SizeType32* beginTopPOffsetBuf,
     SizeType32 batchSize, SizeType32 vocabSize)
 {
@@ -77,7 +75,8 @@ __launch_bounds__(THREADBLOCK_SIZE) __global__ void topPBeamTopKKernel(T const* 
     SizeType32 const* batchSlots)
 {
     /**
-     * Kernel performs top 1 search and saves the token with largest probability if it exceeds probability threshold
+     * Kernel performs top 1 search and saves the token with largest probability
+     * if it exceeds probability threshold
      */
     SizeType32 constexpr MAX_K = 1;
     auto const threadId = static_cast<SizeType32>(threadIdx.x);
@@ -190,11 +189,13 @@ __device__ void epilogue(SizeType32 batchId, SizeType32 currentStep, SizeType32 
         if (ids[batchId][currentStep] == endIds[batchId])
         {
             finishedOutput[batchId].setFinishedEOS();
-            // Do not increase seq len when EOS is generated. Seq len should always contain only tokens to be outputted
+            // Do not increase seq len when EOS is generated. Seq len should always
+            // contain only tokens to be outputted
         }
         else
         {
-            // We don't need to set output finished state as it is assumed to be in non finished state
+            // We don't need to set output finished state as it is assumed to be in
+            // non finished state
             sequenceLengths[batchId] += 1;
         }
     }
@@ -210,9 +211,12 @@ __global__ void topPSsampling(T const* sortedProbs, TokenIdType const* sortedIdV
     SizeType32 maxSeqLen, TokenIdType* outputIdCurrentStep, bool const* skipOutputIdCurrentStep)
 {
     /**
-     * Each block processes one request row sorted in descending order by probabilities.
-     * All threads within block compute running sum of probabilities until one of the threads exceeds the randomly
-     * chosen probability threshold. Thread that crossed probaility threshold writes the corresponding token to the
+     * Each block processes one request row sorted in descending order by
+     * probabilities.
+     * All threads within block compute running sum of probabilities until one of
+     * the threads exceeds the randomly
+     * chosen probability threshold. Thread that crossed probaility threshold
+     * writes the corresponding token to the
      * output.
      */
 
@@ -252,11 +256,14 @@ __global__ void topPSsampling(T const* sortedProbs, TokenIdType const* sortedIdV
         && skipOutputIdCurrentStep && !skipOutputIdCurrentStep[batchSlot];
 
     // With P in (0.0; 1.0] we draw a random number P' in range (0.0; P]
-    // We will sum all probs moving from the largest probability to the smallest and
-    // will choose the token which probability makes cumulative probability sum to exceed P'
+    // We will sum all probs moving from the largest probability to the smallest
+    // and
+    // will choose the token which probability makes cumulative probability sum to
+    // exceed P'
     if (threadIdx.x == 0)
     {
-        // if we want to return all top p indices, we should not do random sampling for probThreshold
+        // if we want to return all top p indices, we should not do random sampling
+        // for probThreshold
         auto const randomNumber = randomVals ? randomVals[batchSlot] : curand_uniform(curandState + batchSlot);
         randNumS = returnAllSelectedTokens ? probThreshold : randomNumber * probThreshold;
         randNumS2 = sampleTokenInSelected ? curand_uniform(curandState + batchSlot) * probThreshold : 0.0f;
@@ -343,7 +350,8 @@ __global__ void topPSsampling(T const* sortedProbs, TokenIdType const* sortedIdV
     }
     else
     {
-        // select first thread exceeded the prob threshold or the last thread in case of P=1.0f
+        // select first thread exceeded the prob threshold or the last thread in
+        // case of P=1.0f
         if (threadIdx.x == min(blockDim.x - count, blockDim.x - 1))
         {
             epilogue(batchSlot, currentStep, offset + selectedTokenId, idsPtrs, sortedIdVals, sortedProbs, cumLogProbs,
@@ -365,10 +373,9 @@ std::vector<size_t> getTopPWorkspaceSizes(SizeType32 batchSize, SizeType32 vocab
     tensorrt_llm::common::check_cuda_error(cub::DeviceSegmentedRadixSort::SortPairsDescending(nullptr,
         cubTempStorageSize, static_cast<T*>(nullptr), static_cast<T*>(nullptr), static_cast<SizeType32*>(nullptr),
         static_cast<SizeType32*>(nullptr), static_cast<SizeType32>(vocabSize * batchSize), batchSize,
-        static_cast<SizeType32*>(nullptr), static_cast<SizeType32*>(nullptr),
-        0,             // begin_bit
-        sizeof(T) * 8, // end_bit = sizeof(KeyT) * 8
-        0));           // cudaStream_t
+        static_cast<SizeType32*>(nullptr), static_cast<SizeType32*>(nullptr), 0, // begin_bit
+        sizeof(T) * 8,                                                           // end_bit = sizeof(KeyT) * 8
+        0));                                                                     // cudaStream_t
 
     return {cubTempStorageSize, sortedLogProbBufSize, sortedIdValsBufSize, topPIdValsSize, topPOffsetSize,
         beginTopPOffsetSize};
@@ -424,7 +431,8 @@ void invokeBatchTopPSampling(TopPSamplingKernelParams<T> const& params, cudaStre
 
     SizeType32 constexpr BLOCK_SIZE = 256;
     // Performs Top K=1 search.
-    // If the most probable token exceeds P, we skip sorting by setting beginOffsetBuf[bi] = offsetBuf[bi]
+    // If the most probable token exceeds P, we skip sorting by setting
+    // beginOffsetBuf[bi] = offsetBuf[bi]
     topPBeamTopKKernel<T, BLOCK_SIZE><<<params.batchSize, BLOCK_SIZE, 0, stream>>>(params.probs, sortedIdVals,
         sortedProbs, params.finishedInput, params.vocabSizePadded, offsetBuf, beginOffsetBuf, params.topPs,
         params.skipDecode, params.batchSlots);
@@ -434,8 +442,7 @@ void invokeBatchTopPSampling(TopPSamplingKernelParams<T> const& params, cudaStre
     auto cubWorkspaceSize = workspaceSizes[0];
     check_cuda_error(cub::DeviceSegmentedRadixSort::SortPairsDescending(cubTempStorage, cubWorkspaceSize, params.probs,
         sortedProbs, idVals, sortedIdVals, params.vocabSizePadded * params.batchSize, params.batchSize, beginOffsetBuf,
-        offsetBuf + 1,
-        0,                                      // begin_bit
+        offsetBuf + 1, 0,                       // begin_bit
         static_cast<SizeType32>(sizeof(T) * 8), // end_bit = sizeof(KeyT) * 8
         stream));                               // cudaStream_t
 
@@ -519,6 +526,4 @@ void invokeSetTopPRuntimeArgs(SizeType32 batchSize, ScatterDecodingParamEntry<Si
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

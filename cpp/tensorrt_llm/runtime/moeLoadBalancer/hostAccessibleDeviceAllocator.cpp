@@ -26,14 +26,11 @@
 #include "hostAccessibleDeviceAllocator.h"
 #include "topologyDetector.h"
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class NumaHugePagePoolAllocator
@@ -134,7 +131,8 @@ void* NumaHugePagePoolAllocator::allocate(size_t memorySize)
 
 void NumaHugePagePoolAllocator::free(void* ptr)
 {
-    // TODO: we don't actually free up memory since reuse is not implemented, and our use case is for weights, which are
+    // TODO: we don't actually free up memory since reuse is not implemented,
+    // and our use case is for weights, which are
     // not released until exit.
     (void) ptr;
 }
@@ -232,9 +230,10 @@ void HostAccessibleDeviceAllocator::shutdown()
     {
         return;
     }
-    // We should close GDRCopy handle in the last MoeLoadBalancer,
-    // But there might be some allocated memory not freed, so we can't close GDRCopy handle.
-    // So for now, we don't close GDRCopy handle.
+// We should close GDRCopy handle in the last MoeLoadBalancer,
+// But there might be some allocated memory not freed, so we can't close GDRCopy
+// handle.
+// So for now, we don't close GDRCopy handle.
 #if 0
     if (mGdrHandle != nullptr) {
         tensorrt_llm::runtime::gdrcopy::close(mGdrHandle);
@@ -357,15 +356,19 @@ void* HostAccessibleDeviceAllocator::allocate(size_t memorySize)
     int currentDevId = -1;
     TLLM_CUDA_CHECK(cudaGetDevice(&currentDevId));
     TLLM_CHECK_WITH_INFO(currentDevId == mDevId,
-        "HostAccessibleDeviceAllocator is not initialized for the current device, currentDevId=%d, mDevId=%d",
+        "HostAccessibleDeviceAllocator is not initialized for "
+        "the current device, currentDevId=%d, mDevId=%d",
         currentDevId, mDevId);
-    TLLM_CHECK_WITH_INFO(isSupported(), "HostAccessibleDeviceAllocator is not supported on the current system.");
+    TLLM_CHECK_WITH_INFO(isSupported(),
+        "HostAccessibleDeviceAllocator is not "
+        "supported on the current system.");
     void* devPtr = nullptr;
     void* hostPtr = nullptr;
     gdrcopy::GdrMemDesc* memDesc = nullptr;
     if (mGpuMemNumaId >= 0)
     {
-        // devPtr = TopologyDetector::getInstance().allocateCurrentGpuNumaMemory(memorySize);
+        // devPtr =
+        // TopologyDetector::getInstance().allocateCurrentGpuNumaMemory(memorySize);
         devPtr = NumaHugePagePoolAllocator::getInstance().allocate(memorySize);
         hostPtr = devPtr;
     }
@@ -375,8 +378,10 @@ void* HostAccessibleDeviceAllocator::allocate(size_t memorySize)
     }
     else
     {
-        TLLM_CHECK_WITH_INFO(
-            mAllowManagedFallback, "HostAccessibleDeviceAllocator is not supported on the current system.");
+        TLLM_CHECK_WITH_INFO(mAllowManagedFallback,
+            "HostAccessibleDeviceAllocato"
+            "r is not supported on the "
+            "current system.");
         TLLM_CUDA_CHECK(cudaMallocManaged(&devPtr, memorySize));
         TLLM_CUDA_CHECK(cudaMemAdvise(
             devPtr, memorySize, cudaMemAdviseSetPreferredLocation, {cudaMemLocationTypeDevice, currentDevId}));
@@ -399,13 +404,16 @@ void HostAccessibleDeviceAllocator::free(void* ptr)
         }
         else if (mGpuMemNumaId >= 0)
         {
-            // TopologyDetector::getInstance().freeCurrentGpuNumaMemory(const_cast<void*>(it->first), allocInfo.size);
+            // TopologyDetector::getInstance().freeCurrentGpuNumaMemory(const_cast<void*>(it->first),
+            // allocInfo.size);
             NumaHugePagePoolAllocator::getInstance().free(const_cast<void*>(it->first));
         }
         else
         {
-            TLLM_CHECK_WITH_INFO(
-                mAllowManagedFallback, "HostAccessibleDeviceAllocator is not supported on the current system.");
+            TLLM_CHECK_WITH_INFO(mAllowManagedFallback,
+                "HostAccessibleDeviceAlloca"
+                "tor is not supported on "
+                "the current system.");
             TLLM_CUDA_CHECK(cudaFree(ptr));
         }
         void* hostPtr = it->second.hostPtr;
@@ -415,10 +423,10 @@ void HostAccessibleDeviceAllocator::free(void* ptr)
     }
     else
     {
-        TLLM_LOG_WARNING("Attempted to free a pointer that was not allocated by HostAccessibleDeviceAllocator.");
+        TLLM_LOG_WARNING(
+            "Attempted to free a pointer that was not allocated by "
+            "HostAccessibleDeviceAllocator.");
     }
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

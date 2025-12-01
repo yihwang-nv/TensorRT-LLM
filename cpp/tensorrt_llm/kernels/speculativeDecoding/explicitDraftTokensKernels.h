@@ -23,9 +23,9 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 
 template <typename T>
@@ -221,16 +221,23 @@ struct ExtractExplicitDraftTokensParams
     }
 };
 
-//! @brief Modifies `outputIds` and `sequenceLengths` according to the accepted tokens
-//! derived from `nextDraftTokens`, `lastDraftTokens`, `inputUnpackedNextDraftIndices`, `bestPathIndices` and
-//! `bestPathLengths`. Sets new draft tokens `outputNextDraftTokens` and their lengths `nextDraftLengths`. Splits input
-//! tensors mapped lienarly from ExplicitDraftTokens network into respective outputs at batch slots. `nextDraftTokens`
-//! -> `unpackedNextDraftTokens` `inputUnpackedNextDraftIndices` -> `unpackedNextDraftIndices` `packedPositionIds` ->
-//! `outputPositionIds` Generates random data for `randDataSample` and `randDataVerification`.
+//! @brief Modifies `outputIds` and `sequenceLengths` according to the accepted
+// tokens
+//! derived from `nextDraftTokens`, `lastDraftTokens`,
+//`inputUnpackedNextDraftIndices`, `bestPathIndices` and
+//! `bestPathLengths`. Sets new draft tokens `outputNextDraftTokens` and their
+// lengths `nextDraftLengths`. Splits input
+//! tensors mapped lienarly from ExplicitDraftTokens network into respective
+// outputs at batch slots. `nextDraftTokens`
+//! -> `unpackedNextDraftTokens` `inputUnpackedNextDraftIndices` ->
+//`unpackedNextDraftIndices` `packedPositionIds` ->
+//! `outputPositionIds` Generates random data for `randDataSample` and
+//`randDataVerification`.
 template <typename T>
 void invokeExtractExplicitDraftTokens(ExtractExplicitDraftTokensParams<T> const& params, cudaStream_t stream);
 
-//! @brief Copies linear draft probs from linear batch index at `nextDraftProbs` to `outputDraftProbs` at `batchSlot`
+//! @brief Copies linear draft probs from linear batch index at `nextDraftProbs`
+// to `outputDraftProbs` at `batchSlot`
 //! batch indices.
 template <typename T>
 void invokeCopyProbs(ExtractExplicitDraftTokensParams<T> const& params, cudaStream_t stream);
@@ -345,16 +352,19 @@ struct PackExplicitDraftTokensParams
     }
 };
 
-//! @brief Copy all rows at `batchSlots[batchIdx]` from `inputGenerationLengths` tensors to `batchIdx` rows at
+//! @brief Copy all rows at `batchSlots[batchIdx]` from `inputGenerationLengths`
+// tensors to `batchIdx` rows at
 //! `outputGenerationLengths` tensor.
 template <typename T>
 void invokePackGenerationLengths(PackExplicitDraftTokensParams<T> const& params, cudaStream_t stream);
 
-//! @brief Copy all rows at `batchSlots[batchIdx]` from `input*` tensors to `batchIdx` rows at `output*` tensor.
+//! @brief Copy all rows at `batchSlots[batchIdx]` from `input*` tensors to
+//`batchIdx` rows at `output*` tensor.
 template <typename T>
 void invokePackExplicitDraftTokens(PackExplicitDraftTokensParams<T> const& params, cudaStream_t stream);
 
-//! @brief Copies draft probs from `batchSlot` rows to linear batch index. From `inputDraftProbs` to `outputDraftProbs`.
+//! @brief Copies draft probs from `batchSlot` rows to linear batch index. From
+//`inputDraftProbs` to `outputDraftProbs`.
 template <typename T>
 void invokeCopyProbs(PackExplicitDraftTokensParams<T> const& params, cudaStream_t stream);
 
@@ -377,6 +387,6 @@ void invokeConvertMaskToPackedMask(runtime::SizeType32 batchSize,
     runtime::SizeType32 const* __restrict__ batchSlots, runtime::SizeType32 maxDraftTokens,
     runtime::SizeType32 maxGenerationLength, runtime::SizeType32* __restrict__ packedMask, cudaStream_t stream);
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

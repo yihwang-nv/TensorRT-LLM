@@ -18,7 +18,6 @@
 #include <cstdio>
 
 #include "lookupPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/lookupKernels.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 

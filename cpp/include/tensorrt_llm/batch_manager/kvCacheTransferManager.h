@@ -15,7 +15,6 @@
  */
 
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
@@ -25,14 +24,15 @@ namespace kvc = tensorrt_llm::executor::kv_cache;
 
 #pragma once
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
-// The TransferManager accelerates transfers to/from the GPU by overlapping HtoD and DtoH transfers, and tracks ongoing
-// transfers in order to avoid race conditions. It is functionally equivalent to the prior approach of putting all
-// transfers into the forward pass stream. This is only ever used as a component of a KVCacheManager.
+// The TransferManager accelerates transfers to/from the GPU by overlapping
+// HtoD and DtoH transfers, and tracks ongoing
+// transfers in order to avoid race conditions. It is functionally equivalent
+// to the prior approach of putting all
+// transfers into the forward pass stream. This is only ever used as a
+// component of a KVCacheManager.
 class KVCacheTransferManager
 {
 public:
@@ -49,7 +49,8 @@ public:
         int numTokensToCopy = 0, executor::KvCacheTransferMode mode = executor::KvCacheTransferMode::DRAM,
         std::string const& directory = "");
 
-    //! \brief Synchronize the offload/onboard streams with the bufferManager stream.
+    //! \brief Synchronize the offload/onboard streams with the bufferManager
+    // stream.
     void syncTransfers();
 
 private:
@@ -66,7 +67,8 @@ private:
      * \param isOffload       true => GPU->CPU/file, false => CPU/file->GPU
      * \param numTokensToCopy if > 0, partial copy is done
      * \param mode            See \ref executor::KvCacheTransferMode
-     * \param directory       Directory to save the file if mode is GDS or POSIX_DEBUG_FALLBACK
+     * \param directory       Directory to save the file if mode is GDS or
+     *POSIX_DEBUG_FALLBACK
      *
      * The default param is set to executor::KvCacheTransferMode::DRAM.
      */
@@ -85,6 +87,4 @@ private:
     int mDeviceId;
 };
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

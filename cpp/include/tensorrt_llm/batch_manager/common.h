@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include <cstdint>
 #include <list>
@@ -25,14 +24,12 @@
 #include <utility>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 class RequestWithId;
 }
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class LlmRequest;
 
@@ -44,11 +41,13 @@ using ReqIdsSet = std::unordered_set<RequestIdType>;
 class ScheduledRequests
 {
 public:
-    /// @brief context phase requests (for decoder-only models) or encoder phase requests (for encoder-decoder models
+    /// @brief context phase requests (for decoder-only models) or encoder phase
+    /// requests (for encoder-decoder models
     /// and encoder-only models)
     RequestVector contextRequests;
 
-    /// @brief generation phase requests (for decoder-only models) or empty for others
+    /// @brief generation phase requests (for decoder-only models) or empty for
+    /// others
     RequestVector generationRequests;
 
     ScheduledRequests() = default;
@@ -118,6 +117,4 @@ struct BatchStateHash
     }
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

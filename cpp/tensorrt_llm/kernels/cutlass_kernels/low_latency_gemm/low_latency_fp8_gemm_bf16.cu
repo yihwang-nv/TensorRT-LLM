@@ -17,16 +17,14 @@
 #include "fp8_low_latency_gemm_template.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
-template class CutlassLowLatencyFp8GemmRunner<__nv_bfloat16>; // for compilation only
+template class CutlassLowLatencyFp8GemmRunner<__nv_bfloat16>; // for compilation
+                                                              // only
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

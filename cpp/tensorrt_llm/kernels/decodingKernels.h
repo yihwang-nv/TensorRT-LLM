@@ -26,15 +26,13 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct gatherTreeParam
 {
     // TODO rename the parameters
-    int32_t* beams = nullptr;              // [batchSize, beamWidth, maxSeqLen], workspace to put intermediate outputIds
+    int32_t* beams = nullptr;              // [batchSize, beamWidth, maxSeqLen], workspace to
+                                           // put intermediate outputIds
     int32_t* sequenceLengths = nullptr;    // [batchSize, beamWidth], total lengths of each query
     int32_t maxSequenceLengthFinalStep = 0;
     int32_t const* inputLengths = nullptr; // [batchSize, beamWidth]
@@ -62,22 +60,29 @@ void invokeInsertUnfinishedPath(BeamHypotheses& bh, cudaStream_t stream);
 
 void invokeFinalize(BeamHypotheses& bh, cudaStream_t stream);
 
-//! \brief invoke the kernel that Initializes the output tensor by prefilling it with end tokens.
+//! \brief invoke the kernel that Initializes the output tensor by prefilling it
+// with end tokens.
 //!
 //! \param finalOutputIds The output tensor to be initialized.
 //! \param endIds The tensor containing the end IDs.
-//! \param batchBeam batchSize*beamWidth. inferred from finalOutputIds.shape[0] * finalOutputIds.shape[1]
-//! \param maxSeqLen The maximum sequence length, inferred from the finalOutputIds.shape[3]
+//! \param batchBeam batchSize*beamWidth. inferred from finalOutputIds.shape[0]
+//* finalOutputIds.shape[1]
+//! \param maxSeqLen The maximum sequence length, inferred from the
+// finalOutputIds.shape[3]
 //! \param stream The CUDA stream on which to perform the operation.
 void invokeInitializeOutput(runtime::TokenIdType* finalOutputIds, runtime::TokenIdType const* endIds,
     runtime::SizeType32 batch, runtime::SizeType32 beam, runtime::SizeType32 maxSeqLen, cudaStream_t stream);
 
-//! \brief Copies the data from the buffers in src to dst to reduce the kernel launch overhead of individual memcpy.
-//! for streaming + beam search, where we need to avoid overwriting the beam search buffers.
+//! \brief Copies the data from the buffers in src to dst to reduce the kernel
+// launch overhead of individual memcpy.
+//! for streaming + beam search, where we need to avoid overwriting the beam
+// search buffers.
 //!
-//! \param src the source, usually the buffers in which the beam search kernels write
+//! \param src the source, usually the buffers in which the beam search kernels
+// write
 //! \param dst temp buffers for use in the subsequent gatherTree kernels.
-//! \param srcCumLogProbs source of the cumLogProbs. Separate since it's not included in beamHypotheses.
+//! \param srcCumLogProbs source of the cumLogProbs. Separate since it's not
+// included in beamHypotheses.
 //! \param dstCumLogProbs dst of srcCumLogProbs.
 //! \param stream CUDA stream to execute the kernel
 //! \param numSMs number of SMs available on the device
@@ -85,17 +90,23 @@ void invokeCopyBeamHypotheses(runtime::DecodingOutput::BeamHypotheses const& src
     runtime::DecodingOutput::BeamHypotheses const& dst, runtime::ITensor& srcCumLogProbs,
     runtime::ITensor& dstCumLogProbs, runtime::CudaStream const& stream, int numSMs);
 
-//! \brief Copies last numNewTokens (or 1 if numNewTokens == nullptr) tokens from outputIdsPtr
+//! \brief Copies last numNewTokens (or 1 if numNewTokens == nullptr) tokens
+// from outputIdsPtr
 //! to nextStepIds according to sequenceLengths.
 //!
-//! \param nextStepIds output buffer [maxTokensPerStep, maxBatchSize, maxBeamWidth],
+//! \param nextStepIds output buffer [maxTokensPerStep, maxBatchSize,
+// maxBeamWidth],
 //! destination of the new tokens.
 //! \param outputIdsPtr input buffer [maxBatchSize][maxBeamWidth, maxSeqLen],
 //! array of pointers to the source of the copy.
-//! \param sequenceLengths input buffer [maxBatchSize], sequence length of the request
-//! in outputIdsPtr that includes all new tokens. It must be guaranteed that sequenceLengths <= maxSeqLen.
-//! \param numNewTokens input buffer [maxBatchSize], optional, number of tokens to be copied.
-//! If nullptr, only 1 token is copied. It must be guaranteed that numNewTokens <= sequenceLengths.
+//! \param sequenceLengths input buffer [maxBatchSize], sequence length of the
+// request
+//! in outputIdsPtr that includes all new tokens. It must be guaranteed that
+// sequenceLengths <= maxSeqLen.
+//! \param numNewTokens input buffer [maxBatchSize], optional, number of tokens
+// to be copied.
+//! If nullptr, only 1 token is copied. It must be guaranteed that numNewTokens
+//<= sequenceLengths.
 //! \param batchSlots input buffer [batchSize], address map from local index
 //! to global index [0, batchSize] -> [0, maxBatchSize]
 //! \param batchSize current batch size
@@ -115,16 +126,23 @@ void invokeTransposeLogProbs(float* output_log_probs, float* output_log_probs_ti
     runtime::SizeType32 max_batch_size, runtime::SizeType32 beam_width, runtime::SizeType32 max_seq_len,
     cudaStream_t stream);
 
-} // namespace kernels
+TRTLLM_KERNELS_NAMESPACE_END
 
+namespace tensorrt_llm
+{
 namespace runtime::kernels
 {
-//! \brief Inserts the running beams into the finished beams stored in the CBA buffers. (beams where the most likely
-//! continuation is the end token get stored separately, and another candidate next token is stored). Then sorts the
-//! beams according to their cumulative log probs. Note: the kernels in gatherTree modify the buffers inplace. When
-//! streaming, we use tmp buffers since beam search kernels expect ungathered data.
+//! \brief Inserts the running beams into the finished beams stored in the CBA
+// buffers. (beams where the most likely
+//! continuation is the end token get stored separately, and another candidate
+// next token is stored). Then sorts the
+//! beams according to their cumulative log probs. Note: the kernels in
+// gatherTree modify the buffers inplace. When
+//! streaming, we use tmp buffers since beam search kernels expect ungathered
+// data.
 //!
-//! \param decodingOutput contains a slice of the output buffers to gather. Also contains the
+//! \param decodingOutput contains a slice of the output buffers to gather.
+// Also contains the
 //! DecodingOutput::BeamHypotheses object with the finished beams.
 //! \param decodingInput used for endIds and input lengths.
 //! \param samplingConfig the usual buffer samplingConfig.
@@ -134,4 +152,4 @@ void gatherTree(DecodingOutput const& decodingOutput, DecodingInput const& decod
     SamplingConfig const& samplingConfig, runtime::CudaStream const& cudaStream);
 } // namespace runtime::kernels
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

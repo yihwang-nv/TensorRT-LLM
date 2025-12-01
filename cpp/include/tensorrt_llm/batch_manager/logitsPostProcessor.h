@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,21 +21,18 @@
 #include "common.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class CudaStream;
 }
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class DecoderInputBuffers;
 
-class LogitsPostProcessor : Algorithm
+class LogitsPostProcessor : tensorrt_llm::common::Algorithm
 {
 public:
     using CudaStreamPtr = std::shared_ptr<runtime::CudaStream>;
@@ -53,6 +51,4 @@ public:
         std::optional<LogitsPostProcessorBatched> const& logitsPostProcessorBatched = std::nullopt) const;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

@@ -26,20 +26,24 @@
 #include <cstdint>
 #include <optional>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
 // self: [M, K], fp16/bf16/fp8_quantized
-// globalScale: [1] float, = (448 * 6) / self.abs().max(). Not used when sfUseUE8M0 is true.
+// globalScale: [1] float, = (448 * 6) / self.abs().max(). Not used when
+// sfUseUE8M0 is true.
 // nvfp4: sfVecSize = 16, sfUseUE8M0 = false
 // mxfp4: sfVecSize = 32, sfUseUE8M0 = true
 // alignment: sfVecSize
-// isSfSwizzledLayout: bool, if true, the scale factors are stored in swizzled layout, otherwise in linear layout.
+// isSfSwizzledLayout: bool, if true, the scale factors are stored in swizzled
+// layout, otherwise in linear layout.
 // See QuantizationSFLayout enum for more details about the two layouts.
 // returns self_fp4, self_block_scale_factors
 // self_fp4: [M, K / 2], FLOAT4_E2M1X2
-// self_block_scale_factors: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
+// self_block_scale_factors: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4,
+// SF_DTYPE (UE4M3 or UE8M0)
 std::tuple<at::Tensor, at::Tensor> fp4_quantize(at::Tensor const& self, std::optional<at::Tensor> const& globalScale,
     int64_t sfVecSize, bool sfUseUE8M0, bool isSfSwizzledLayout)
 {
@@ -82,8 +86,8 @@ std::tuple<at::Tensor, at::Tensor> fp4_quantize(at::Tensor const& self, std::opt
     int64_t SFSize = isSfSwizzledLayout ? tensorrt_llm::computeSwizzledLayoutSFSize(m, k / sfVecSize)
                                         : tensorrt_llm::computeLinearLayoutSFSize(m, k / sfVecSize);
 
-    at::Tensor scaleFP8SF
-        = at::detail::empty_cuda({SFSize}, SF_DTYPE, self.device(), /* stride */ std::nullopt); // 1D tensor
+    at::Tensor scaleFP8SF = at::detail::empty_cuda({SFSize}, SF_DTYPE, self.device(),
+        /* stride */ std::nullopt); // 1D tensor
 
     const thread_local int mMultiProcessorCount = tensorrt_llm::common::getMultiProcessorCount();
 
@@ -120,7 +124,10 @@ std::tuple<at::Tensor, at::Tensor> fp4_quantize(at::Tensor const& self, std::opt
         }
         else
         {
-            C10_THROW_ERROR(NotImplementedError, "fp4_quantize only supports input tensor with dtypes fp16/bf16/e4m3.");
+            C10_THROW_ERROR(NotImplementedError,
+                "fp4_quantize only supports input "
+                "tensor with dtypes "
+                "fp16/bf16/e4m3.");
         }
     }
     else
@@ -147,7 +154,10 @@ std::tuple<at::Tensor, at::Tensor> fp4_quantize(at::Tensor const& self, std::opt
         }
         else
         {
-            C10_THROW_ERROR(NotImplementedError, "fp4_quantize only supports input tensor with dtypes fp16/bf16/e4m3.");
+            C10_THROW_ERROR(NotImplementedError,
+                "fp4_quantize only supports input "
+                "tensor with dtypes "
+                "fp16/bf16/e4m3.");
         }
     }
 
@@ -184,7 +194,8 @@ at::Tensor calculate_nvfp4_global_scale(at::Tensor const& input, std::optional<a
         token_num = inputShape[1];
     }
 
-    // Create output tensor with same dimensions as input, but last dimension size is 1
+    // Create output tensor with same dimensions as input, but last dimension size
+    // is 1
     std::vector<int64_t> outputShape(inputShape.begin(), inputShape.end());
     outputShape[rank - 1] = 1;
 
@@ -226,22 +237,27 @@ at::Tensor calculate_nvfp4_global_scale(at::Tensor const& input, std::optional<a
     }
     else
     {
-        C10_THROW_ERROR(
-            NotImplementedError, "calculate_nvfp4_global_scale only supports input tensor with dtypes fp16/bf16.");
+        C10_THROW_ERROR(NotImplementedError,
+            "calculate_nvfp4_global_scale only "
+            "supports input tensor with dtypes "
+            "fp16/bf16.");
     }
 
     return globalScale;
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "fp4_quantize(Tensor input, Tensor? globalScale, int sfVecSize, bool sfUseUE8M0=False, bool "
+        "fp4_quantize(Tensor input, Tensor? globalScale, int sfVecSize, bool "
+        "sfUseUE8M0=False, bool "
         "isSfSwizzledLayout=True) -> (Tensor, Tensor)");
-    m.def("calculate_nvfp4_global_scale(Tensor input, Tensor? tokensPerBatch) -> Tensor");
+    m.def(
+        "calculate_nvfp4_global_scale(Tensor input, Tensor? tokensPerBatch) -> "
+        "Tensor");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

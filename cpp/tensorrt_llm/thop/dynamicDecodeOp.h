@@ -22,7 +22,8 @@
 
 namespace th = torch;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -155,11 +156,12 @@ private:
     int const tensorParaSize_;
     int const pipelineParaSize_;
     at::ScalarType const scalarType_;                 // Data type of expected input logits
-    std::unique_ptr<IFtDynamicDecode> dynamicDecode_; // FT Dynamic decode layer wrapper instance
+    std::unique_ptr<IFtDynamicDecode> dynamicDecode_; // FT Dynamic decode layer
+                                                      // wrapper instance
 
     void createInstance();
 };
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

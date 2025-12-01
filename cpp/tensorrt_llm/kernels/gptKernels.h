@@ -23,10 +23,7 @@
 #include <cuda_runtime.h>
 #include <sstream>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 enum class AttentionMaskType
 {
@@ -111,24 +108,31 @@ struct BlockSparseParams
 template <typename AttentionMaskDataType>
 struct BuildDecoderInfoParams
 {
-    // The offsets to the 1st token in each sequence of Q buffer. Shape: [batchSize+1].
+    // The offsets to the 1st token in each sequence of Q buffer. Shape:
+    // [batchSize+1].
     int* seqQOffsets;
-    // The offsets to the 1st token in each sequence of KV buffer. Shape: [batchSize+1].
+    // The offsets to the 1st token in each sequence of KV buffer. Shape:
+    // [batchSize+1].
     int* seqKVOffsets;
-    // The number of padded tokens in the corresponding padded tensor before the current token, for Decoder. Shape:
+    // The number of padded tokens in the corresponding padded tensor before the
+    // current token, for Decoder. Shape:
     // [numTokens].
     int* paddingOffsets;
     // The batch_idx and token_idx_in_seq for each token. Shape: [numTokens].
     int2* tokensInfo;
-    // The number of padded tokens in the corresponding padded tensor before the current token, for Encoder. Shape:
+    // The number of padded tokens in the corresponding padded tensor before the
+    // current token, for Encoder. Shape:
     // [numTokens].
     int* encoderPaddingOffsets;
-    // The offsets to the 1st row in each sequence of packed mask buffer. Shape: [batchSize+1].
+    // The offsets to the 1st row in each sequence of packed mask buffer. Shape:
+    // [batchSize+1].
     int* packedMaskRowOffsets;
-    // The cumulative average partial sequence lengths for context parallel. Shape: [batchSize+1].
+    // The cumulative average partial sequence lengths for context parallel.
+    // Shape: [batchSize+1].
     int* seqCpPartialOffsets;
 
-    // The mask to mark invalid tokens in Attention - that's not used by the plugins as it can be
+    // The mask to mark invalid tokens in Attention - that's not used by the
+    // plugins as it can be
     // computed on-the-fly. When it's not needed, simply use nullptr.
     // Shape: [batchSize, maxSeqLength, maxSeqLength].
     AttentionMaskDataType* attentionMask;
@@ -160,12 +164,15 @@ struct BuildDecoderInfoParams
 
     // The number of sequences in the batch.
     int batchSize;
-    // The maximum query length of a sequence for Decoder (max_input_length), N for ctx phase, 1 for gen phase.
+    // The maximum query length of a sequence for Decoder (max_input_length), N
+    // for ctx phase, 1 for gen phase.
     int maxQSeqLength;
-    // The maximum query length of a sequence for Encoder, for cross attention (cross_qkv_length).
+    // The maximum query length of a sequence for Encoder, for cross attention
+    // (cross_qkv_length).
     int maxEncoderQSeqLength;
     // The kv cache capacity.
-    // We will apply the limited_length_causal mask when there are not enough kv cache.
+    // We will apply the limited_length_causal mask when there are not enough kv
+    // cache.
     int attentionWindowSize;
     // The number of sink tokens in the kv cache.
     int sinkTokenLength;
@@ -179,7 +186,8 @@ struct BuildDecoderInfoParams
     BlockSparseParams blockSparseParams;
 
     // Rotary Embedding inv_freq.
-    // [batch_size, halfRotaryDim] variable across different requests due to dynamic scaling.
+    // [batch_size, halfRotaryDim] variable across different requests due to
+    // dynamic scaling.
     float rotaryEmbeddingScale;
     float rotaryEmbeddingBase;
     int rotaryEmbeddingDim;
@@ -275,6 +283,4 @@ struct BuildDecoderInfoParams
 template <typename T>
 void invokeBuildDecoderInfo(BuildDecoderInfoParams<T> const& params, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

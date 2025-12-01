@@ -36,7 +36,7 @@
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/deep_gemm/fp8_gemm.cuh"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace kernel_utils
 {
@@ -157,7 +157,7 @@ __inline__ __device__ uint32_t elect_one_sync([[maybe_unused]] int lane_id)
 
 } // namespace kernel_utils
 
-namespace kernels::fp8_blockscale_gemm
+namespace fp8_blockscale_gemm
 {
 
 template <typename T>
@@ -386,7 +386,8 @@ __global__ void __launch_bounds__(TILE_M == 64 ? 256 : 384, 1) cooperative_1x128
     float* smem_scales_a[NUM_STAGES];
 
     Barrier* full_bars[NUM_STAGES];
-    // NUM_EMPTY_BARS must be a const expression, otherwise it will cost too many registers.
+    // NUM_EMPTY_BARS must be a const expression, otherwise it will cost too many
+    // registers.
     constexpr int NUM_EMPTY_BARS = div_up(NUM_STAGES, TMA_ISSUE_INTERVAL);
     Barrier* empty_bars[NUM_EMPTY_BARS];
 
@@ -1466,9 +1467,7 @@ void gemm_dispatch_old(void* mat_a, int ld_a, void* mat_b, int ld_b, void* mat_d
             Layout::RowMajor, float, float, float, TILE_M, TILE_N, 128, ScaleType::PerSubChannel, ScaleType::PerBlock, \
             1, 128, 128, 128>;                                                                                         \
         GemmType::run(reinterpret_cast<__nv_fp8_e4m3*>(mat_a), ld_a, reinterpret_cast<__nv_fp8_e4m3*>(mat_b), ld_b,    \
-            reinterpret_cast<__nv_bfloat16*>(mat_d), ld_d, scales_a, scales_b, shape_m, shape_n, shape_k, stream       \
-                                                                                                                       \
-        );                                                                                                             \
+            reinterpret_cast<__nv_bfloat16*>(mat_d), ld_d, scales_a, scales_b, shape_m, shape_n, shape_k, stream);     \
     }                                                                                                                  \
     break
 
@@ -1533,9 +1532,7 @@ void gemm_dispatch_old(void* mat_a, void* mat_b, void* mat_d, float* scales_a, f
             1, 128, 128, 128>;                                                                                         \
         GemmType::run(reinterpret_cast<__nv_fp8_e4m3*>(mat_a), reinterpret_cast<__nv_fp8_e4m3*>(mat_b),                \
             reinterpret_cast<__nv_bfloat16*>(mat_d), scales_a, scales_b, num_problems, problem_m_offsets, shape_n,     \
-            shape_k, max_shape_m, stream                                                                               \
-                                                                                                                       \
-        );                                                                                                             \
+            shape_k, max_shape_m, stream);                                                                             \
     }                                                                                                                  \
     break
 
@@ -1805,7 +1802,8 @@ void fp8_grouped_gemm_run(__nv_bfloat16 const* mat_a, __nv_fp8_e4m3* fp8_mat_a, 
         int smem_size = num_problems * sizeof(int64_t);
         int num_blocks
             = std::min(static_cast<int64_t>(kNumDeviceSMs), div_up(max_shape_m * scales_dim_x, NumThreads / 32));
-        // Binary search is expected to have lower complexity when max_shape_m is small
+        // Binary search is expected to have lower complexity when max_shape_m is
+        // small
         bool use_binary_search
             = static_cast<double>(max_shape_m) * scales_dim_x / static_cast<double>(NumThreads * num_blocks / 32)
             <= static_cast<double>(num_problems) / std::log2(static_cast<double>(num_problems));
@@ -1963,6 +1961,6 @@ void fp8_stride_batch_gemm_run(__nv_bfloat16 const* mat_a, __nv_fp8_e4m3* fp8_ma
     }
 }
 
-} // namespace kernels::fp8_blockscale_gemm
+} // namespace fp8_blockscale_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -16,16 +16,14 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <memory>
 
-/// @brief Forward declaration of cudaMemPool_t to avoid including "driver_types.h"
+/// @brief Forward declaration of cudaMemPool_t to avoid including
+/// "driver_types.h"
 struct CUmemPoolHandle_st;
 using cudaMemPool_t = CUmemPoolHandle_st*;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class CudaMemPool
@@ -33,28 +31,36 @@ class CudaMemPool
 public:
     explicit CudaMemPool(cudaMemPool_t pool);
 
-    /// @brief Gets the amount of reserved memory in the memory pool stream, WITHOUT synchronizing.
+    /// @brief Gets the amount of reserved memory in the memory pool stream,
+    /// WITHOUT synchronizing.
     [[nodiscard]] std::size_t memoryPoolReserved() const;
 
-    /// @brief Gets the amount of used memory in the memory pool, WITHOUT synchronizing.
+    /// @brief Gets the amount of used memory in the memory pool, WITHOUT
+    /// synchronizing.
     [[nodiscard]] std::size_t memoryPoolUsed() const;
 
-    /// @brief Gets the amount of free memory in the memory pool, WITHOUT synchronizing.
+    /// @brief Gets the amount of free memory in the memory pool, WITHOUT
+    /// synchronizing.
     [[nodiscard]] std::size_t memoryPoolFree() const;
 
-    /// @brief Hints the driver to trim the pool. Does not guarantee that the amount of reserved memory will actually
-    /// decrease, only guarantees that this amount after trimming will be larger than the provided size.
+    /// @brief Hints the driver to trim the pool. Does not guarantee that the
+    /// amount of reserved memory will actually
+    /// decrease, only guarantees that this amount after trimming will be larger
+    /// than the provided size.
     void memoryPoolTrimTo(std::size_t size);
 
     /// @brief Returns the underlying cudaMemPool_t for usage by CUDA APIs.
     [[nodiscard]] cudaMemPool_t getPool() const;
 
-    /// @brief Gets or initializes and gets the primary memory pool for the provided device ID if it was successfully
+    /// @brief Gets or initializes and gets the primary memory pool for the
+    /// provided device ID if it was successfully
     /// initialized, nullptr otherwise.
     static std::shared_ptr<tensorrt_llm::runtime::CudaMemPool> getPrimaryPoolForDevice(int deviceId);
 
-    /// @brief Returns a value indicating whether memory pools are supported on the device.
-    /// @details Memory pools depend on the presence of the UVM driver. On some systems, the UVM driver is explicitly
+    /// @brief Returns a value indicating whether memory pools are supported on
+    /// the device.
+    /// @details Memory pools depend on the presence of the UVM driver. On some
+    /// systems, the UVM driver is explicitly
     /// disabled.
     static bool supportsMemoryPool(int deviceId);
 
@@ -70,6 +76,4 @@ private:
     PoolPtr mPool;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

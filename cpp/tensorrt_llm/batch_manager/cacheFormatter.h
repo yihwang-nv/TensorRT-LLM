@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +22,6 @@
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/batch_manager/kvCacheUtils.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/cacheCommunicator.h"
@@ -36,14 +36,12 @@
 #include <vector>
 
 // Forward declare TransferSession in the correct global namespace scope
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class TransferSession;
 }
 
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 BlockRange getBlockRangeForSending(BaseKVCacheManager* cacheManager, LlmRequest const& llmRequest,
     BlockKey const& lastBlockKey, SizeType32 indexFromEnd, bool recvSideHasCP = false);
@@ -58,7 +56,8 @@ using BlockRange = kv_cache_manager::BlockRange;
 BlockRange getBlockRangeForReceiving(BaseKVCacheManager* cacheManager, LlmRequest const& llmRequest,
     bool srcEnableBlockReuse, bool recvSideHasCP = false);
 
-// Used to support the cache transmission with different layouts and different protocols.
+// Used to support the cache transmission with different layouts and different
+// protocols.
 class BaseCacheFormatter
 {
 public:
@@ -72,15 +71,18 @@ public:
     /// @param session The transfer session.
     virtual void unformat(tensorrt_llm::batch_manager::TransferSession& session) = 0;
 
-    /// @brief Determine whether the sender is applicable to the source and target.
+    /// @brief Determine whether the sender is applicable to the source and
+    /// target.
     /// @param selfConfig Source data arrangement.
     /// @param destConfig Target data arrangement.
     /// @return Whether the sender is applicable to the source and target.
     [[nodiscard]] virtual bool inquireSupport(CacheState const& selfConfig, CacheState const& destConfig) const = 0;
 
-    /// @brief Obtain the indies of the counterparts that need to be actually communicated with.
+    /// @brief Obtain the indies of the counterparts that need to be actually
+    /// communicated with.
     /// @param selfConfig Source data arrangement.
-    /// @param selfIdx The sequential index of the current executor process within the entire parallel group.
+    /// @param selfIdx The sequential index of the current executor process
+    /// within the entire parallel group.
     /// @param destConfig Target data arrangement.
     /// @return The indies of the counterparts.
     [[nodiscard]] virtual std::vector<SizeType32> getCounterparts(
@@ -97,7 +99,8 @@ public:
     virtual ~BaseCacheFormatter() = default;
 };
 
-// Simple cache block copy. Because it does not involve data splitting or merging, it performs best when the
+// Simple cache block copy. Because it does not involve data splitting or
+// merging, it performs best when the
 // parallel topology is completely identical, making it the preferred method.
 class CacheFormatter final : public BaseCacheFormatter
 {
@@ -139,6 +142,4 @@ private:
 std::unique_ptr<BaseCacheFormatter> createCacheFormatter(BaseKVCacheManager* cacheManager,
     std::vector<CacheTransBufferManager*> const& cacheTransBufferManagers, bool isMLA = false);
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

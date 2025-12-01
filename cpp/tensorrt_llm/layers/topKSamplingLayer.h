@@ -17,18 +17,17 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 //! \brief Layer to randomly sample tokens from TopK logits.
-//! When both TopK and TopP are specified, layer jointly samples using TopK and TopP.
-//! When no TopK param is specified, sampling is skipped for particular request.
+//! When both TopK and TopP are specified, layer jointly samples using TopK
+// and TopP.
+//! When no TopK param is specified, sampling is skipped for particular
+// request.
 template <typename T>
 class TopKSamplingLayer : public BaseLayer
 {
@@ -63,6 +62,4 @@ private:
     void allocateBuffer(runtime::SizeType32 batchSize);
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

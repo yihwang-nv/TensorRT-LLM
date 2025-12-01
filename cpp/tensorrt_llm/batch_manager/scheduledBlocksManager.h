@@ -18,15 +18,12 @@
 
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <algorithm>
 #include <map>
 #include <optional>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 class NoEvictScheduledBlocksManager
@@ -87,7 +84,9 @@ public:
         {
             auto const required = mKvCacheManager.getNeededBlocksOneStep(req, mTwoStepsLookAhead, windowSize);
 
-            TLLM_LOG_DEBUG("MaxUtilizationScheduler: request ID %lu required blocks %i for %i window size",
+            TLLM_LOG_DEBUG(
+                "MaxUtilizationScheduler: request ID %lu required "
+                "blocks %i for %i window size",
                 req.mRequestId, required, windowSize);
 
             auto const scheduledTotal = numScheduled + required;
@@ -119,6 +118,4 @@ private:
     bool const mTwoStepsLookAhead;
 };
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

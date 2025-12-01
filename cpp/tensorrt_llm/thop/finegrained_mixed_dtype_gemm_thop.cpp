@@ -41,7 +41,8 @@
 #include <tuple>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -68,7 +69,6 @@ finegrainedMixedDtypeGemmRunner::finegrainedMixedDtypeGemmRunner(
                 tensorrt_llm::kernels::cutlass_kernels::CutlassFpAIntBGemmRunner<__nv_bfloat16, cutlass::uint4b_t,
                     cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY, __nv_bfloat16, __nv_bfloat16, __nv_bfloat16>>();
         }
-
         else if (activationDtype == at::ScalarType::Float8_e4m3fn)
         {
             if (outputDtype == at::ScalarType::BFloat16)
@@ -93,7 +93,6 @@ finegrainedMixedDtypeGemmRunner::finegrainedMixedDtypeGemmRunner(
             TORCH_CHECK(false, "Unsupported activation dtype", activationDtype);
         }
     }
-
     else if (quant_mode == 1)
     {
         if (activationDtype == at::ScalarType::Half)
@@ -137,10 +136,15 @@ finegrainedMixedDtypeGemmRunner::finegrainedMixedDtypeGemmRunner(
         TORCH_CHECK(false, "Unsupported quant mode for finegrainedMixedDtypeGemmRunner: ", quant_mode);
     }
 
-    TORCH_CHECK(mGemmRunner, "Failed to create finegrained Mixed Dtype GEMM runner for activation type ",
+    TORCH_CHECK(mGemmRunner,
+        "Failed to create finegrained Mixed Dtype GEMM "
+        "runner for activation type ",
         c10::toString(activationDtype));
     mConfigs = mGemmRunner->getConfigs(); // Get configs via the interface
-    TORCH_CHECK(!mConfigs.empty(), "Failed to get CUTLASS configs for finegrainedMixedDtype GEMM with activation type ",
+    TORCH_CHECK(!mConfigs.empty(),
+        "Failed to get CUTLASS configs for "
+        "finegrainedMixedDtype GEMM with activation "
+        "type ",
         c10::toString(activationDtype));
 }
 
@@ -238,7 +242,7 @@ at::Tensor finegrainedMixedDtypeGemmRunner::runGemm(at::Tensor const& A, at::Ten
     void const* scales_ptr = scales.data_ptr();
     void* C_ptr = C_tensor.data_ptr();
 
-    tensorrt_llm::cutlass_extensions::CutlassGemmConfig gemm_config_to_use;
+    tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig gemm_config_to_use;
     if (configIdx >= 0 && configIdx < getNumConfigs())
     {
         gemm_config_to_use = mConfigs.at(configIdx);
@@ -273,7 +277,7 @@ int64_t finegrainedMixedDtypeGemmRunner::getNumConfigs() const
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

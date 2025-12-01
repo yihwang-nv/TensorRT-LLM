@@ -17,12 +17,9 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 class BlockIterator;
@@ -77,11 +74,16 @@ public:
     {
 
         auto poolNum = cacheManager.getBlockManager().getNumPools(
-            /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
-        TLLM_CHECK_WITH_INFO(poolNum == 1, "Reuse tree is not supported for multiple pools or variable window size");
+            /*includeBlockScalePools=*/false,
+            /*includeIndexerKCachePools=*/false);
+        TLLM_CHECK_WITH_INFO(poolNum == 1,
+            "Reuse tree is not supported for "
+            "multiple pools or variable window "
+            "size");
 
         auto windowSize = cacheManager.getBlockManager().getWindowSizesMetadata().begin()->first;
-        // Find the last block in the reuse tree for the provided full sequence of block keys
+        // Find the last block in the reuse tree for the provided full sequence of
+        // block keys
         auto lastBlock = cacheManager.findBlocksInReuseTreeByBlockKey(lastBlockKey, windowSize);
         // TODO: handle the case where the last block is not found
         TLLM_CHECK_WITH_INFO(lastBlock, "Couldn't find the requested block in the reuse tree");
@@ -180,7 +182,8 @@ private:
         , mBlockIdsPerWindow(std::move(blockIdsPerWindow))
     {
         auto poolNum = mManager->getBlockManager().getNumPools(
-            /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
+            /*includeBlockScalePools=*/false,
+            /*includeIndexerKCachePools=*/false);
         for (SizeType32 poolIdx = 0; poolIdx < poolNum; ++poolIdx)
         {
             auto windowSize = cacheManager.getBlockManager().getPoolWindowSize(poolIdx);
@@ -193,7 +196,8 @@ private:
         , mRequestId(requestId)
     {
         auto poolNum = mManager->getBlockManager().getNumPools(
-            /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
+            /*includeBlockScalePools=*/false,
+            /*includeIndexerKCachePools=*/false);
         for (SizeType32 poolIdx = 0; poolIdx < poolNum; ++poolIdx)
         {
             auto windowSize = cacheManager.getBlockManager().getPoolWindowSize(poolIdx);
@@ -311,6 +315,4 @@ inline BlockIterator BlockRangeForWindow::begin() const
     return {this, 0};
 }
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

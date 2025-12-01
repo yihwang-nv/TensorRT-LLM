@@ -18,10 +18,8 @@
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/xqaParams.h"
 #include "tensorrt_llm/kernels/trtllmGenKernels/fmha/fmhaRunner.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace jit
 {
 
@@ -32,6 +30,5 @@ bool supportConfigTllmGen(
     XQAParams const& xqaParams, int SM, bool forConfigurePlugin, TllmGenFmhaRunner const* tllmRunner);
 
 } // namespace jit
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

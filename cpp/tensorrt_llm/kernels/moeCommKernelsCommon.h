@@ -18,10 +18,7 @@
 #include "tensorrt_llm/common/config.h"
 #include <stdint.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 #ifdef __CUDACC__
 #define ALIGN_256 __align__(256)
@@ -44,6 +41,4 @@ struct MoeExpertParallelInfo
     int topK = 1;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

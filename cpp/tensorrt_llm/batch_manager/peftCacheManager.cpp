@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #include "tensorrt_llm/batch_manager/peftCacheManager.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/tllmException.h"
@@ -42,9 +42,7 @@
 #include <unordered_set>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 PeftTaskNotCachedException::PeftTaskNotCachedException(std::string const& msg)
@@ -139,11 +137,13 @@ PeftCacheManager::getPageManagerConfig(PeftCacheManagerConfig const& config, run
         = getMaxNumSlots(config, modelConfig.getDataType(), pageWidth, max1dModSize, bufferManager);
 
     TLLM_CHECK_WITH_INFO(totalHostSlots >= minTotalSlots,
-        "Not enough space allocated to host LoRA cache to hold 1 max sized LoRA %lu < %lu", totalHostSlots,
-        minTotalSlots);
+        "Not enough space allocated to host LoRA cache to "
+        "hold 1 max sized LoRA %lu < %lu",
+        totalHostSlots, minTotalSlots);
     TLLM_CHECK_WITH_INFO(totalDeviceSlots >= minTotalSlots,
-        "Not enough space allocated to device LoRA cache to hold 1 max sized LoRA %lu < %lu", totalDeviceSlots,
-        minTotalSlots);
+        "Not enough space allocated to device LoRA cache to "
+        "hold 1 max sized LoRA %lu < %lu",
+        totalDeviceSlots, minTotalSlots);
 
     uint64_t const totalHostPages = common::ceilDiv(totalHostSlots, numSlotsPerPage);
     uint64_t const totalDevicePages = common::ceilDiv(totalDeviceSlots, numSlotsPerPage);
@@ -170,10 +170,13 @@ PeftCacheManager::getPageManagerConfig(PeftCacheManagerConfig const& config, run
 
 void PeftCacheManager::prefetchLoraWeights(std::string const& modelDir, runtime::BufferManager const& bufferManager)
 {
-    // This function loads LoRA weights from modelDir. In the folder, users can put many
+    // This function loads LoRA weights from modelDir. In the folder, users can
+    // put many
     // folders for different lora tasks.
-    // For example, assume we want to store lora weights in modelDir and there are three
-    // lora tasks `0`, `1` and `3`, then the architecture of the folder would be like
+    // For example, assume we want to store lora weights in modelDir and there
+    // are three
+    // lora tasks `0`, `1` and `3`, then the architecture of the folder would be
+    // like
     // modelDir
     // ├── 0
     // │   ├── model.lora_config.npy
@@ -210,7 +213,9 @@ void PeftCacheManager::prefetchLoraWeights(std::string const& modelDir, runtime:
             else
             {
                 TLLM_LOG_WARNING(
-                    "lora task name %s is invalid, skipping to load lora weight from this folder.", task_name.c_str());
+                    "lora task name %s is invalid, skipping to load "
+                    "lora weight from this folder.",
+                    task_name.c_str());
             }
         }
     }
@@ -403,7 +408,8 @@ PeftCacheManager::getTaskMaps(RequestVector const& contextRequests, RequestVecto
                 else if (!taskIdToFuture.count(taskId))
                 {
                     /*
-                     * if we don't find a future in mPutFutures, we may have already put one in
+                     * if we don't find a future in mPutFutures, we may have already put
+                     * one in
                      * taskIdToFutures (ie if 2 requests have the same taskId)
                      * If no future is found we create a dummy future for the task
                      */
@@ -434,8 +440,10 @@ PeftCacheManager::PeftTable PeftCacheManager::ensureBatch(
     {
         auto fn = [&taskIdToFuture, taskId = taskId, this]() -> std::vector<runtime::LoraCache::TaskLayerModuleConfig>
         {
-            // TODO (grclark) it should be possible to move capture taskFuture instead of doing a second lookup
-            // And you can, which required this lambda to be mutable, which doesn't work with WorkerPool
+            // TODO (grclark) it should be possible to move capture taskFuture
+            // instead of doing a second lookup
+            // And you can, which required this lambda to be mutable, which doesn't
+            // work with WorkerPool
             auto&& taskFuture = taskIdToFuture.at(taskId);
             try
             {
@@ -647,6 +655,4 @@ SizeType32 NoOpPeftCacheManager::determineNumPages(std::shared_ptr<LlmRequest> l
 {
     return 0;
 }
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,13 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
 #include <set>
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class CpSplitPlugin : public BasePluginV3
@@ -46,17 +44,19 @@ public:
 
     // IPluginV3OneBuild methods
     int32_t configurePlugin(nvinfer1::DynamicPluginTensorDesc const* in, int32_t nbInputs,
-        nvinfer1::DynamicPluginTensorDesc const* out, int32_t nbOutputs) noexcept override; // nochange
+        nvinfer1::DynamicPluginTensorDesc const* out,
+        int32_t nbOutputs) noexcept override;      // nochange
     int32_t getOutputDataTypes(nvinfer1::DataType* outputTypes, int32_t nbOutputs, nvinfer1::DataType const* inputTypes,
-        int32_t nbInputs) const noexcept override;                                          // fixed
+        int32_t nbInputs) const noexcept override; // fixed
     int32_t getOutputShapes(nvinfer1::DimsExprs const* inputs, int32_t nbInputs, nvinfer1::DimsExprs const* shapeInputs,
         int32_t nbShapeInputs, nvinfer1::DimsExprs* outputs, int32_t nbOutputs,
-        nvinfer1::IExprBuilder& exprBuilder) noexcept override;                                       // fixed
+        nvinfer1::IExprBuilder& exprBuilder) noexcept override; // fixed
     bool supportsFormatCombination(int32_t pos, nvinfer1::DynamicPluginTensorDesc const* inOut, int32_t nbInputs,
-        int32_t nbOutputs) noexcept override;                                                         // fixed
-    int32_t getNbOutputs() const noexcept override;                                                   // fixed
+        int32_t nbOutputs) noexcept override;                   // fixed
+    int32_t getNbOutputs() const noexcept override;             // fixed
     size_t getWorkspaceSize(nvinfer1::DynamicPluginTensorDesc const* inputs, int32_t nbInputs,
-        nvinfer1::DynamicPluginTensorDesc const* outputs, int32_t nbOutputs) const noexcept override; // fixed
+        nvinfer1::DynamicPluginTensorDesc const* outputs,
+        int32_t nbOutputs) const noexcept override; // fixed
     int32_t getValidTactics(int32_t* tactics, int32_t nbTactics) noexcept override;
     int32_t getNbTactics() noexcept override;
     char const* getTimingCacheID() noexcept override;
@@ -112,6 +112,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

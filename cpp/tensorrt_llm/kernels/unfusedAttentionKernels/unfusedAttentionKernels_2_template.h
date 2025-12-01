@@ -31,10 +31,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 #define WARP_SIZE 32
 #define HALF_WARP_SIZE 16
@@ -187,7 +184,8 @@ inline __device__ type_out* reinterpret_ptr(void* ptr, size_t offset)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Make sure each thread at least processes two elements (gptj rotary embedding).
+// Make sure each thread at least processes two elements (gptj rotary
+// embedding).
 
 template <typename T, RotaryPositionEmbeddingType ROTARY_TYPE>
 struct Rotary_base_t
@@ -224,7 +222,8 @@ inline __device__ void apply_rotary_embedding_gptneox(VecType& q, VecType& q_pai
     int const vision_length = -1)
 {
     // Each thread holds NUM_ELTS elements.
-    // Currently we apply the rotary embedding in float data type for accuracy reasons.
+    // Currently we apply the rotary embedding in float data type for accuracy
+    // reasons.
     using RotaryBaseType = typename Rotary_base_t<T, RotaryPositionEmbeddingType::GPT_NEOX>::RotaryBaseType;
 #pragma unroll
     for (int elt_id = 0; elt_id < VEC_SIZE; elt_id++)
@@ -274,7 +273,8 @@ inline __device__ void apply_rotary_embedding_gptj(VecType& q, VecType& k, float
     float const* rotary_inv_freq_buffer, int const rotary_dim_idx, int const half_rotary_dim, int const rotary_position)
 {
     // Each thread holds NUM_ELTS elements.
-    // Currently we apply the rotary embedding in float data type for accuracy reasons.
+    // Currently we apply the rotary embedding in float data type for accuracy
+    // reasons.
     using RotaryBaseType = typename Rotary_base_t<T, RotaryPositionEmbeddingType::GPTJ>::RotaryBaseType;
 #pragma unroll
     for (int elt_id = 0; elt_id < VEC_SIZE; elt_id++)
@@ -329,7 +329,8 @@ template <typename T, typename TCache, int Dh_MAX, bool ADD_BIAS, bool STORE_QKV
     RotaryPositionEmbeddingType ROTARY_TYPE, bool DYNAMIC_ROTARY_SCALING, bool FP8_OUTPUT, bool GEN_PHASE>
 __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuffer> params)
 {
-    // This kernel add bias to QKV, which has shape [batch_size, seq_len, 3, head_num, size_per_head]
+    // This kernel add bias to QKV, which has shape [batch_size, seq_len, 3,
+    // head_num, size_per_head]
     // Extract the Q input when using paged KV FMHA.
     // For q and k, also apply the rotary embedding.
 
@@ -340,8 +341,10 @@ __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuff
     //                      ^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^
     //                              m                        n
     //      head_num != kv_head_num
-    //      QKV src shape: (batch_size, seq_len, head_num * size_per_head + 2 * kv_head_num * size_per_head)
-    //                      ^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //      QKV src shape: (batch_size, seq_len, head_num * size_per_head + 2 *
+    // kv_head_num * size_per_head)
+    //                      ^^^^^^^^^^^^^^^^^^^
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     //                                 m                               n
     // Additionally, if there is no padding:
     //      QKV src shape (num_tokens, 3, head_num, size_per_head)
@@ -354,7 +357,8 @@ __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuff
 
     // There are two kinds of output:
     //  1. Contiguous QKV output.
-    //  2. Contiguous Q output + Paged KV output (needed by Paged KV FMHA kernels).
+    //  2. Contiguous Q output + Paged KV output (needed by Paged KV FMHA
+    // kernels).
 
     // VEC_SIZE is power of 2.
     constexpr int VEC_SIZE = Rotary_vec_t<T, Dh_MAX>::size;
@@ -418,7 +422,8 @@ __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuff
             bool const valid_token = token_idx_in_seq < cache_seq_len;
 
             // NOTE: only spec decoding needs the position offsets.
-            // In the generation phase, we assume all sequences should have the same input length.
+            // In the generation phase, we assume all sequences should have the same
+            // input length.
             int const rotary_position
                 = (params.spec_decoding_position_offsets != nullptr ? (
                        params.spec_decoding_position_offsets[local_token_idx + batch_idx * params.max_input_seq_len]
@@ -437,7 +442,8 @@ __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuff
             // head_num == kv_head_num:
             //   src QKV: [batch, time, 3, head_num, size_per_head]
             // head_num != kv_head_num:
-            //   src QKV: [batch, time, head_num * size_per_head + 2 * kv_head_num * size_per_head]
+            //   src QKV: [batch, time, head_num * size_per_head + 2 * kv_head_num *
+            // size_per_head]
             auto const src_q_idx = static_cast<size_t>(global_token_idx) * hidden_size + hidden_idx;
             auto const src_k_idx = static_cast<size_t>(global_token_idx) * hidden_size + src_k_offset + hidden_idx_kv;
             auto const src_v_idx = static_cast<size_t>(global_token_idx) * hidden_size + src_v_offset + hidden_idx_kv;
@@ -477,7 +483,8 @@ __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuff
             }
 
             // The offset of rotary_embedding_inv_freq.
-            // Dynamic rotary scaling might have different inv_freq values for different sequences.
+            // Dynamic rotary scaling might have different inv_freq values for
+            // different sequences.
             size_t const inv_freq_buffer_offset = DYNAMIC_ROTARY_SCALING ? batch_idx * params.half_rotary_dim : 0;
             switch (ROTARY_TYPE)
             {
@@ -672,7 +679,8 @@ __global__ void applyBiasRopeUpdateKVCache(QKVPreprocessingParams<T, KVCacheBuff
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Bandwidth-bound kernel by reading cos/sin coefficients from global memory (pre-computed and saved as weights).
+// Bandwidth-bound kernel by reading cos/sin coefficients from global memory
+// (pre-computed and saved as weights).
 
 template <typename T>
 struct VecType
@@ -716,7 +724,8 @@ template <typename T, typename TCache, int BLOCK_SIZE, int Dh, bool ADD_BIAS, bo
     bool GEN_PHASE, typename KVCacheBuffer, RotaryPositionEmbeddingType ROTARY_TYPE>
 __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBuffer> params)
 {
-    // This kernel add bias to QKV, which has shape [batch_size, seq_len, 3, head_num, size_per_head]
+    // This kernel add bias to QKV, which has shape [batch_size, seq_len, 3,
+    // head_num, size_per_head]
     // Extract the Q input when using paged KV FMHA.
     // For q and k, also apply the rotary embedding.
 
@@ -727,8 +736,10 @@ __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBu
     //                           m                        n
     //   QKV dst shape (3, batch_size, head_num, seq_len, size_per_head)
     // head_num != kv_head_num
-    //   QKV src shape: (batch_size, seq_len, head_num * size_per_head + 2 * kv_head_num * size_per_head)
-    //                   ^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //   QKV src shape: (batch_size, seq_len, head_num * size_per_head + 2 *
+    // kv_head_num * size_per_head)
+    //                   ^^^^^^^^^^^^^^^^^^^
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     //                             m                               n
     // Additionally, if there is no padding:
     //   QKV src shape (num_tokens, 3, head_num, size_per_head)
@@ -739,7 +750,8 @@ __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBu
 
     // There are two kinds of output:
     //  1. Contiguous QKV output.
-    //  2. Contiguous Q output + Paged KV output (needed by Paged KV FMHA kernels).
+    //  2. Contiguous Q output + Paged KV output (needed by Paged KV FMHA
+    // kernels).
 
     // Constants.
     using VecT = typename VecType<T>::Type;
@@ -791,7 +803,8 @@ __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBu
     int const src_v_offset = src_k_offset + params.kv_hidden_size;
 
     int const rotated_head_dim_offset = first_half ? params.half_rotary_dim : -params.half_rotary_dim;
-    // Make sure there are multiple of tokens_per_block otherwise syncthreads will lead to deadlocks.
+    // Make sure there are multiple of tokens_per_block otherwise syncthreads will
+    // lead to deadlocks.
     int const tokens_loop_end = int((params.token_num + TOKENS_PER_BLOCK - 1) / TOKENS_PER_BLOCK) * TOKENS_PER_BLOCK;
 
     // Mainloop.
@@ -830,11 +843,13 @@ __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBu
         int token_idx_in_kv_cache = past_seq_len + token_idx_in_seq;
         // The same as token_idx_in_seq < actual_seq_len.
         valid_token = valid_token && (token_idx_in_kv_cache < cache_seq_len);
-        // Limit the token_idx to cache seq length (we need all threads in this block to be involved).
+        // Limit the token_idx to cache seq length (we need all threads in this
+        // block to be involved).
         token_idx_in_kv_cache = std::min(token_idx_in_kv_cache, cache_seq_len - 1);
 
         // NOTE: only spec decoding needs the position offsets.
-        // In the generation phase, we assume all sequences should have the same input length.
+        // In the generation phase, we assume all sequences should have the same
+        // input length.
         int const rotary_position = params.spec_decoding_position_offsets != nullptr
             ? (params.spec_decoding_position_offsets[token_idx_in_seq + batch_idx * params.max_input_seq_len]
                 + cache_seq_len - actual_seq_len)
@@ -843,7 +858,8 @@ __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBu
         // head_num == kv_head_num:
         //   src QKV: [batch, time, 3, head_num, size_per_head]
         // head_num != kv_head_num:
-        //   src QKV: [batch, time, head_num * size_per_head + 2 * kv_head_num * size_per_head]
+        //   src QKV: [batch, time, head_num * size_per_head + 2 * kv_head_num *
+        // size_per_head]
         auto const src_q_idx = static_cast<size_t>(bounded_global_token_idx) * params.hidden_size + hidden_idx;
         auto const src_k_idx
             = static_cast<size_t>(bounded_global_token_idx) * params.hidden_size + src_k_offset + hidden_idx_kv;
@@ -858,7 +874,8 @@ __global__ void applyBiasRopeUpdateKVCacheV2(QKVPreprocessingParams<T, KVCacheBu
         [[maybe_unused]] auto k_pair
             = *reinterpret_cast<VecT const*>(&params.qkv_input[src_k_idx + rotated_head_dim_offset]);
 
-        // Bias should have been fused with QKV projection, but we keep the logic here for unit tests.
+        // Bias should have been fused with QKV projection, but we keep the logic
+        // here for unit tests.
         if constexpr (ADD_BIAS)
         {
             auto const q_bias = *reinterpret_cast<VecT const*>(&params.qkv_bias[hidden_idx]);
@@ -1341,7 +1358,8 @@ __global__ void updateKVCacheForCrossAttention(QKVPreprocessingParams<T, KVCache
 {
     // For cross-attention,
     // 1. Load Q from params.qkv_input, and store it to params.q_output.
-    // 2. Load K,V from params.cross_kv_input, and store it to params.kv_cache_buffer.
+    // 2. Load K,V from params.cross_kv_input, and store it to
+    // params.kv_cache_buffer.
 
     // NOTE:
     // head_num == kv_head_num
@@ -1349,8 +1367,10 @@ __global__ void updateKVCacheForCrossAttention(QKVPreprocessingParams<T, KVCache
     //                  ^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^
     //                           m                        n
     // head_num != kv_head_num
-    //   QKV src shape: (num_tokens, head_num * size_per_head + 2 * kv_head_num, size_per_head)
-    //                   ^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //   QKV src shape: (num_tokens, head_num * size_per_head + 2 * kv_head_num,
+    // size_per_head)
+    //                   ^^^^^^^^^^
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     //                             m                               n
     // Q dst shape: (num_tokens, head_num, size_per_head)
     // KV dst shape: refer to the kvCacheBuffer.
@@ -1370,7 +1390,8 @@ __global__ void updateKVCacheForCrossAttention(QKVPreprocessingParams<T, KVCache
     int const batch_idx = blockIdx.z;
 
     // The decoder sequence length.
-    // Spec decoding not supported for cross-attention at the moment so we can set 1 and batch_idx here
+    // Spec decoding not supported for cross-attention at the moment so we can set
+    // 1 and batch_idx here
     int const decoder_seq_len = params.generation_phase ? 1 : params.seq_lens[batch_idx];
     // The decoder sequence offset.
     int const decoder_seq_offset = params.generation_phase ? batch_idx : params.cu_seq_lens[batch_idx];
@@ -1405,7 +1426,8 @@ __global__ void updateKVCacheForCrossAttention(QKVPreprocessingParams<T, KVCache
     }
 
     // For loop in the sequence length dimension.
-    // There might be multiple blocks (blockIdx.x) that process the same sequence in order to fully utilize
+    // There might be multiple blocks (blockIdx.x) that process the same sequence
+    // in order to fully utilize
     for (int token_idx = blockIdx.x * TOKENS_PER_BLOCK + (threadIdx.x / VECS_PER_HEAD); token_idx < max_seq_len;
          token_idx += (gridDim.x * TOKENS_PER_BLOCK))
     {
@@ -1531,7 +1553,8 @@ void invokeApplyBiasRopeUpdateKVCacheDispatch(QKVPreprocessingParams<T, KVCacheB
     TLLM_CHECK_WITH_INFO(params.rotary_embedding_dim % 8 == 0, "Rotary embedding dimension needs to be multiple of 8!");
 
     // TODO: this should be extended to support quantized FP4 outputs as well.
-    // For now, we will assume that the attention kernel reads directly from the KV cache
+    // For now, we will assume that the attention kernel reads directly from the
+    // KV cache
     // and FP16 inputs.
     TLLM_CHECK_WITH_INFO(
         !(params.quantized_fp8_output && !params.separate_q_kv_output && params.quantized_qkv_output == nullptr)
@@ -1544,7 +1567,8 @@ void invokeApplyBiasRopeUpdateKVCacheDispatch(QKVPreprocessingParams<T, KVCacheB
     if (params.cross_attention)
     {
         TLLM_CHECK_WITH_INFO((absolute_position_embedding && params.remove_padding && params.qkv_bias == nullptr),
-            "Assume cross attention has learned_absolute position embedding, remove_padding is enabled and no bias");
+            "Assume cross attention has learned_absolute position "
+            "embedding, remove_padding is enabled and no bias");
 #ifdef ENABLE_FP4
         // TODO: update the kernel and remove this check.
         TLLM_CHECK_WITH_INFO(
@@ -1562,14 +1586,16 @@ void invokeApplyBiasRopeUpdateKVCacheDispatch(QKVPreprocessingParams<T, KVCacheB
         return;
     }
 
-    // Long-sequence-length that exceeds the max_position_size needs to compute the cos/sin on-the-fly.
+    // Long-sequence-length that exceeds the max_position_size needs to compute
+    // the cos/sin on-the-fly.
     bool const long_seq_rotary_support = params.rotary_scale_type == RotaryScalingType::kDYNAMIC
         || params.max_kv_seq_len > params.rotary_embedding_max_positions;
     bool const has_rotary_cos_sin_cache = params.rotary_coef_cache_buffer != nullptr;
     bool const has_sink_tokens = params.sink_token_len > 0;
     bool const use_v1_for_mrope
         = params.position_embedding_type == PositionEmbeddingType::kROPE_M && params.mrope_rotary_cos_sin == nullptr;
-    // V2 implementation requires multiple of paired 16 bytes for gpt-neox rotation.
+    // V2 implementation requires multiple of paired 16 bytes for gpt-neox
+    // rotation.
     bool const support_rotary_for_v2 = (params.position_embedding_type != PositionEmbeddingType::kROPE_GPT_NEOX
                                            && params.position_embedding_type != PositionEmbeddingType::kLONG_ROPE)
         || params.rotary_embedding_dim % 16 == 0;
@@ -1583,7 +1609,8 @@ void invokeApplyBiasRopeUpdateKVCacheDispatch(QKVPreprocessingParams<T, KVCacheB
         return;
     }
 
-    // Attempt to adopt optimized memory-bound kernel first, otherwise fall back to the v1 kernel.
+    // Attempt to adopt optimized memory-bound kernel first, otherwise fall back
+    // to the v1 kernel.
     switch (params.size_per_head)
     {
     case 32: kernelV2DispatchHeadSize<256, 32, T, TCache, KVCacheBuffer>(params, stream); break;
@@ -1628,7 +1655,8 @@ __global__ __launch_bounds__(1024) void updateCyclicKvCacheAfterFmha(QKVPreproce
     int cache_seq_length = params.cache_seq_lens[batch_idx];
     // The past cache sequence length.
     int past_cache_seq_length = cache_seq_length - seq_length;
-    // Do we need to move the kv from the temporary kv cache to the cyclic kv cache (i.e. overwriting) ?
+    // Do we need to move the kv from the temporary kv cache to the cyclic kv
+    // cache (i.e. overwriting) ?
     bool const write_to_cyclic_kv_cache = cache_seq_length > params.cyclic_kv_cache_len;
     // The number of tokens in the temporary kv cache.
     int num_tmp_kv_tokens = past_cache_seq_length < params.cyclic_kv_cache_len
@@ -1646,8 +1674,10 @@ __global__ __launch_bounds__(1024) void updateCyclicKvCacheAfterFmha(QKVPreproce
         return;
     }
 
-    // The kv cache buffer has the shape of [batch_size, 2, max_num_blocks_per_seq, [num_kv_heads, tokens_per_block,
-    // head_size]] All threads in block.y and grid.x will iterate over all the tokens.
+    // The kv cache buffer has the shape of [batch_size, 2,
+    // max_num_blocks_per_seq, [num_kv_heads, tokens_per_block,
+    // head_size]] All threads in block.y and grid.x will iterate over all the
+    // tokens.
     int thread_token_idx = blockIdx.x * blockDim.y + threadIdx.y;
     int num_tokens_per_loop = gridDim.x * blockDim.y;
     // Iterate over new tokens' kv blocks.
@@ -1690,10 +1720,12 @@ template <typename T, typename TCache, typename KVCacheBuffer>
 void invokeUpdateCyclicKvCacheAfterFmha(QKVPreprocessingParams<T, KVCacheBuffer> params, cudaStream_t stream)
 {
     //
-    // This function processes at most params.cyclic_kv_cache_len kv cache as others will be overwritten anyway.
+    // This function processes at most params.cyclic_kv_cache_len kv cache as
+    // others will be overwritten anyway.
     //
 
-    // Launch kernels for updating cyclic kv cache. It is only needed when sliding window attention and chunked context
+    // Launch kernels for updating cyclic kv cache. It is only needed when sliding
+    // window attention and chunked context
     // (i.e. paged kv context fmha) are used together.
     dim3 block(32, 32);
     dim3 grid(std::min(64, int(divUp(params.cyclic_kv_cache_len, block.y))), params.kv_head_num, params.batch_size);
@@ -1844,9 +1876,8 @@ void invokeUpdateSparseKvCacheAfterFmha(QKVPreprocessingParams<T, KVCacheBuffer>
     template void invokeUpdateCyclicKvCacheAfterFmha<T, TCache, KVCacheBuffer>(                                        \
         QKVPreprocessingParams<T, KVCacheBuffer> params, cudaStream_t stream);                                         \
     template void invokeUpdateSparseKvCacheAfterFmha<T, TCache, KVCacheBuffer>(                                        \
-        QKVPreprocessingParams<T, KVCacheBuffer> params, cudaStream_t stream);                                         \
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
+        QKVPreprocessingParams<T, KVCacheBuffer> params,                                                               \
+        cudaStream_t                                                                                                   \
+            stream); ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

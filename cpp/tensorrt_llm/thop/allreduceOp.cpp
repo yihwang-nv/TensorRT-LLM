@@ -61,7 +61,8 @@ using tensorrt_llm::pg_utils::get_world_pg;
 using tensorrt_llm::pg_utils::get_local_pg;
 using tensorrt_llm::pg_utils::PgHelper;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -186,7 +187,8 @@ std::set<int> getLocalGroupTorch(std::set<int> const& group)
 
         if (myRank == *group.begin())
         {
-            // Leader: gather from peers (world ranks), then broadcast full localSize arrays.
+            // Leader: gather from peers (world ranks), then broadcast full localSize
+            // arrays.
             size_t cnt = 0;
             ranks[cnt++] = myRank;
             int tmp;
@@ -419,7 +421,8 @@ private:
                        [&](c10::intrusive_ptr<c10d::ProcessGroup>& torchPg)
                        {
                            reduce_output = input.clone();
-                           // TLLM_LOG_INFO("AllReduce Rank: %d, tensor numel: %d", torchPg->getRank(),
+                           // TLLM_LOG_INFO("AllReduce Rank: %d, tensor numel: %d",
+                           // torchPg->getRank(),
                            // reduce_output.numel());
                            std::vector tensors{reduce_output};
                            PGCHECK_THROW(torchPg->allreduce(tensors, {c10d::ReduceOp::SUM}));
@@ -588,7 +591,8 @@ private:
         allreduce_fusion_params.norm_out = nullptr;
         allreduce_fusion_params.trigger_completion_at_end = trigger_completion_at_end;
 
-        // Determine if using oneshot or twoshot allreduce kernel in case using MIN_LATENCY strategy.
+        // Determine if using oneshot or twoshot allreduce kernel in case using
+        // MIN_LATENCY strategy.
         if (strategy == AllReduceStrategyType::MIN_LATENCY)
         {
             allreduce_fusion_params.use_oneshot = seq_len <= tensorrt_llm::kernels::ar_fusion::kOneShotMaxToken
@@ -737,7 +741,8 @@ private:
         torch::Tensor& reduce_output)
     {
         // If we reach here, it means the extra fallback operations are required.
-        // All patterns are broken into ALlReduce + residual_rms_norm + following operations (quantization, etc.)
+        // All patterns are broken into ALlReduce + residual_rms_norm + following
+        // operations (quantization, etc.)
         auto const size = input.numel();
         auto const hidden_size = input.size(-1);
         auto const stream = at::cuda::getCurrentCUDAStream(input.get_device());
@@ -767,7 +772,8 @@ private:
         bool const is_sf_swizzled_layout = true;
         TORCH_CHECK(scale, "scale is required for quantization ops");
 
-        // Attach the subsequent operations after the residual RMS norm all-reduce and return the final outputs.
+        // Attach the subsequent operations after the residual RMS norm all-reduce and
+        // return the final outputs.
         switch (mOp)
         {
         case AllReduceFusionOp::RESIDUAL_RMS_NORM_QUANT_FP8:
@@ -835,7 +841,8 @@ private:
         mIsP2PSupported = true;
         mIsNVLINKSupported = true;
 
-        // TODO(ytong): Should we provide group topology info instead of querying it here?
+        // TODO(ytong): Should we provide group topology info instead of querying it
+        // here?
         // Use cudaDeviceCanAccessPeer to determine whether p2p is supported,
         // and use nvml to determine whether there are nvlink links between ranks.
         for (int first_device_id : local_group)
@@ -889,7 +896,8 @@ private:
                     {
                         // Maybe Two GPUs are connected via nvswitch,
                         // now remotePciInfo represents the pci information of nvswitch,
-                        // determine whether nvlink is supported by whether two GPUs are connected to the same
+                        // determine whether nvlink is supported by whether two GPUs are
+                        // connected to the same
                         // nvswitch.
                         nvmlDevice_t second_device;
                         NVML_CHECK_THROW(nvmlDeviceGetHandleByIndex(second_device_id, &second_device));
@@ -930,7 +938,8 @@ private:
     {
         if (mStrategy != AllReduceStrategyType::AUTO)
         {
-            // For UB,NCCL,NCCL_SYMMETRIC, the correctness of the strategy dispatching is guaranteed by the user.
+            // For UB,NCCL,NCCL_SYMMETRIC, the correctness of the strategy dispatching
+            // is guaranteed by the user.
             if (mStrategy == AllReduceStrategyType::UB || mStrategy == AllReduceStrategyType::NCCL
                 || mStrategy == AllReduceStrategyType::NCCL_SYMMETRIC)
             {
@@ -956,15 +965,19 @@ private:
             return AllReduceStrategyType::NCCL;
         }
 
-        // This rule based heuristic only chooses between NCCL and MIN_LATENCY strategies.
-        // From this point, all fusion patterns are supported by all these strategies: NCCL, ONESHOT, TWOSHOT and
+        // This rule based heuristic only chooses between NCCL and MIN_LATENCY
+        // strategies.
+        // From this point, all fusion patterns are supported by all these strategies:
+        // NCCL, ONESHOT, TWOSHOT and
         // MIN_LATENCY.
         if (mStrategy != AllReduceStrategyType::AUTO)
         {
             // Check TWOSHOT constraint: seq_len >= tp_size
             if (mStrategy == AllReduceStrategyType::TWOSHOT && seq_len < mGroup.size())
             {
-                TLLM_LOG_WARNING("TWOSHOT strategy requires seq_len >= tp_size (%zu < %zu), falling back to ONESHOT",
+                TLLM_LOG_WARNING(
+                    "TWOSHOT strategy requires seq_len >= tp_size (%zu < "
+                    "%zu), falling back to ONESHOT",
                     seq_len, mGroup.size());
                 return AllReduceStrategyType::ONESHOT;
             }
@@ -980,7 +993,8 @@ private:
 
     bool ifFallbackToNCCL(size_t seq_len, size_t message_size_bytes, size_t max_workspace_size)
     {
-        // If messageSize is less than maxWorkspaceSize, use NCCL, regardless of the fusion type.
+        // If messageSize is less than maxWorkspaceSize, use NCCL, regardless of the
+        // fusion type.
         if (message_size_bytes > max_workspace_size || !mIsP2PSupported || !mIsNVLINKSupported)
         {
             return true;
@@ -994,7 +1008,8 @@ private:
         bool force_low_precision = mStrategy == AllReduceStrategyType::LOWPRECISION;
 
 #ifdef ENABLE_FP8
-        // Use LowPrecision if PCIe and p2p support and message size is larger than 2MB
+        // Use LowPrecision if PCIe and p2p support and message size is larger than
+        // 2MB
         constexpr int LowPrecisionMinMessageSize = 2 * 1024 * 1024;
         return force_low_precision && !mIsNVLINKSupported && mIsP2PSupported
             && message_size >= LowPrecisionMinMessageSize;
@@ -1136,8 +1151,10 @@ std::vector<torch::Tensor> moe_allreduce(torch::Tensor const& residual, torch::T
     return {norm_out, residual_out};
 }
 
-// Pattern: MoE Reduction + Add + AR + ADD_RMS, see this torch reference implementation:
-// expert_reduction = finalize(input, expanded_idx_to_permuted_idx, expert_scale_factor)
+// Pattern: MoE Reduction + Add + AR + ADD_RMS, see this torch reference
+// implementation:
+// expert_reduction = finalize(input, expanded_idx_to_permuted_idx,
+// expert_scale_factor)
 // output_add = expert_reduction + shared_expert_output
 // output_residual = output_add + residual
 // output_hidden_states = rms_norm(output_residual, norm_weight, eps)
@@ -1209,8 +1226,9 @@ std::vector<torch::Tensor> mnnvlFusionAllReduce(torch::Tensor& input, torch::opt
     torch::Tensor& buffer_flags, bool rmsnorm_fusion)
 {
     auto* mcast_mem = tensorrt_llm::common::findMcastDevMemBuffer(comm_buffer.data_ptr());
-    TORCH_CHECK(
-        mcast_mem != nullptr, "[mnnvlFusionAllReduce] comm_buffer must be obtained from a mcastBuffer instance.");
+    TORCH_CHECK(mcast_mem != nullptr,
+        "[mnnvlFusionAllReduce] comm_buffer must "
+        "be obtained from a mcastBuffer instance.");
     TORCH_CHECK(input.is_contiguous(), "[mnnvlFusionAllReduce] input must be contiguous");
 
     auto const eltsPerThread = sizeof(float4) / input.itemsize();
@@ -1240,7 +1258,8 @@ std::vector<torch::Tensor> mnnvlFusionAllReduce(torch::Tensor& input, torch::opt
     if (rmsnorm_fusion)
     {
         TORCH_CHECK(residual_in.has_value() && gamma.has_value() && epsilon.has_value(),
-            "[mnnvlFusionAllReduce] residual_in, gamma, and epsilon must be provided for rmsnorm fusion");
+            "[mnnvlFusionAllReduce] residual_in, gamma, and epsilon must "
+            "be provided for rmsnorm fusion");
         TORCH_CHECK(residual_in.value().is_contiguous(), "[mnnvlFusionAllReduce] residual_in must be contiguous");
         TORCH_CHECK(gamma.value().is_contiguous(), "[mnnvlFusionAllReduce] gamma must be contiguous");
 
@@ -1277,13 +1296,14 @@ std::vector<torch::Tensor> mnnvlFusionAllReduce(torch::Tensor& input, torch::opt
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
         "mnnvl_fusion_allreduce(Tensor input, Tensor? residual, Tensor? gamma, "
-        "float? epsilon, Tensor(a!) comm_buffer, Tensor buffer_flags, bool rmsnorm_fusion) -> "
+        "float? epsilon, Tensor(a!) comm_buffer, Tensor buffer_flags, bool "
+        "rmsnorm_fusion) -> "
         "Tensor[]");
     m.def(
         "allreduce("
@@ -1325,7 +1345,9 @@ TORCH_LIBRARY_FRAGMENT(trtllm, m)
         "int rank,"
         "int nranks,"
         "float eps) -> Tensor[]");
-    m.def("initialize_static_lowprecision_buffers(Tensor workspace, int tp_size) -> Tensor[]");
+    m.def(
+        "initialize_static_lowprecision_buffers(Tensor workspace, int tp_size) "
+        "-> Tensor[]");
     m.def(
         "moe_finalize_allreduce("
         "Tensor input,"

@@ -26,10 +26,7 @@
 #include "CudaType.h"
 #include "Poly.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 typedef void (*StatePassingKernelFunc)(int B_, int L_, int H_, int P_, int G_, int N_,
     //  const void *g_mxY_,  // Tp_   B*L*H*P
@@ -38,13 +35,13 @@ typedef void (*StatePassingKernelFunc)(int B_, int L_, int H_, int P_, int G_, i
     void const* g_mxSt_, // float B*C*H*N*P
                          //  const void *g_mxdc_, // float B*C*H*Q
     void const* g_mxdA_, // float B*C*H*Q
-                         //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
-                         //  const void *g_mxdb_, // Wt_       H
-                         //  const void *g_mxA_,  // Wt_       H
-                         //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
-                         //  const void *g_mxD_,  // Wt_       H
-                         //  const void *g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
-                         //  const void *g_mxZ_,  // g_mxdt_ or nullptr
+    //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
+    //  const void *g_mxdb_, // Wt_       H
+    //  const void *g_mxA_,  // Wt_       H
+    //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
+    //  const void *g_mxD_,  // Wt_       H
+    //  const void *g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
+    //  const void *g_mxZ_,  // g_mxdt_ or nullptr
     bool removePadding_, int const* lastTokenIdsPtr_, int const* stateSlotMappingPtr_);
 
 template <int Q_, int tileH_, int warpH_, class Tp_>
@@ -54,15 +51,16 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
     void* g_mxOs_,       // Tp_   B*C*H*N*P
     void* g_mxFs_,       // Tp_   B  *H*N*P
     void const* g_mxSt_, // float B*C*H*N*P
-                         //  const void *g_mxdc_, // float B*C*H*Q
+    //  const void *g_mxdc_, // float B*C*H*Q
     void const* g_mxdA_, // float B*C*H*Q
-                         //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
-                         //  const void *g_mxdb_, // Wt_       H
-                         //  const void *g_mxA_,  // Wt_       H
-                         //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
-                         //  const void *g_mxD_,  // Wt_       H
-                         //  const void *g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
-                         //  const void *g_mxZ_,  // g_mxdt_ or nullptr
+                         //  const void *g_mxdt_, // Tp_
+    // B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
+    //  const void *g_mxdb_, // Wt_       H
+    //  const void *g_mxA_,  // Wt_       H
+    //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
+    //  const void *g_mxD_,  // Wt_       H
+    //  const void *g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
+    //  const void *g_mxZ_,  // g_mxdt_ or nullptr
     bool removePadding_, int const* lastTokenIdsPtr_, int const* stateSlotMappingPtr_)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
@@ -265,7 +263,5 @@ static inline StatePassingKernelFunc getStatePassingKernel(int B_, int L_, int H
     return nullptr;
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 // vim: ts=2 sw=2 sts=2 et sta

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "bertAttentionPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/gptKernels.h"
 #include "tensorrt_llm/kernels/recoverFromRingAtten.h"
 #include "tensorrt_llm/kernels/sageAttentionKernels.h"
@@ -85,8 +84,10 @@ BertAttentionPlugin::BertAttentionPlugin(int num_heads, int head_size, float q_s
         }
         else
         {
-            TLLM_LOG_INFO("SageAttnQBlockSize: %d, SageAttnKBlockSize: %d, SageAttnVBlockSize: %d", mSageAttnQBlockSize,
-                mSageAttnKBlockSize, mSageAttnVBlockSize);
+            TLLM_LOG_INFO(
+                "SageAttnQBlockSize: %d, SageAttnKBlockSize: %d, "
+                "SageAttnVBlockSize: %d",
+                mSageAttnQBlockSize, mSageAttnKBlockSize, mSageAttnVBlockSize);
         }
     }
 
@@ -152,7 +153,8 @@ nvinfer1::DimsExprs BertAttentionPlugin::getOutputDimensions(
 bool BertAttentionPlugin::supportsFormatCombination(
     int pos, nvinfer1::PluginTensorDesc const* inOut, int nbInputs, int nbOutputs) noexcept
 {
-    // inputs: [0] qkv, [1] input_lengths, [2] max_input_length (optional), [3] relative_attention_bias (optional)
+    // inputs: [0] qkv, [1] input_lengths, [2] max_input_length (optional), [3]
+    // relative_attention_bias (optional)
     // outputs: [X] hidden_states
     if (nbInputs == 2)
     { // BERT
@@ -184,8 +186,10 @@ void BertAttentionPlugin::configurePlugin(nvinfer1::DynamicPluginTensorDesc cons
 size_t BertAttentionPlugin::getWorkspaceSize(nvinfer1::PluginTensorDesc const* inputs, int nbInputs,
     nvinfer1::PluginTensorDesc const* outputs, int nbOutputs) const noexcept
 {
-    // if remove padding, inputs[0] "qkv_hidden_states" dim is [num_tokens, 3*hidden_dim] which doesn't have shape
-    // info should get max_batch_size and max_input_length from inputs[1] "input_lengths" and input[2]
+    // if remove padding, inputs[0] "qkv_hidden_states" dim is [num_tokens,
+    // 3*hidden_dim] which doesn't have shape
+    // info should get max_batch_size and max_input_length from inputs[1]
+    // "input_lengths" and input[2]
     // "max_input_length"
     int const batch_size = mRemovePadding ? inputs[1].dims.d[0] : inputs[0].dims.d[0];
     int const input_seq_len = mRemovePadding ? inputs[2].dims.d[0] : inputs[0].dims.d[1];
@@ -276,16 +280,22 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
 {
 
     // inputs
-    //     input_tensor [batch_size, seq_len, local_hidden_size*3] or [num_tokens, local_hidden_size*3]
+    //     input_tensor [batch_size, seq_len, local_hidden_size*3] or [num_tokens,
+    // local_hidden_size*3]
     //     input_lengths [batch_size]
-    //     max_input_length [max_input_length] -- use shape dim to represent max value. If remove padding, this records
-    //     the max input length among sequences; otherwise same as input_tensor's padded dim[1] relative_attention_bias
+    //     max_input_length [max_input_length] -- use shape dim to represent max
+    // value. If remove padding, this records
+    //     the max input length among sequences; otherwise same as input_tensor's
+    // padded dim[1] relative_attention_bias
     //     [num_heads, num_buckets] (optional)
     // outputs
-    //     output_tensor [batch_size, seq_len, local_hidden_size] or [num_tokens, local_hidden_size]
+    //     output_tensor [batch_size, seq_len, local_hidden_size] or [num_tokens,
+    // local_hidden_size]
 
-    // if remove padding, inputs[0] dim is [num_tokens] which doesn't have workspace info
-    // should get max_batch_size from inputs[1] and max_input_length from plugin attribute
+    // if remove padding, inputs[0] dim is [num_tokens] which doesn't have
+    // workspace info
+    // should get max_batch_size from inputs[1] and max_input_length from plugin
+    // attribute
     int const batch_size = mRemovePadding ? inputDesc[1].dims.d[0] : inputDesc[0].dims.d[0];
     int const input_seq_len = mRemovePadding ? inputDesc[2].dims.d[0] : inputDesc[0].dims.d[1];
     int const num_tokens = mRemovePadding ? inputDesc[0].dims.d[0] : batch_size * input_seq_len;
@@ -427,17 +437,22 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
     int const attention_seq_len_1 = request_seq_len; // q length
     int const attention_seq_len_2 = request_seq_len; // kv length
 
-    // If the model has relative attentiona bias, q scaling should be applied in QK gemm stage and use 1 in
-    // softamax stage (because to get softmax[scale(Q*K) + rel pos bias] here, q_scaling can't be applied during
-    // softmax phase by qk_scale); otherwise, use 1 in gemm stage and apply scaling in softmax stage
-    float const qk_scale
-        = 1.0f / (sqrtf(mHeadSize * 1.0f) * q_scaling); // q_scaling in denominator. by default q_scaling =1.0f
+    // If the model has relative attentiona bias, q scaling should be applied in
+    // QK gemm stage and use 1 in
+    // softamax stage (because to get softmax[scale(Q*K) + rel pos bias] here,
+    // q_scaling can't be applied during
+    // softmax phase by qk_scale); otherwise, use 1 in gemm stage and apply
+    // scaling in softmax stage
+    float const qk_scale = 1.0f / (sqrtf(mHeadSize * 1.0f) * q_scaling); // q_scaling in denominator.
+                                                                         // by default q_scaling
+                                                                         // =1.0f
     float const qk_scale_gemm = mRelativeAttention ? qk_scale : 1.0f;
     T const qk_scale_softmax = static_cast<T>(mRelativeAttention ? 1.0f : qk_scale);
 
     T* linear_bias_slopes = nullptr;
 
-    // FMHA doesn't apply to MHA with relative attention bias, i.e. softmax(QK + bias) * V
+    // FMHA doesn't apply to MHA with relative attention bias, i.e. softmax(QK +
+    // bias) * V
     // We update mEnableContextFMHA in constructor to check this condition
     if (mEnableContextFMHA)
     {
@@ -534,7 +549,6 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
             common::check_cuda_error(cudaStreamDestroy(mNcclStream));
             free(fmha_scheduler_counter_h);
         }
-
         else
         {
             if (mSageAttn && mHeadSize == 72 && mSageAttnQBlockSize == 64 && mSageAttnKBlockSize == 64
@@ -553,7 +567,8 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
                     // quant q k v
                     quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * paddedHeadSize,
                     quanted_qkv_ptr + 2 * mNumHeads * paddedHeadSize,
-                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize, context,
+                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize,
+                    // context,
                     3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize,
                     // scales
                     q_scale_ptr, k_scale_ptr, v_scale_ptr, stream);
@@ -576,7 +591,8 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
                     // quant q k v
                     quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * paddedHeadSize,
                     quanted_qkv_ptr + 2 * mNumHeads * paddedHeadSize,
-                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize, context,
+                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize,
+                    // context,
                     3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize,
                     // scales
                     q_scale_ptr, k_scale_ptr, v_scale_ptr, stream);
@@ -599,7 +615,8 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
                     // quant q k v
                     quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * paddedHeadSize,
                     quanted_qkv_ptr + 2 * mNumHeads * paddedHeadSize,
-                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize, context,
+                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize,
+                    // context,
                     3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize,
                     // scales
                     q_scale_ptr, k_scale_ptr, v_scale_ptr, stream);
@@ -622,7 +639,8 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
                     // quant q k v
                     quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * paddedHeadSize,
                     quanted_qkv_ptr + 2 * mNumHeads * paddedHeadSize,
-                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize, context,
+                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize,
+                    // context,
                     3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize,
                     // scales
                     q_scale_ptr, k_scale_ptr, v_scale_ptr, stream);
@@ -645,7 +663,8 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
                     // quant q k v
                     quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * paddedHeadSize,
                     quanted_qkv_ptr + 2 * mNumHeads * paddedHeadSize,
-                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize, context,
+                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize,
+                    // context,
                     3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize,
                     // scales
                     q_scale_ptr, k_scale_ptr, v_scale_ptr, stream);
@@ -668,7 +687,8 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
                     // quant q k v
                     quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * paddedHeadSize,
                     quanted_qkv_ptr + 2 * mNumHeads * paddedHeadSize,
-                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize, context,
+                    // quanted_qkv_ptr, quanted_qkv_ptr + mNumHeads * mHeadSize,
+                    // context,
                     3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize, 3 * mNumHeads * paddedHeadSize,
                     // scales
                     q_scale_ptr, k_scale_ptr, v_scale_ptr, stream);
@@ -730,13 +750,19 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
     }
     else
     {
-        // FIXME: a temporary solution to make sure the padding part of key/value buffer is 0
-        // NOTE: pointer subtraction is used below since there could be some extra gap due to alignment.
-        //  Otherwise, we could do cudaMemsetAsync(k_buf_2_, 0, k_buf_2_size + v_buf_2_size, stream);
-        // cudaMemsetAsync(k_buf_2_, 0, reinterpret_cast<int8_t*>(qk_buf_) - reinterpret_cast<int8_t*>(k_buf_2_),
+        // FIXME: a temporary solution to make sure the padding part of key/value
+        // buffer is 0
+        // NOTE: pointer subtraction is used below since there could be some extra
+        // gap due to alignment.
+        //  Otherwise, we could do cudaMemsetAsync(k_buf_2_, 0, k_buf_2_size +
+        // v_buf_2_size, stream);
+        // cudaMemsetAsync(k_buf_2_, 0, reinterpret_cast<int8_t*>(qk_buf_) -
+        // reinterpret_cast<int8_t*>(k_buf_2_),
         // stream);
-        // FIXME: the final solution is to change the add_fusedQKV_bias_transpose_kernel to map CTAs corresponding to
-        // the output shape, and set the padding part to 0. Without zero-initialize guarantee, these workspace buffers
+        // FIXME: the final solution is to change the
+        // add_fusedQKV_bias_transpose_kernel to map CTAs corresponding to
+        // the output shape, and set the padding part to 0. Without zero-initialize
+        // guarantee, these workspace buffers
         // may contain random NaN values when IFB workload is high.
         cudaMemsetAsync(k_buf_2_, 0,
             reinterpret_cast<int8_t*>(v_buf_2_) - reinterpret_cast<int8_t*>(k_buf_2_) + v_buf_2_size, stream);
@@ -749,30 +775,30 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
 
         if (!mQKHalfAccum && gemm_data_type != CUDA_R_32F)
         {
-            mCublasWrapper->stridedBatchedGemm(CUBLAS_OP_T, CUBLAS_OP_N,
-                attention_seq_len_2,             // n
-                attention_seq_len_1,             // m
-                mHeadSize,                       // k
-                qk_scale_gemm, k_buf_2_, gemm_data_type,
-                mHeadSize,                       // k
-                attention_seq_len_2 * mHeadSize, // n * k
-                q_buf_2_, gemm_data_type,
-                mHeadSize,                       // k
-                attention_seq_len_1 * mHeadSize, // m * k
-                0.0f, qk_buf_float_, CUDA_R_32F,
-                attention_seq_len_2,             // n
+            mCublasWrapper->stridedBatchedGemm(CUBLAS_OP_T, CUBLAS_OP_N, attention_seq_len_2, // n
+                attention_seq_len_1,                                                          // m
+                mHeadSize,                                                                    // k
+                qk_scale_gemm, k_buf_2_, gemm_data_type, mHeadSize,                           // k
+                attention_seq_len_2 * mHeadSize,                                              // n * k
+                q_buf_2_, gemm_data_type, mHeadSize,                                          // k
+                attention_seq_len_1 * mHeadSize,                                              // m * k
+                0.0f, qk_buf_float_, CUDA_R_32F, attention_seq_len_2,                         // n
                 attention_seq_len_2 * attention_seq_len_1,
-                request_batch_size * mNumHeads,  // global batch size
+                request_batch_size * mNumHeads,                                               // global batch size
                 CUDA_R_32F);
 
             // add relative position bias
             if (mRelativeAttention)
             {
                 // add rel pos bias
-                // QK is (batch_size, local_head_num, q_length, k_length), rel pos bias is (1, local_head_num,
-                // max_output_len + 1, max_output_len + 1). broadcast along 1st dim. max_seq_len is already
-                // max_output_len + 1. In implicit mode, relative_attention_bias is rel attn table
-                // [num_heads, num_buckets], with necessary params (max_distance, num_buckets) passed at the end
+                // QK is (batch_size, local_head_num, q_length, k_length), rel pos bias
+                // is (1, local_head_num,
+                // max_output_len + 1, max_output_len + 1). broadcast along 1st dim.
+                // max_seq_len is already
+                // max_output_len + 1. In implicit mode, relative_attention_bias is rel
+                // attn table
+                // [num_heads, num_buckets], with necessary params (max_distance,
+                // num_buckets) passed at the end
                 invokeAddRelativeAttentionBiasUnaligned(qk_buf_float_, relative_attn_table, request_batch_size,
                     mNumHeads, attention_seq_len_1, attention_seq_len_2, stream, mMaxDistance > 0,
                     inputDesc[3].dims.d[1], mMaxDistance, true /* bidirectional */);
@@ -802,10 +828,14 @@ int BertAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
             if (mRelativeAttention)
             {
                 // add rel pos bias
-                // QK is (batch_size, local_head_num, q_length, k_length), rel pos bias is (1, local_head_num,
-                // max_output_len + 1, max_output_len + 1). broadcast along 1st dim. max_seq_len is already
-                // max_output_len + 1. In implicit mode, relative_attention_bias is rel attn table
-                // [num_heads, num_buckets], with necessary params (max_distance, num_buckets) passed at the end
+                // QK is (batch_size, local_head_num, q_length, k_length), rel pos bias
+                // is (1, local_head_num,
+                // max_output_len + 1, max_output_len + 1). broadcast along 1st dim.
+                // max_seq_len is already
+                // max_output_len + 1. In implicit mode, relative_attention_bias is rel
+                // attn table
+                // [num_heads, num_buckets], with necessary params (max_distance,
+                // num_buckets) passed at the end
                 invokeAddRelativeAttentionBiasUnaligned(qk_buf_, relative_attn_table, request_batch_size, mNumHeads,
                     attention_seq_len_1, attention_seq_len_2, stream, mMaxDistance > 0, inputDesc[3].dims.d[1],
                     mMaxDistance, true /* bidirectional */);

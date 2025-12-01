@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +18,16 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/types.h"
 
 #include <deque>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
-/// @brief A class that maintains runtime input and output length statistics and computes runtime dynamic batch size.
+/// @brief A class that maintains runtime input and output length statistics
+/// and computes runtime dynamic batch size.
 class DynamicBatchTuner
 {
 public:
@@ -46,7 +45,8 @@ public:
         return mEnableMaxNumTokensTuning;
     }
 
-    /// @brief Update current stats given the input and output length from a single request.
+    /// @brief Update current stats given the input and output length from a
+    /// single request.
     void updateStats(SizeType32 inputLen, SizeType32 outputLen);
 
     /// @brief Get average input length.
@@ -87,6 +87,4 @@ private:
     static SizeType32 const kMaxNumTokensThresholdGenHeavy = 2048;
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

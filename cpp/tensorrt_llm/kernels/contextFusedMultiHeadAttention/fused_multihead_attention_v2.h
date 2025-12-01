@@ -34,10 +34,7 @@
 #include <set>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Base Class
@@ -140,7 +137,8 @@ public:
     void run(
         Fused_multihead_attention_params_v2& params, Launch_params& launch_params, cudaStream_t stream) const override;
 
-    // Check if any kernels support the attention types during building the engines.
+    // Check if any kernels support the attention types during building the
+    // engines.
     bool checkIfKernelExist(MHARunnerFixedParams params) const override;
 
     void getStepSize(uint32_t& out_step_q, uint32_t& out_step_kv, Fused_multihead_attention_params_v2 const& params,
@@ -156,6 +154,4 @@ using FusedMHAKernelFactoryV2 = TFusedMHAKernelFactory<FusedMultiHeadAttentionXM
 
 FusedMultiHeadAttentionXMMAKernelV2 const* getXMMAKernelsV2(Data_type inputType, Data_type outputType, unsigned int sm);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

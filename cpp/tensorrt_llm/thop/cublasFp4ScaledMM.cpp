@@ -27,7 +27,8 @@
 
 using torch::Tensor;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -54,7 +55,8 @@ inline at::Tensor const& getWorkspaceTensor(c10::Device device)
     return workspace_tensors[device_id];
 }
 
-// Helper function: Convert PyTorch ScalarType to CUDA datatype for FP4 GEMM output
+// Helper function: Convert PyTorch ScalarType to CUDA datatype for FP4 GEMM
+// output
 inline cudaDataType_t getCudaDataType(at::ScalarType dtype)
 {
     if (dtype == at::ScalarType::Half)
@@ -71,8 +73,9 @@ inline cudaDataType_t getCudaDataType(at::ScalarType dtype)
     }
     else
     {
-        TLLM_CHECK_WITH_INFO(
-            false, "Unsupported output dtype for FP4 GEMM. Supported types: Float16, BFloat16, Float32");
+        TLLM_CHECK_WITH_INFO(false,
+            "Unsupported output dtype for FP4 GEMM. "
+            "Supported types: Float16, BFloat16, Float32");
         return CUDA_R_16BF; // Unreachable, but satisfy compiler
     }
 }
@@ -143,11 +146,12 @@ void cublas_fp4_gemm_caller(torch::Tensor& out, torch::Tensor const& a, torch::T
     //   3. Passing dimensions as (n, m, k) instead of (m, n, k)
     //   4. Swapping scaling factors to match (b_sf_ptr, a_sf_ptr)
     // Note: beta is always 0 and is managed internally by BlockScaleGemm
-    cublasWrapper->BlockScaleGemm(CUBLAS_OP_T, CUBLAS_OP_N, n, m, k, b_ptr, k, // B matrix (swapped to first position)
-        a_ptr, k,                                                              // A matrix (swapped to second position)
-        out_ptr, n,                                                            // Output: C[m, n] in row-major
-        b_sf_ptr, a_sf_ptr,                                                    // Scaling factors (also swapped)
-        alpha_ptr);                                                            // Uses default algorithm (nullptr)
+    cublasWrapper->BlockScaleGemm(CUBLAS_OP_T, CUBLAS_OP_N, n, m, k, b_ptr,
+        k,                  // B matrix (swapped to first position)
+        a_ptr, k,           // A matrix (swapped to second position)
+        out_ptr, n,         // Output: C[m, n] in row-major
+        b_sf_ptr, a_sf_ptr, // Scaling factors (also swapped)
+        alpha_ptr);         // Uses default algorithm (nullptr)
 }
 
 } // namespace
@@ -210,8 +214,9 @@ public:
             algo_ptr = &cache.heuristics[tactic].algo;
             has_algo = true;
             TLLM_LOG_DEBUG(
-                "CublasLtFP4GemmRunner: Using specified tactic %ld (out of %zu) for shape (m=%d, n=%d, k=%d)", tactic,
-                cache.heuristics.size(), m, n, k);
+                "CublasLtFP4GemmRunner: Using specified tactic %ld (out "
+                "of %zu) for shape (m=%d, n=%d, k=%d)",
+                tactic, cache.heuristics.size(), m, n, k);
         }
         else if (tactic == -1 && !cache.heuristics.empty())
         {
@@ -220,7 +225,9 @@ public:
                 = cache.best_tactic < static_cast<int64_t>(cache.heuristics.size()) ? cache.best_tactic : 0;
             algo_ptr = &cache.heuristics[best_idx].algo;
             has_algo = true;
-            TLLM_LOG_DEBUG("CublasLtFP4GemmRunner: Using best tactic %ld (out of %zu) for shape (m=%d, n=%d, k=%d)",
+            TLLM_LOG_DEBUG(
+                "CublasLtFP4GemmRunner: Using best tactic %ld (out of "
+                "%zu) for shape (m=%d, n=%d, k=%d)",
                 best_idx, cache.heuristics.size(), m, n, k);
         }
 
@@ -233,7 +240,8 @@ public:
         {
             // Fall back to default (no algorithm specified)
             TLLM_LOG_WARNING(
-                "CublasLtFP4GemmRunner: No valid algorithm found (tactic=%ld, available=%zu), falling back to default "
+                "CublasLtFP4GemmRunner: No valid algorithm found "
+                "(tactic=%ld, available=%zu), falling back to default "
                 "for shape (m=%d, n=%d, k=%d)",
                 tactic, cache.heuristics.size(), m, n, k);
             cublas_fp4_gemm_caller(out, mat1, mat2, mat1_scale, mat2_scale, alpha);
@@ -288,7 +296,8 @@ private:
         if (mAlgoCache.find(key) == mAlgoCache.end())
         {
             TLLM_LOG_DEBUG(
-                "CublasLtFP4GemmRunner: Cache miss for shape (m=%d, k=%d, n=%d, device=%d, dtype=%d), creating new "
+                "CublasLtFP4GemmRunner: Cache miss for shape (m=%d, k=%d, "
+                "n=%d, device=%d, dtype=%d), creating new "
                 "cache entry",
                 m, k, n, device.index(), static_cast<int>(mOutputDtype));
 
@@ -331,13 +340,15 @@ private:
             }
 
             TLLM_LOG_DEBUG(
-                "CublasLtFP4GemmRunner: Found %zu valid algorithms for shape (m=%d, k=%d, n=%d) on device %d",
+                "CublasLtFP4GemmRunner: Found %zu valid algorithms for "
+                "shape (m=%d, k=%d, n=%d) on device %d",
                 cache.heuristics.size(), m, k, n, device.index());
 
             if (cache.heuristics.empty())
             {
                 TLLM_LOG_WARNING(
-                    "CublasLtFP4GemmRunner: No valid cuBLASLt algorithms found for shape (m=%d, k=%d, n=%d), will fall "
+                    "CublasLtFP4GemmRunner: No valid cuBLASLt algorithms "
+                    "found for shape (m=%d, k=%d, n=%d), will fall "
                     "back to default",
                     m, k, n);
             }
@@ -349,7 +360,8 @@ private:
         else
         {
             TLLM_LOG_DEBUG(
-                "CublasLtFP4GemmRunner: Cache hit for shape (m=%d, k=%d, n=%d, device=%d, dtype=%d), %zu algorithms "
+                "CublasLtFP4GemmRunner: Cache hit for shape (m=%d, k=%d, "
+                "n=%d, device=%d, dtype=%d), %zu algorithms "
                 "available",
                 m, k, n, device.index(), static_cast<int>(mOutputDtype), mAlgoCache[key].heuristics.size());
         }
@@ -406,7 +418,8 @@ private:
         cublasWrapper->setStream(stream);
         cublasWrapper->setWorkspace(ws_ptr);
 
-        // Matrix layout conversion for cuBLASLt (same as in cublas_fp4_gemm_caller):
+        // Matrix layout conversion for cuBLASLt (same as in
+        // cublas_fp4_gemm_caller):
         //   PyTorch uses row-major layout: A[m, k] x B[n, k]^T = C[m, n]
         //   cuBLASLt expects column-major layout: B^T[k, n] x A^T[k, m] = C[m, n]
         // Conversion is achieved by:
@@ -429,7 +442,7 @@ private:
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

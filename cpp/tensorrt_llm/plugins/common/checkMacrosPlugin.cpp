@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +17,10 @@
  */
 
 #include "checkMacrosPlugin.h"
-#include "tensorrt_llm/common/config.h"
 
 #include "tensorrt_llm/common/logger.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 void caughtError(std::exception const& e)
@@ -35,6 +33,4 @@ void logError(char const* msg, char const* file, char const* fn, int line)
     TLLM_LOG_ERROR("Parameter check failed at: %s::%s::%d, condition: %s", file, fn, line, msg);
 }
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

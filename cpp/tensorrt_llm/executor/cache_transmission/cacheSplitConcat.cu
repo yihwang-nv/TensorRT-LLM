@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "cacheSplitConcat.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaFp8Utils.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/envUtils.h"
@@ -36,9 +36,7 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 namespace
@@ -67,8 +65,10 @@ int getBlockNumAccountingForCP(int cpRank, int cpSize, int numTotalBlocks)
     {
         return numTotalBlocks;
     }
-    // Blocks are distributed among CP ranks as evenly as possible. When the number of blocks is not
-    // divisible by cpSize, the remainder shall be distributed evenly among lowest-indexed CP ranks
+    // Blocks are distributed among CP ranks as evenly as possible. When the
+    // number of blocks is not
+    // divisible by cpSize, the remainder shall be distributed evenly among
+    // lowest-indexed CP ranks
     // (let's call them overflow ranks).
     int numBlocksCurrRank = numTotalBlocks / cpSize;
     if (numTotalBlocks % cpSize > cpRank)
@@ -122,8 +122,10 @@ TargetRanksInfo TargetRanksInfoForDP(
     TLLM_CHECK(peerNumLayerPerPP.size() == peerPPNum);
     TLLM_CHECK(selfNumLayerPerPP.size() == selfPPNum);
     int selfStartLayerId = 0;
-    // global start layer id for selfPPrank, which is the sum of the layer num of the previous PP ranks.
-    // compute the target PP ranks and layer num need to be fetched from each target PP rank, according to [global start
+    // global start layer id for selfPPrank, which is the sum of the layer num
+    // of the previous PP ranks.
+    // compute the target PP ranks and layer num need to be fetched from each
+    // target PP rank, according to [global start
     // layer id, global end layer id)
 
     for (int ppRank = 0; ppRank < selfPPRank; ppRank++)
@@ -158,7 +160,8 @@ TargetRanksInfo TargetRanksInfoForDP(
     TLLM_CHECK(targetPeerPpLayerNumSum == selfNumLayerPerPP[selfPPRank]);
 
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        "selfPPRank:%d,selfPPNum:%d,peerPPNum:%d,selfTPNum:%d,peerTPNum:%d,peerPPRankStart:%d,peerPPRankEnd:%d",
+        "selfPPRank:%d,selfPPNum:%d,peerPPNum:%d,selfTPNum:%d,"
+        "peerTPNum:%d,peerPPRankStart:%d,peerPPRankEnd:%d",
         selfPPRank, selfPPNum, peerPPNum, selfTPNum, peerTPNum, peerPPRankStart, peerPPRankEnd);
     int peerTPRankStart = 0;
     int mDomainTPSize = 1;
@@ -234,9 +237,12 @@ TargetRanksInfo TargetRanksInfoForDP(
     }
 
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        "mDomainPPSize:%d, mDomainTPSize:%d, mDupHeadFactor:%d, mPeerDupHeadFactor:%d, selfPPRank:%d, selfPPNum:%d, "
-        "peerPPNum:%d, selfTPNum:%d, peerTPNum:%d, selfTPSizePerDPGroup:%d, peerTPSizePerDPGroup:%d, "
-        "selfNbHeadsPerLayer:%d, peerNbHeadsPerLayer:%d, selfTPrankInDPGroup:%d, peerDpRank:%d, selfRank:%d",
+        "mDomainPPSize:%d, mDomainTPSize:%d, mDupHeadFactor:%d, "
+        "mPeerDupHeadFactor:%d, selfPPRank:%d, selfPPNum:%d, "
+        "peerPPNum:%d, selfTPNum:%d, peerTPNum:%d, selfTPSizePerDPGroup:%d, "
+        "peerTPSizePerDPGroup:%d, "
+        "selfNbHeadsPerLayer:%d, peerNbHeadsPerLayer:%d, "
+        "selfTPrankInDPGroup:%d, peerDpRank:%d, selfRank:%d",
         mDomainPPSize, mDomainTPSize, mDupHeadFactor, mPeerDupHeadFactor, selfPPRank, selfPPNum, peerPPNum, selfTPNum,
         peerTPNum, selfTPSizePerDPGroup, peerTPSizePerDPGroup, selfNbHeadsPerLayer, peerNbHeadsPerLayer,
         selfTPrankInDPGroup, peerDpRank, selfRank);
@@ -405,11 +411,11 @@ template <typename T>
 void concatKVCache(runtime::ITensor::SharedPtr* inputBlocks, int inputBlockNum, std::vector<int> const& inputRanks,
     kv_cache::CacheState const& iCacheState, runtime::ITensor::SharedPtr* outputBlocks, int outputBlockNum, int oRank,
     kv_cache::CacheState const& oCacheState, runtime::BufferManager const& bufferManager)
-
 {
     TLLM_CHECK_WITH_INFO(!inputRanks.empty(), "inputRanks should not be empty.");
     TLLM_CHECK_WITH_INFO(inputBlockNum == outputBlockNum * inputRanks.size(),
-        "inputBlockNum must equal outputBlockNum multiplied by the size of inputRanks.");
+        "inputBlockNum must equal outputBlockNum multiplied "
+        "by the size of inputRanks.");
     TLLM_CHECK(inputRanks == targetIRanks(iCacheState, oCacheState, oRank).mIRanks);
 
     auto const& iParallelConfig = iCacheState.getParallelConfig();
@@ -533,7 +539,9 @@ void concatKVCache(runtime::ITensor::SharedPtr* inputBlocks, int inputBlockNum, 
         }
         else
         {
-            TLLM_THROW("concatKVCacheDispatch encountered an unsupported data type error.");
+            TLLM_THROW(
+                "concatKVCacheDispatch encountered an unsupported data type "
+                "error.");
         }
     }
     }
@@ -664,8 +672,10 @@ __global__ void splitKVCacheForMLAKernel(T const** __restrict__ inputBlocks, T**
         int blockIdInDomainCP = blockId / domainCPSize; // localBlockId on genCPRank.
         if (domainCPSize > 1 && !isCPRoundRobin)
         {
-            // NOTE: domainCPSize is the same as genCPSize as contextCP is always 1 currently. So,
-            // - rankInDomainCP is the same as genCPRank to which this block belongs.
+            // NOTE: domainCPSize is the same as genCPSize as contextCP is always 1
+            // currently. So,
+            // - rankInDomainCP is the same as genCPRank to which this block
+            // belongs.
             // - blockIdInDomainCP is the localBlockId on this genCPRank.
             getBlockIdInDomainCPandRankInDomainCP(
                 blockId, domainCPSize, prefixBlockNumDevPtr, blockIdInDomainCP, rankInDomainCP);
@@ -685,14 +695,18 @@ __global__ void splitKVCacheForMLAKernel(T const** __restrict__ inputBlocks, T**
                 T const* inputBlockPtr = inputBlocks[blockId];
                 T const* kInputPtr = inputBlockPtr + layerId * kvFactor * headNum * tokensPerBlock * dimsPerHead
                     + headId * tokensPerBlock * dimsPerHead;
-                // Example to understand the indexing: Say PP=2 and CP=2 for generation while PP=1 and CP=1 for context:
+                // Example to understand the indexing: Say PP=2 and CP=2 for
+                // generation while PP=1 and CP=1 for context:
                 // genRank 0 is ppRank0, cpRank0
                 // genRank 1 is ppRank0, cpRank1
                 // genRank 2 is ppRank1, cpRank0
                 // genRank 3 is ppRank1, cpRank1
-                // However, the order of cache transmission (targetRankInfo.mIRanks) is {0, 2, 1, 3}. i.e. {{pp0cp0},
-                // {pp1cp0}, {pp0cp1}, {pp1cp1}}. So, outputCaches of all ppRanks corresponding to a given cpRank are
-                // grouped together. We do blockId % domainCPSize because blocks are distributed among cpRanks in a
+                // However, the order of cache transmission (targetRankInfo.mIRanks)
+                // is {0, 2, 1, 3}. i.e. {{pp0cp0},
+                // {pp1cp0}, {pp0cp1}, {pp1cp1}}. So, outputCaches of all ppRanks
+                // corresponding to a given cpRank are
+                // grouped together. We do blockId % domainCPSize because blocks are
+                // distributed among cpRanks in a
                 // round-robin fashion.
                 int outputCacheIdx = rankInDomainCP * domainPPSize + rankInDomainPP;
                 T* outputCachePtr = outputCaches[outputCacheIdx];
@@ -729,7 +743,8 @@ __global__ void splitKVCacheForMLAKernel(T const** __restrict__ inputBlocks, T**
 
 // Block shape: [head, tokens, dimsPerHead]
 // CacheBlock shape: [numLayers, 2, mBlockSize]
-// Output split caches shape: [outputSplitCaches, numLayers, 2, head, tokensPerBlock, dimsPerHead]
+// Output split caches shape: [outputSplitCaches, numLayers, 2, head,
+// tokensPerBlock, dimsPerHead]
 // Note: The number of tokens can be large
 // subWarpSize * subWarpGroupSize
 
@@ -1131,7 +1146,8 @@ void splitKVCache(std::map<SizeType32, std::vector<runtime::ITensor::SharedPtr>>
     }
     TLLM_CHECK(outputCacheNum == outputSplitBlocks.size());
     TLLM_CHECK(inputBlockNumSum > 0);
-    // we want to reduce the call of `cudaMemcpyAsync H2D` , cachePtrs is used to store the pointers of the cache blocks
+    // we want to reduce the call of `cudaMemcpyAsync H2D` , cachePtrs is used
+    // to store the pointers of the cache blocks
     // and the values of the prefix layer num.
     std::vector<uint64_t> cachePtrs;
     std::vector<SizeType32> windowSizes;
@@ -1265,7 +1281,8 @@ void splitKVCache(std::map<SizeType32, std::vector<runtime::ITensor::SharedPtr>>
     constexpr int mlaSubWarpSize = 16;
 
     TLLM_LOG_DEBUG(
-        "splitKVCache - numLayers: %d, headNum: %d, domainPPSize: %d, domainTPSize: %d, "
+        "splitKVCache - numLayers: %d, headNum: %d, domainPPSize: "
+        "%d, domainTPSize: %d, "
         "headsPerDomainTP: %d",
         numLayers, headNum, domainPPSize, domainTPSize, headNumDomainTP);
 
@@ -1524,8 +1541,10 @@ void concatKVCache(std::vector<runtime::ITensor::SharedPtr> const& inputSplitBlo
         cachePtrs.push_back(reinterpret_cast<uint64_t>(inputSplitBlock->data()));
     }
 
-    // the prefix layer num is used to store the layer num of the previous PP ranks.
-    // which is helpful for the kernel to get layer num info.  refer to the function
+    // the prefix layer num is used to store the layer num of the previous PP
+    // ranks.
+    // which is helpful for the kernel to get layer num info.  refer to the
+    // function
     // `getLayerIdInDomainPPandRankInDomainPP`.
 
     std::vector<uint64_t> prefixLayerNum(targetRankInfo.mDomainPPSize + 1, 0);
@@ -1597,7 +1616,8 @@ void concatKVCache(std::vector<runtime::ITensor::SharedPtr> const& inputSplitBlo
 
     bool isMLA = selfAttentionConfig.mAttentionType == CacheState::AttentionType::kMLA;
     TLLM_LOG_DEBUG(
-        "concatKVCache - numLayers: %d, headNum: %d, domainPPSize: %d, domainTPSize: %d, "
+        "concatKVCache - numLayers: %d, headNum: %d, domainPPSize: "
+        "%d, domainTPSize: %d, "
         "headsPerDomainTP: %d",
         numLayers, headNum, domainPPSize, domainTPSize, headNumDomainTP);
 
@@ -1795,6 +1815,4 @@ void concatKvCacheV2Dispatch(std::vector<runtime::ITensor::SharedPtr> const& inp
     }
 }
 
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

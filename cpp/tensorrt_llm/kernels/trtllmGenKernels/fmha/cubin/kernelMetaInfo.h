@@ -21,10 +21,8 @@
 
 #include <cstddef>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 struct TllmGenFmhaKernelMetaInfo
 {
     Data_type mDataTypeQ;
@@ -61,6 +59,5 @@ struct TllmGenFmhaKernelMetaInfo
 extern const TllmGenFmhaKernelMetaInfo sTllmGenFmhaKernelMetaInfos[];
 extern const size_t sTllmGenFmhaKernelMetaInfosSize;
 // clang-format on
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

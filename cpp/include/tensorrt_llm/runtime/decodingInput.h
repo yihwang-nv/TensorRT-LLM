@@ -16,20 +16,18 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
 #include <optional>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 /// @brief Represents the inputs to the decoder.
-/// @details This input type is assumed immutable. It represents whatever the decoder received initially, and can always
+/// @details This input type is assumed immutable. It represents whatever the
+/// decoder received initially, and can always
 /// be referred to as such.
 class DecodingInput
 {
@@ -46,7 +44,8 @@ public:
     SizeType32 maxLength{};
     //! The maximum length of the attention window to consider while decoding
     SizeType32 maxAttentionWindow{};
-    //! The number of tokens to use as attention sinks, https://arxiv.org/html/2309.17453v3
+    //! The number of tokens to use as attention sinks,
+    // https://arxiv.org/html/2309.17453v3
     SizeType32 sinkTokenLength{};
     //! The number of samples in the batch
     SizeType32 batchSize{};
@@ -56,25 +55,31 @@ public:
     SizeType32 maxStopWordsLen{};
     //! The maximum value in the `badWordsLens` tensor
     SizeType32 maxBadWordsLen{};
-    //! The output of the model forward computation, a probability distribution over the vocabulary
+    //! The output of the model forward computation, a probability distribution
+    // over the vocabulary
     //! [batchSize][numGenTokens, beamWidth, vocabSizePadded] on gpu
     std::vector<TensorConstPtr> logitsVec;
     //! The end ids, [batchSize * beamWidth] on gpu
     TensorConstPtr endIds;
-    //! Address map of the linear batch id to to the seq slots, [batchSize] on pinned, int32_t
+    //! Address map of the linear batch id to to the seq slots, [batchSize] on
+    // pinned, int32_t
     TensorConstPtr batchSlots;
 
     //! Optional parameters
-    //! Finished states at current iteration (skip decoding step of a request if true), [batchSize, beamWidth] on gpu
+    //! Finished states at current iteration (skip decoding step of a request if
+    // true), [batchSize, beamWidth] on gpu
     TensorConstPtr finishReasons;
-    //! The maximum sequence length for each sequence in the batch, [batchSize] on gpu
+    //! The maximum sequence length for each sequence in the batch, [batchSize]
+    // on gpu
     TensorConstPtr sequenceLimitLength;
     TensorConstPtr embeddingBias;          // [batchSize, vocabSizePadded] on gpu
     TensorConstPtr lengths;                // [batchSize, beamWidth] on gpu
-    std::vector<TensorPtr> badWordsLists;  // [batchSize][2, badWordsLength] on gpu
+    std::vector<TensorPtr> badWordsLists;  // [batchSize][2, badWordsLength] on
+                                           // gpu
     TensorConstPtr badWordsPtrs;           // [batchSize][2, badWordsLength] on pinned
     TensorConstPtr badWordsLens;           // [batchSize] on gpu
-    std::vector<TensorPtr> stopWordsLists; // [batchSize][2, stopWordsLength] on gpu
+    std::vector<TensorPtr> stopWordsLists; // [batchSize][2, stopWordsLength] on
+                                           // gpu
     TensorConstPtr stopWordsPtrs;          // [batchSize][2, stopWordsLength] on pinned
     TensorConstPtr stopWordsLens;          // [batchSize] on pinned
     TensorConstPtr noRepeatNgramSize;      // [batchSize] on gpu
@@ -93,7 +98,8 @@ public:
         TensorConstPtr medusaPaths;
         //! [batchSize, maxTokensPerStep], on gpu
         TensorConstPtr medusaTreeIds;
-        //! [batchSize][maxAcceptedDraftTokensPerStep][maxDraftTokens + 1, vocabSizePadded], on gpu
+        //! [batchSize][maxAcceptedDraftTokensPerStep][maxDraftTokens + 1,
+        // vocabSizePadded], on gpu
         std::vector<std::vector<TensorPtr>> medusaLogits;
         //! [batchSize], on gpu
         TensorPtr medusaCurTokensPerStep;
@@ -126,10 +132,12 @@ public:
         TensorConstPtr nextDraftTokens;       // [batchSize, maxNumPaths, maxPathLen]
         TensorConstPtr nextFlatTokens;        // [batchSize * maxDecodingTokens]
         TensorConstPtr nextDraftIndices;      // [batchSize, maxNumPaths, maxPathLen]
-        TensorConstPtr nextDraftProbs;        // [batchSize, maxNumPaths, maxDraftPathLen, vocabSize]
+        TensorConstPtr nextDraftProbs;        // [batchSize, maxNumPaths,
+                                              // maxDraftPathLen, vocabSize]
         TensorConstPtr lastDraftTokens;       // [batchSize, maxNumPaths, maxPathLen]
         TensorConstPtr lastDraftIndices;      // [batchSize, maxNumPaths, maxPathLen]
-        TensorConstPtr masks;                 // [batchSize, maxDecodingTokens, maxDecodingTokens], bool
+        TensorConstPtr masks;                 // [batchSize, maxDecodingTokens,
+                                              // maxDecodingTokens], bool
         TensorConstPtr packedPositionIds;     // [batchSize * maxDecodingTokens]
         TensorConstPtr bestPathLengths;       // [batchSize]
         TensorConstPtr bestPathIndices;       // [batchSize]
@@ -149,10 +157,12 @@ public:
     {
         TensorConstPtr nextDraftTokens;          // [batchSize, maxDecodingDraftTokens]
         TensorConstPtr nextDraftLens;            // [batchSize]
-        TensorConstPtr nextDraftPaths;           // [batchSize, maxDecodingTokens, maxPathLen]
+        TensorConstPtr nextDraftPaths;           // [batchSize, maxDecodingTokens,
+                                                 // maxPathLen]
         TensorConstPtr lastDraftTokens;          // [batchSize, maxNumPaths, maxPathLen]
         TensorConstPtr lastDraftLens;            // [batchSize]
-        TensorConstPtr lastDraftPaths;           // [batchSize, maxDecodingTokens, maxPathLen]
+        TensorConstPtr lastDraftPaths;           // [batchSize, maxDecodingTokens,
+                                                 // maxPathLen]
         TensorConstPtr acceptedTokens;           // [batchSize, maxPathLen]
         TensorConstPtr acceptedLens;             // [batchSize]
         TensorConstPtr acceptedPathIds;          // [batchSize]
@@ -171,6 +181,4 @@ public:
     std::optional<EagleInputs> eagleInputs;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

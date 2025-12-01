@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,40 +18,51 @@
 
 #ifndef TRT_SELECTIVE_SCAN_PLUGIN_H
 #define TRT_SELECTIVE_SCAN_PLUGIN_H
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/selectiveScan/selectiveScan.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 // batch_size = num_ctx_requests or num_gen_requests
-// num_ctx_requests = number of context requests (single sequence per request).
-// num_gen_requests = number of generation requests (single sequences per request).
+// num_ctx_requests = number of context requests (single sequence per
+// request).
+// num_gen_requests = number of generation requests (single sequences per
+// request).
 // can not support beam search
 
 // inputs
-//     0.  input_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-//     1.  state, mamba: [batch_size, dstate, dim] or host [1] containing only pointer for paged_state
-//                mamba2: [batch_size, nheads, dstate, dim] or host [1] containing only pointer for paged_state
-//     2.  delta, mamba: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-//                mamba2: [batch_size, seq_len, nheads] or [num_tokens, nheads] for remove_input_padding
+//     0.  input_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
+//     1.  state, mamba: [batch_size, dstate, dim] or host [1] containing only
+// pointer for paged_state
+//                mamba2: [batch_size, nheads, dstate, dim] or host [1]
+// containing only pointer for paged_state
+//     2.  delta, mamba: [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
+//                mamba2: [batch_size, seq_len, nheads] or [num_tokens,
+// nheads] for remove_input_padding
 //     3.  delta_bias, [dim] for mamba, [nheads] for mamba2
 //     4.  A, [dstate, dim] for mamba, [nheads] for mamba2
-//     5.  BC, mamba: [batch_size, seq_len, dstate * 2] or [num_tokens, dstate * 2] for remove_input_padding
-//             mamba2: [batch_size, seq_len, ngroups * dstate * 2] or [num_tokens, ngroups * dstate * 2] for
+//     5.  BC, mamba: [batch_size, seq_len, dstate * 2] or [num_tokens, dstate
+// * 2] for remove_input_padding
+//             mamba2: [batch_size, seq_len, ngroups * dstate * 2] or
+// [num_tokens, ngroups * dstate * 2] for
 //             remove_input_padding
 //     6.  D, [dim] for mamba, [nheads] for mamba2
-//     7.  host_request_types [batch_size] int32. 0: context; 1: generation; 2: none.
+//     7.  host_request_types [batch_size] int32. 0: context; 1: generation;
+// 2: none.
 //     8.  last_token_ids [batch_size] int32
-//     9.  host_context_lengths [batch_size] int32, optional for remove_input_padding
+//     9.  host_context_lengths [batch_size] int32, optional for
+// remove_input_padding
 //    10.  state_slot_mapping [batch_size] int32, optional for paged state
-//    11.  z [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//    11.  z [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 // outputs
-//     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-//     1. state, [batch_size, dstate, dim] for mamba, [batch_size, nheads, dstate, dim] for mamba2
+//     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
+//     1. state, [batch_size, dstate, dim] for mamba, [batch_size, nheads,
+// dstate, dim] for mamba2
 
 class SelectiveScanPlugin : public BasePlugin
 {
@@ -216,7 +228,6 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
+} // namespace tensorrt_llm::plugins
 
-TRTLLM_NAMESPACE_END
 #endif // TRT_SELECTIVE_SCAN_PLUGIN_H

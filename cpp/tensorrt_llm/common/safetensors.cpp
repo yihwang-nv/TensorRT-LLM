@@ -28,7 +28,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common::safetensors
+namespace safetensors
 {
 using nvinfer1::DataType;
 
@@ -60,8 +60,10 @@ class SafeTensorArray : public INdArray
     std::vector<int64_t> mShape;
     mutable std::unique_ptr<std::byte[]> mData;
     DataType mDataType;
-    int64_t mOffsetBegin; // adjusted to represent offset relative to the beginning of the file
-    int64_t mOffsetEnd;   // adjusted to represent offset relative to the beginning of the file
+    int64_t mOffsetBegin; // adjusted to represent offset relative to the
+                          // beginning of the file
+    int64_t mOffsetEnd;   // adjusted to represent offset relative to the beginning
+                          // of the file
     std::shared_ptr<std::ifstream> mFs;
 
 public:
@@ -167,6 +169,6 @@ std::shared_ptr<ISafeTensor> ISafeTensor::open(char const* filename)
 {
     return std::make_shared<SafeTensor>(filename);
 }
-} // namespace common::safetensors
+} // namespace safetensors
 
 TRTLLM_NAMESPACE_END

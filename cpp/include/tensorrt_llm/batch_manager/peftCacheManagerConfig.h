@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +18,11 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/common.h"
 #include <optional>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using runtime::SizeType32;
@@ -71,9 +69,11 @@ struct PeftCacheManagerConfig
     {
     }
 
-    // number of max sized 1-layer 1-module adapterSize=1 sets of weights that can be stored in host cache
+    // number of max sized 1-layer 1-module adapterSize=1 sets of weights that
+    // can be stored in host cache
     SizeType32 numHostModuleLayer;
-    // number of max sized 1-layer 1-module sets of weights that can be stored in host cache
+    // number of max sized 1-layer 1-module sets of weights that can be stored
+    // in host cache
     SizeType32 numDeviceModuleLayer;
     // optimal adapter size used to set page width
     SizeType32 optimalAdapterSize;
@@ -93,9 +93,8 @@ struct PeftCacheManagerConfig
     std::optional<float> deviceCachePercent;
     // size in bytes to use for host cache
     std::optional<size_t> hostCacheSize;
-    // folder to store the LoRA weights we hope to load during engine initialization
+    // folder to store the LoRA weights we hope to load during engine
+    // initialization
     std::optional<std::string> loraPrefetchDir;
 };
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

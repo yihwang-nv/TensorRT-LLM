@@ -16,12 +16,9 @@
  */
 
 #include "tensorrt_llm/runtime/lookaheadBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/layers/lookaheadDecodingUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 LookaheadDecodingBuffers::LookaheadDecodingBuffers(
@@ -223,6 +220,4 @@ void LookaheadRuntimeBuffers::insertInputTensors(
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

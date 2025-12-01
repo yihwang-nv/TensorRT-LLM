@@ -21,7 +21,8 @@
 namespace th = torch;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -246,7 +247,7 @@ std::tuple<th::Tensor, th::Tensor> selective_scan(th::Tensor const& input, th::T
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
@@ -258,7 +259,8 @@ TORCH_LIBRARY_FRAGMENT(trtllm, m)
         "Tensor? host_context_lengths, Tensor? slot_mapping, "
         "int dim, int dstate, int nheads, int ngroups, "
         "int chunk_size, int delta_rank, bool delta_softplus, "
-        "bool remove_padding, bool is_mamba2, bool is_paged_state) -> (Tensor, Tensor)");
+        "bool remove_padding, bool is_mamba2, bool is_paged_state) -> (Tensor, "
+        "Tensor)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

@@ -33,9 +33,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 constexpr float FP8_E4M3_MAX = 448.0f;
 
 enum QuantizeMode
@@ -320,8 +317,6 @@ void invokeComputeFP8QuantizeScale(T_S* quant_ptr, const T_W* weights, const int
 template <typename T_OUT, typename T_S, typename T_IN>
 void invokeComputeScalesAndQuantizeMatrix(T_OUT* output, T_S* quant_ptr, const T_IN* weights, const int64_t numel,
     const int64_t lda, QuantizeMode quantize_mode, cudaStream_t stream);
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END
 #endif // ENABLE_FP8

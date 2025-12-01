@@ -20,9 +20,9 @@
 #include "tensorrt_llm/kernels/dsv3MinLatencyKernels/dsv3RouterGemm.h"
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::dsv3MinLatencyKernels
+namespace dsv3MinLatencyKernels
 {
 
 // Custom FMA implementation using PTX assembly instructions
@@ -65,7 +65,8 @@ __global__ __launch_bounds__(128, 1) void router_gemm_kernel(float* out, T const
     // Shared memory for warp-level reduction
     __shared__ float sm_reduction[kNumTokens][kNumWarps]; // kNumWarps
 
-    // B matrix is in column-major order, so we can directly load a column for the n_idx expert
+    // B matrix is in column-major order, so we can directly load a column for the
+    // n_idx expert
     T const* b_col = mat_b + n_idx * kHiddenDim;
 
     // Pre-compute k_base values for each iteration to help compiler optimize
@@ -242,6 +243,6 @@ template void tensorrt_llm::kernels::dsv3MinLatencyKernels::invokeRouterGemm<__n
 template void tensorrt_llm::kernels::dsv3MinLatencyKernels::invokeRouterGemm<__nv_bfloat16, 16, 256, 7168>(
     float*, __nv_bfloat16 const*, __nv_bfloat16 const*, cudaStream_t);
 
-} // namespace kernels::dsv3MinLatencyKernels
+} // namespace dsv3MinLatencyKernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

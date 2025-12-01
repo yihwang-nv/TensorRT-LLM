@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fused_gated_gemm/fused_gated_gemm.h"
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
@@ -25,20 +25,17 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 using GemmSwigluRunnerPtr
     = std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFusedGatedGemmRunnerInterface>;
 
-class GemmSwigluPluginProfiler : public GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+class GemmSwigluPluginProfiler : public GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
                                      GemmSwigluRunnerPtr, GemmIdCore, GemmIdCoreHash>
-
 {
 public:
-    using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
 
     void setQuantMode(tensorrt_llm::common::QuantMode const& quantMode);
 
@@ -50,7 +47,8 @@ protected:
     void computeTmpSize(size_t maxM, size_t n, size_t k) override;
 
     // TODO(anchengc) implement checkTactic
-    // bool checkTactic(int m, int n, int k, const Config& tactic) const override;
+    // bool checkTactic(int m, int n, int k, const Config& tactic) const
+    // override;
 
     std::vector<Config> getTactics(int m, int n, int k) const override;
 
@@ -150,6 +148,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

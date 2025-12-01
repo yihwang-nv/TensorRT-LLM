@@ -20,10 +20,8 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace jit
 {
 
@@ -43,6 +41,5 @@ private:
 };
 
 } // namespace jit
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,16 +21,13 @@
 #include "common.h"
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
-class AllocateKvCache : Algorithm
+class AllocateKvCache : tensorrt_llm::common::Algorithm
 {
     using BaseKVCacheManager = tensorrt_llm::batch_manager::kv_cache_manager::BaseKVCacheManager;
 
@@ -48,6 +46,4 @@ public:
         OptionalRef<BaseKVCacheManager> crossKvCacheManager = std::nullopt) const;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

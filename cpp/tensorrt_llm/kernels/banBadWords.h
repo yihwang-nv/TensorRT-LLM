@@ -21,10 +21,7 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 void invokeBanBadWords(T* logits, runtime::TokenIdType const** output_ids_ptr,
@@ -34,6 +31,4 @@ void invokeBanBadWords(T* logits, runtime::TokenIdType const** output_ids_ptr,
     runtime::SizeType32 vocab_size_padded, runtime::SizeType32 const* sequence_lengths, runtime::SizeType32 max_seq_len,
     cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

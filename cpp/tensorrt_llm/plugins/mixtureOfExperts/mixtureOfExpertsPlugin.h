@@ -18,16 +18,14 @@
 #define TRT_MIXTURE_OF_EXPERTS_PLUGIN_H
 
 #include "NvInferPlugin.h"
-#include "tensorrt_llm/common/config.h"
-
-#include "tensorrt_llm/common/cudaUtils.h"
+#include "tensorrt_llm/kernels/cutlass_kernels/include/cutlass_kernel_selector.h"
 #if defined(USING_OSS_CUTLASS_MOE_GEMM)
-#include "tensorrt_llm/common/quantization.h"
+#include "tensorrt_llm/kernels/cutlass_kernels/include/moe_kernels.h"
 #else
 #include "moe_kernels.h"
 #endif
-#include "tensorrt_llm/kernels/cutlass_kernels/include/cutlass_kernel_selector.h"
-#include "tensorrt_llm/kernels/cutlass_kernels/include/moe_kernels.h"
+#include "tensorrt_llm/common/cudaUtils.h"
+#include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/kernels/lora/lora.h"
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
@@ -39,9 +37,7 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 namespace kernels = CUTLASS_MOE_GEMM_KERNELS_NAMESPACE;
 using MoeMinLatencyParams = CUTLASS_MOE_GEMM_KERNELS_NAMESPACE::MoeMinLatencyParams;
@@ -82,10 +78,10 @@ struct GemmIDMoe
 
     friend std::ostream& operator<<(std::ostream& out, GemmIDMoe const& id)
     {
-        out << "gemm idx, experts, experts_per_token, parallelism_config, hidden, inter, group_size, actfn, dtype, "
+        out << "gemm idx, experts, experts_per_token, parallelism_config, "
+               "hidden, inter, group_size, actfn, dtype, "
                "weight "
                "type, parallelism mode, determinism mode="
-
             << id.gemm_idx << "," << id.num_experts << "," << id.experts_per_token << "," << id.parallelism_config
             << "," << id.hidden << "," << id.inter << "," << id.group_size << "," << static_cast<int>(id.actfn) << ","
             << static_cast<int>(id.dtype) << "," << static_cast<int>(id.wdtype) << "," << id.quant_mode.value() << ","
@@ -531,7 +527,8 @@ private:
     }
 
     /**
-     * Get the index of the expert shape tuple that represents the inner dimension
+     * Get the index of the expert shape tuple that represents the inner
+     * dimension
      */
     int getGemmShapeInnerDimIndex() const
     {
@@ -540,7 +537,8 @@ private:
     }
 
     /**
-     * Get the index of the expert shape tuple that represents the outer dimension
+     * Get the index of the expert shape tuple that represents the outer
+     * dimension
      */
     int getGemmShapeOuterDimIndex() const
     {
@@ -565,13 +563,14 @@ private:
 };
 
 class MixtureOfExpertsGemmProfiler
-    : public tensorrt_llm::plugins::GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+    : public tensorrt_llm::plugins::GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
           MixtureOfExpertsPlugin*, GemmIDMoe, GemmIDMoeHash>
 {
 public:
     MixtureOfExpertsGemmProfiler()
     {
-        // NOTE: Do not access mPlugin here, since we are called from the constructor before all fields are init
+        // NOTE: Do not access mPlugin here, since we are called from the
+        // constructor before all fields are init
     }
 
     void setGemmToProfile(kernels::GemmProfilerBackend::GemmToProfile gemm_to_profile)
@@ -593,7 +592,7 @@ public:
     }
 
 protected:
-    using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
     void runTactic(int m, int n, int k, Config const& tactic, char* workspace, cudaStream_t const& stream) override;
     void computeTmpSize(size_t maxM, size_t n, size_t k) override;
     std::vector<Config> getTactics(int m, int n, int k) const override;
@@ -636,7 +635,6 @@ private:
     std::string mNamespace;
 };
 
-} // namespace plugins
+} // namespace tensorrt_llm::plugins
 
-TRTLLM_NAMESPACE_END
 #endif // TRT_MIXTURE_OF_EXPERTS_PLUGIN_H

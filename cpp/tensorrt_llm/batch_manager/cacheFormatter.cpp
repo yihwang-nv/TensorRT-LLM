@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,13 +18,12 @@
 
 #include "cacheFormatter.h"
 #include "mlaCacheFormatter.h"
-#include "tensorrt_llm/batch_manager/contextProgress.h"
 
+#include "tensorrt_llm/batch_manager/contextProgress.h"
 #include "tensorrt_llm/batch_manager/dataTransceiver.h"
 #include "tensorrt_llm/batch_manager/kvCacheEventManager.h"
 #include "tensorrt_llm/batch_manager/kvCacheUtils.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/dataType.h"
 #include "tensorrt_llm/common/envUtils.h"
@@ -40,9 +40,7 @@
 #include <future>
 #include <numeric>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 BlockRange getBlockRangeForSending(BaseKVCacheManager* cacheManager, LlmRequest const& llmRequest,
@@ -51,7 +49,8 @@ BlockRange getBlockRangeForSending(BaseKVCacheManager* cacheManager, LlmRequest 
     auto poolNum = cacheManager->getBlockManager().getNumPools(
         /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
 
-    // Note: When recv side has CP, the requested seqLen is lesser than seqLen on the sender side as seqLen is
+    // Note: When recv side has CP, the requested seqLen is lesser than seqLen
+    // on the sender side as seqLen is
     // distributed among CP ranks. So, we transfer all blocks from send side.
     if (poolNum > 1 || !cacheManager->isEnableBlockReuse() || lastBlockKey.uniqueTokens.size() == 0 || recvSideHasCP)
     {
@@ -76,7 +75,9 @@ BlockRange getBlockRangeForSending(BaseKVCacheManager* cacheManager, LlmRequest 
                     - (windowSize / cacheManager->getBlockManager().getTokensPerBlock() + 1);
             // TODO: promptLen to get the startBlockIdx
             SizeType32 startBlockIdx = std::max(0, windowStartBlockIdx);
-            TLLM_LOG_DEBUG("getBlockRangeForSending windowSize: %d, startBlockIdx: %d  windowStartBlockIdx: %d",
+            TLLM_LOG_DEBUG(
+                "getBlockRangeForSending windowSize: %d, startBlockIdx: "
+                "%d  windowStartBlockIdx: %d",
                 windowSize, startBlockIdx, windowStartBlockIdx);
             blockRange.setBlockIdsForWindow(windowSize,
                 std::vector<SizeType32>(
@@ -93,12 +94,14 @@ BlockRange getBlockRangeForSending(BaseKVCacheManager* cacheManager, LlmRequest 
 BlockRange getBlockRangeForReceiving(
     BaseKVCacheManager* cacheManager, LlmRequest const& llmRequest, bool srcEnableBlockReuse, bool recvSideHasCP)
 {
-    // Note: When recv side has CP, we request all blocks from send side right now.
+    // Note: When recv side has CP, we request all blocks from send side right
+    // now.
     auto poolNum = cacheManager->getBlockManager().getNumPools(
         /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
     if (poolNum == 1 && srcEnableBlockReuse && !recvSideHasCP)
     {
-        // Build from all block ids, then slice off the reused blocks so we only transfer newly allocated ones.
+        // Build from all block ids, then slice off the reused blocks so we only
+        // transfer newly allocated ones.
         auto windowSize = cacheManager->getBlockManager().getWindowSizesMetadata().begin()->first;
         auto range = BlockRange::fromAllBlockIds(*cacheManager, llmRequest.mRequestId);
         auto const& allBlockIds = range.getBlockIdsPerWindow().at(windowSize);
@@ -174,7 +177,8 @@ void checkAlternateWindow(BaseKVCacheManager* cacheManager, BaseCacheFormatter::
     BaseCacheFormatter::CacheState const& destConfig)
 {
     // TODO: VSWA do not support uneven layer per PP.
-    // if gen PP and context PP are different, cache formatter only support alternative window like gpt-oss.
+    // if gen PP and context PP are different, cache formatter only support
+    // alternative window like gpt-oss.
     // which is one layer is WSA, and another layer is Full attention.
 
     auto numPools = cacheManager->getBlockManager().getNumPools(
@@ -247,7 +251,8 @@ void CacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& sessio
     auto const selfIdx = session.getSelfState().getCommState().value().getSelfIdx();
     auto indexFromEnd = session.getIndexFromEnd();
     auto& bufferManager = session.getBufferManager();
-    // Some TP rank don't need to send cache since duplicate header is not needed.
+    // Some TP rank don't need to send cache since duplicate header is not
+    // needed.
     if (!needSendCache(selfConfig, destConfig, selfIdx))
     {
         return;
@@ -255,9 +260,10 @@ void CacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& sessio
     auto& blockManager = mCacheManager->getBlockManager();
     auto const& lastBlockKey = session.getLastBlockKey();
     auto blockRange = getBlockRangeForSending(mCacheManager, llmRequest, lastBlockKey, indexFromEnd);
-    auto const numPools
-        = blockManager.getNumPools(/*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
-    // TODO(oargov): are we sure the other side has the same number of pools? this might not hold for pp_size>1...
+    auto const numPools = blockManager.getNumPools(
+        /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
+    // TODO(oargov): are we sure the other side has the same number of pools?
+    // this might not hold for pp_size>1...
 
     bool layerWise = common::getEnvDisaggLayerwise() && numPools == 1;
     if (layerWise)
@@ -280,7 +286,8 @@ void CacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& sessio
                 auto blockRangeForWindow = blockRange.getBlockRangeForWindow(windowSize);
                 for (auto it = blockRangeForWindow.begin(); it != blockRangeForWindow.end(); ++it)
                 {
-                    // Block dim: [1, numLayersInPool, ...], offset = {0, layerIndexInPool}
+                    // Block dim: [1, numLayersInPool, ...], offset = {0,
+                    // layerIndexInPool}
                     auto layer = runtime::ITensor::slice(it, offset, 1);
                     if (offset.d[1] == 0)
                     {
@@ -368,10 +375,13 @@ void CacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& sessio
         // formatter flow
         // 1. collect cache blocks of the request.
         // 2. compute the buffer size for each target.
-        // 3. prepare the pre-allocated buffer for each target according to the buffer size.
-        // 4. call splitKVCacheDispatch to split the cache blocks according to the different parallelis and gather the
+        // 3. prepare the pre-allocated buffer for each target according to the
+        // buffer size.
+        // 4. call splitKVCacheDispatch to split the cache blocks according to the
+        // different parallelis and gather the
         // cache blocks to the corresponding buffer.
-        // 5. send the buffer to the corresponding target. Ideally, we send only once (one buffer) for each target.
+        // 5. send the buffer to the corresponding target. Ideally, we send only
+        // once (one buffer) for each target.
 
         auto cacheBufferId = mCacheTransBufferManager->assignBufferIndexForSend();
         int peerDuplicateHeadFactor = targetInfo.mPeerDupHeadFactor;
@@ -412,7 +422,8 @@ void CacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& sessio
         auto& onlyUseDynamicBuffer = std::get<2>(result);
 
         TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-            " format bufferTargetNum: %d, targetNum: %d, peerDuplicateHeadFactor: %d duplicate:%d "
+            " format bufferTargetNum: %d, targetNum: %d, "
+            "peerDuplicateHeadFactor: %d duplicate:%d "
             "bufferCoverTargetNum:%d connections.size():%ld",
             bufferTargetNum, targetNum, peerDuplicateHeadFactor, targetInfo.mDupHeadFactor, bufferCoverTargetNum,
             connections.size());
@@ -460,8 +471,10 @@ void CacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& sessio
             }
             else
             {
-                // If cacheIdx< bufferCoverTargetNum, the ouputSplitCaches.at(cacheIdx) is allocated by cudaMallocAsync,
-                // which is unable to be transferred by UCX GPU-direct RDMA. We need copy the data to pre-allocated
+                // If cacheIdx< bufferCoverTargetNum, the
+                // ouputSplitCaches.at(cacheIdx) is allocated by cudaMallocAsync,
+                // which is unable to be transferred by UCX GPU-direct RDMA. We need
+                // copy the data to pre-allocated
                 // cudaMalloc buffer,and then start send.
                 // bufferCoverTargetNum == 0, mSendBuffer size < one outputSlice
                 // send multiple times
@@ -551,7 +564,10 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
     auto const& llmRequest = session.getLlmRequest();
     auto const ctxReqId = llmRequest.getContextPhaseParams().value().getReqId();
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        "Start receiving KV cache for request ID: %ld, context request ID: %ld.", llmRequest.mRequestId, ctxReqId);
+        "Start receiving KV cache "
+        "for request ID: %ld, "
+        "context request ID: %ld.",
+        llmRequest.mRequestId, ctxReqId);
     auto const& connections = session.getConnections();
     auto const& selfConfig = session.getSelfState().getCacheState().value();
     auto const& destConfig = session.getOtherState().getCacheState().value();
@@ -566,7 +582,8 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
     std::map<SizeType32, std::vector<runtime::ITensor::SharedPtr>> outputBuffersPerWindow;
     auto const numPools = mCacheManager->getBlockManager().getNumPools(
         /*includeBlockScalePools=*/false, /*includeIndexerKCachePools=*/false);
-    // TODO(oargov): are we sure the other side has the same number of pools? this might not hold for pp_size>1...
+    // TODO(oargov): are we sure the other side has the same number of pools?
+    // this might not hold for pp_size>1...
     size_t blockNum = 0;
     size_t cacheBlockSizeSum = 0;
 
@@ -628,7 +645,8 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
             auto layerVolume = cacheVolume / cacheShape.d[0];
             for (SizeType32 layerIdx = 0; layerIdx < numLayers; layerIdx++)
             {
-                // TODO: only send/recv required layers for ctxPP < genPP (numLayers > numLocalLayers)
+                // TODO: only send/recv required layers for ctxPP < genPP (numLayers >
+                // numLocalLayers)
                 auto const poolIdx = 0;
                 auto const layerIdxInPool = layerIdx;
                 int idx = 0;
@@ -688,17 +706,21 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
                     }
                 }
                 TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-                    "End receiving KV cache for request ID: %ld, context request ID: %ld.", llmRequest.mRequestId,
-                    ctxReqId);
+                    "End receiving KV cache for request ID: %ld, context "
+                    "request ID: %ld.",
+                    llmRequest.mRequestId, ctxReqId);
                 return;
             }
             // unformatted flow
             // 1. collect cache blocks of the request.
             // 2. compute the buffer size for each target.
-            // 3. prepare the pre-allocated buffer for each target according to the buffer size.
-            // 4. receive the buffer from the corresponding target. Ideally, we receive only once (one buffer) for each
+            // 3. prepare the pre-allocated buffer for each target according to the
+            // buffer size.
+            // 4. receive the buffer from the corresponding target. Ideally, we
+            // receive only once (one buffer) for each
             // target.
-            // 5. call concatKvCacheV2Dispatch to  concatenate the cache blocks according to the different parallelis
+            // 5. call concatKvCacheV2Dispatch to  concatenate the cache blocks
+            // according to the different parallelis
 
             runtime::ITensor::SharedPtr recvBufferTemp;
             std::vector<runtime::ITensor::SharedPtr> recvSplitCaches;
@@ -722,14 +744,16 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
                     }
                     return bufferSizeForTarget;
                 }
-                // for duplicate header, gen will not recv from TP which has duplicate header, and will not prepare
+                // for duplicate header, gen will not recv from TP which has duplicate
+                // header, and will not prepare
                 // buffer for it.
                 size_t validTpSize = pickUpConnections.size() / targetInfo.mDomainPPSize;
                 TLLM_CHECK_WITH_INFO(cacheBlockSizeSum % validTpSize == 0,
                     "cacheBlockSizeSum must be divisible by validTpSize %ld", validTpSize);
                 TLLM_CHECK_WITH_INFO((cacheBlockSizeSum % (selfAttentionLayerNum * validTpSize)) == 0,
-                    "cacheBlockSizeSum must be divisible by validTpSize %ld * selfAttentionLayerNum %d", validTpSize,
-                    selfAttentionLayerNum);
+                    "cacheBlockSizeSum must be divisible by validTpSize %ld * "
+                    "selfAttentionLayerNum %d",
+                    validTpSize, selfAttentionLayerNum);
                 TLLM_CHECK(targetNum == pickUpConnections.size());
                 // the sum of buffer size is cacheBlockSizeSum.
                 size_t cacheBlockSizePerLayer = cacheBlockSizeSum / (validTpSize * selfAttentionLayerNum);
@@ -915,7 +939,9 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
 {
     if (selfConfig.getDataType() != destConfig.getDataType())
     {
-        TLLM_LOG_WARNING("CacheFormatter::inquireSupport: selfConfig.getDataType() != destConfig.getDataType()");
+        TLLM_LOG_WARNING(
+            "CacheFormatter::inquireSupport: "
+            "selfConfig.getDataType() != destConfig.getDataType()");
         return false;
     }
 
@@ -924,7 +950,9 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
 
     if (setVecSelf.size() != 1)
     {
-        TLLM_LOG_WARNING("CacheFormatter::inquireSupport: only support equal number of heads per layer");
+        TLLM_LOG_WARNING(
+            "CacheFormatter::inquireSupport: only support equal "
+            "number of heads per layer");
         return false;
     }
     if (selfConfig.getAttentionConfig().mAttentionType != destConfig.getAttentionConfig().mAttentionType)
@@ -946,7 +974,8 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
         || destConfig.getParallelConfig().mContextParallelism != 1)
     {
         TLLM_LOG_WARNING(
-            "CacheFormatter::inquireSupport: context parallelism is not currently supported (selfCP=%d, destCP=%d).",
+            "CacheFormatter::inquireSupport: context parallelism is "
+            "not currently supported (selfCP=%d, destCP=%d).",
             selfConfig.getParallelConfig().mContextParallelism, destConfig.getParallelConfig().mContextParallelism);
         return false;
     }
@@ -956,13 +985,17 @@ void CacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& sess
 
     if (setVecDest.size() != 1)
     {
-        TLLM_LOG_WARNING("CacheFormatter::inquireSupport: only support same number of heads per layer");
+        TLLM_LOG_WARNING(
+            "CacheFormatter::inquireSupport: only support same "
+            "number of heads per layer");
         return false;
     }
     if (selfConfig.getModelConfig().mTokensPerBlock != destConfig.getModelConfig().mTokensPerBlock
         || selfConfig.getModelConfig().mSizePerHead != destConfig.getModelConfig().mSizePerHead)
     {
-        TLLM_LOG_WARNING("CacheFormatter::inquireSupport: only support same tokens per block and size per head");
+        TLLM_LOG_WARNING(
+            "CacheFormatter::inquireSupport: only support same "
+            "tokens per block and size per head");
         return false;
     }
     if (selfConfig.getModelConfig().mNbKvHeadsPerLayer.size() != destConfig.getModelConfig().mNbKvHeadsPerLayer.size())
@@ -986,6 +1019,4 @@ std::unique_ptr<BaseCacheFormatter> createCacheFormatter(
     return std::make_unique<CacheFormatter>(cacheManager, cacheTransBufferManagers[0]);
 }
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

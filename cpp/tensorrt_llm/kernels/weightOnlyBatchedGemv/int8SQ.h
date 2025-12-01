@@ -26,10 +26,8 @@
 #include <cuda_runtime_api.h>
 #include <iostream>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace smooth_quant
 {
 struct Params
@@ -60,6 +58,5 @@ struct Params
 template <typename>
 void int8_sq_launcher(Params& params, cudaStream_t s);
 } // namespace smooth_quant
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

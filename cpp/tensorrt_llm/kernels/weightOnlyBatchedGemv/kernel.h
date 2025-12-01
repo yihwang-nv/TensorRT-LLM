@@ -20,10 +20,8 @@
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/common.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/utility.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 template <typename Details, int CtaM, int CtaN, int Threads, int GroupSize, bool EnableActScale, bool EnableZero,
@@ -32,15 +30,18 @@ __global__ void kernel(TypeA* act, TypeA* act_scale, uint8_t* weight, TypeA* sca
     TypeA* out, float alpha, int m, int n, int k)
 {
     // clang-format off
-    // ArgType          ArgName          DataType               Shape                           Layout
-    //
-    // input            act              fp16/bf16              [m, k]                          RowMajor
-    // input            act_scale        fp16/bf16              [1, k]                          RowMajor
-    // input            weight           int4b/int8b            [k, n]                          ColumnMajor or ColumnMajorInterleaved
-    // input            scales           fp16/bf16              [k / GroupSize, n] or [1, n]    RowMajor
-    // input            zeros            fp16/bf16              [k / GroupSize, n] or [1, n]    RowMajor
-    // input            bias             fp16/bf16              [1, n]                          RowMajor
-    // output           out              fp16/bf16              [m, n]                          RowMajor
+  // ArgType          ArgName          DataType               Shape Layout
+  //
+  // input            act              fp16/bf16              [m, k] RowMajor
+  // input            act_scale        fp16/bf16              [1, k] RowMajor
+  // input            weight           int4b/int8b            [k, n]
+  // ColumnMajor or ColumnMajorInterleaved
+  // input            scales           fp16/bf16              [k / GroupSize, n]
+  // or [1, n]    RowMajor
+  // input            zeros            fp16/bf16              [k / GroupSize, n]
+  // or [1, n]    RowMajor
+  // input            bias             fp16/bf16              [1, n] RowMajor
+  // output           out              fp16/bf16              [m, n] RowMajor
     // clang-format on
     using AccessTypeA = typename Details::AccessTypeA;
     using AccessTypeW = typename Details::AccessTypeW;
@@ -144,21 +145,20 @@ void exec_kernel(Params& params, cudaStream_t s)
     dim3 grid(params.m / CtaM, params.n / (CtaN * Details::kInterleave));
     dim3 block(Threads);
     // clang-format off
-    kernel<Details, CtaM, CtaN, Threads, GroupSize, EnableActScale, EnableZero, EnableBias, ApplyAlphaInAdvance><<<grid, block, 0, s>>>(
-        reinterpret_cast<T*>(params.act),
-        reinterpret_cast<T*>(params.act_scale),
-        reinterpret_cast<uint8_t*>(params.weight),
-        reinterpret_cast<T*>(params.scales),
-        reinterpret_cast<T*>(params.zeros),
-        reinterpret_cast<T*>(params.bias),
-        reinterpret_cast<T*>(params.out),
-        params.alpha,
-        params.m, params.n, params.k
-    );
+  kernel<Details, CtaM, CtaN, Threads, GroupSize, EnableActScale, EnableZero, EnableBias, ApplyAlphaInAdvance> << <grid,
+                                                                                                                   block,
+                                                                                                                   0,
+                                                                                                                   s>>>
+      (reinterpret_cast<T *>(params.act),
+       reinterpret_cast<T *>(params.act_scale),
+       reinterpret_cast<uint8_t *>(params.weight),
+       reinterpret_cast<T *>(params.scales),
+       reinterpret_cast<T *>(params.zeros), reinterpret_cast<T *>(params.bias),
+       reinterpret_cast<T *>(params.out), params.alpha, params.m, params.n,
+       params.k);
     // clang-format on
 }
 
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

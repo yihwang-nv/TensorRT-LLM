@@ -1,5 +1,6 @@
 /*
- * Adapted from https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/causal_conv1d.cpp
+ * Adapted from
+ *https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/causal_conv1d.cpp
  * Copyright (c) 2024, Tri Dao.
  *
  * Copyright (c) 2022-2025, NVIDIA CORPORATION.  All rights reserved.
@@ -24,7 +25,8 @@
 #include <c10/cuda/CUDAGuard.h>
 #include <torch/all.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -185,7 +187,8 @@ void causalConv1dFwd(at::Tensor const& x, at::Tensor const& weight, std::optiona
     }
 
     // Otherwise the kernel will be launched from cuda:0 device
-    // Static cast to signed char (AKA c10::DeviceIndex - the input to CUDAGuard) to avoid compiler warning about
+    // Static cast to signed char (AKA c10::DeviceIndex - the input to CUDAGuard)
+    // to avoid compiler warning about
     // narrowing
     at::cuda::CUDAGuard device_guard{static_cast<signed char>(x.get_device())};
     auto stream = at::cuda::getCurrentCUDAStream().stream();
@@ -207,7 +210,9 @@ void causalConv1dUpdate(at::Tensor const& x, at::Tensor const& conv_state, at::T
     TORCH_CHECK(weight_type == at::ScalarType::Float || weight_type == at::ScalarType::Half
         || weight_type == at::ScalarType::BFloat16);
     TORCH_CHECK(weight_type == input_type,
-        "weight type must equal to input type, other variations are disabled due to binary size limitations");
+        "weight type must equal to input "
+        "type, other variations are disabled "
+        "due to binary size limitations");
     TORCH_CHECK(conv_state.scalar_type() == input_type);
 
     TORCH_CHECK(x.is_cuda());
@@ -281,7 +286,8 @@ void causalConv1dUpdate(at::Tensor const& x, at::Tensor const& conv_state, at::T
     }
 
     // Otherwise the kernel will be launched from cuda:0 device
-    // Static cast to signed char (AKA c10::DeviceIndex - the input to CUDAGuard) to avoid compiler warning about
+    // Static cast to signed char (AKA c10::DeviceIndex - the input to CUDAGuard)
+    // to avoid compiler warning about
     // narrowing
     at::cuda::CUDAGuard device_guard{static_cast<signed char>(x.get_device())};
     auto stream = at::cuda::getCurrentCUDAStream().stream();
@@ -291,7 +297,7 @@ void causalConv1dUpdate(at::Tensor const& x, at::Tensor const& conv_state, at::T
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

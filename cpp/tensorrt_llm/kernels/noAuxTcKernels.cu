@@ -27,10 +27,8 @@
 namespace cg = cooperative_groups;
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 static constexpr int WARP_SIZE = 32;
 static constexpr int NumKimiK2Experts = 384;
 static constexpr int NumDeepseekExperts = 256;
@@ -146,7 +144,8 @@ __global__ void deepseek_v3_topk_kernel(InputT* scores, OutputT* topkValues, Idx
     {
         if (warpIdx == 0)
         {
-            // a single warp performs the selection of top groups, and goes on to select the final experts
+            // a single warp performs the selection of top groups, and goes on to
+            // select the final experts
             float groupScore = laneIdx < numGroup ? smemGroupScores[laneIdx] : invalidScoreFloat;
 
             reduce_topk::reduceTopK(warp, topGroups, topGroupIdx, groupScore, laneIdx,
@@ -172,7 +171,8 @@ __global__ void deepseek_v3_topk_kernel(InputT* scores, OutputT* topkValues, Idx
     else if constexpr (MaxNumExperts > MaxNumExpertsUnit)
     {
         // without groups, and the expert number is larger than MaxNumExpertsUnit,
-        // we need to use multiple warps to calculate the intermediate topk results
+        // we need to use multiple warps to calculate the intermediate topk
+        // results
 
         int constexpr NumExpertWarps = (MaxNumExperts - 1) / MaxNumExpertsUnit + 1;
         int constexpr NumInterTopK = NumExpertWarps * MaxNumTopExperts;
@@ -309,9 +309,12 @@ void invokeNoAuxTc(InputT* scores, BiasT* bias, OutputT* topk_values, IdxT* topk
     }
     else
     {
-        // TODO: call the generic path (previous implementation) or signal unsupported config.
+        // TODO: call the generic path (previous implementation) or signal
+        // unsupported config.
         TLLM_CHECK_WITH_INFO(false,
-            "invokeNoAuxTc: unsupported configuration (n_group=%ld, num_experts=%ld, topk_group=%ld). Please use "
+            "invokeNoAuxTc: unsupported configuration "
+            "(n_group=%ld, num_experts=%ld, "
+            "topk_group=%ld). Please use "
             "original pytorch implementation.",
             n_group, num_experts, topk_group);
     }
@@ -337,6 +340,4 @@ INSTANTIATE_NOAUX_TC(__nv_bfloat16, float, __nv_bfloat16, int32_t);
 INSTANTIATE_NOAUX_TC(__nv_bfloat16, half, __nv_bfloat16, int32_t);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

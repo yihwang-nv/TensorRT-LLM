@@ -22,14 +22,14 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::dsv3MinLatencyKernels
+namespace dsv3MinLatencyKernels
 {
 
 template <typename T, int kNumTokens, int kNumExperts, int kHiddenDim>
 void invokeRouterGemm(float* output, T const* mat_a, T const* mat_b, cudaStream_t stream);
 
-} // namespace kernels::dsv3MinLatencyKernels
+} // namespace dsv3MinLatencyKernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

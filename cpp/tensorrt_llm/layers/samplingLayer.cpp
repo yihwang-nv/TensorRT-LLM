@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/decodingCommon.h"
@@ -31,9 +30,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -163,7 +160,8 @@ void SamplingLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> const& 
         ? mRuntimeMinPDevice
         : nullptr;
 
-    // Compute probabilities either for TopP or if cumLogProbs or outputLogProbs are specified
+    // Compute probabilities either for TopP or if cumLogProbs or outputLogProbs
+    // are specified
     bool const skipSoftMax = skipTopP && !mOutputLogProbs && !mCumLogProbs && minPs == nullptr;
 
     inputs->curandStates = reinterpret_cast<curandState_t*>(bufferCast<int8_t>(*mCurandStatesDevice));
@@ -213,6 +211,4 @@ size_t SamplingLayer<T>::getWorkspaceSize() const noexcept
 template class SamplingLayer<float>;
 template class SamplingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

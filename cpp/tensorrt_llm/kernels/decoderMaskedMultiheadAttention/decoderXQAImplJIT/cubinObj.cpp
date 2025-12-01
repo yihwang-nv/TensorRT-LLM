@@ -23,9 +23,9 @@
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/decoderXQAImplCommon.h"
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::jit
+namespace jit
 {
 
 CubinObj::CubinObj(void const* buffer_, size_t buffer_size)
@@ -143,7 +143,8 @@ void CubinObj::launch(dim3 gridDim, dim3 blockDim, CUstream hStream, void** kern
     CUlaunchConfig const cfg{
         gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z, mSharedMemBytes, hStream, &pdlAttr, 1};
 
-    TLLM_CU_CHECK(mDriver->cuLaunchKernelEx(&cfg, kernel(), kernelParams, /*extra=*/nullptr));
+    TLLM_CU_CHECK(mDriver->cuLaunchKernelEx(&cfg, kernel(), kernelParams,
+        /*extra=*/nullptr));
 }
 
 void CubinObj::initialize()
@@ -165,7 +166,8 @@ void CubinObj::initialize()
 
         TLLM_CHECK(mSharedMemBytes > 0);
 
-        /* Set 46KB threshold here because we have to take static/driver shared memory into consideration. */
+        /* Set 46KB threshold here because we have to take static/driver shared
+         * memory into consideration. */
         if (mSharedMemBytes >= 46 * 1024)
         {
             CUdevice device;
@@ -187,6 +189,6 @@ CubinObj::~CubinObj()
     }
 }
 
-} // namespace kernels::jit
+} // namespace jit
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -28,9 +28,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 inline bool setThreadName(std::string const& name)
 {
 #ifdef _WIN32
@@ -46,7 +43,5 @@ bool contains(std::initializer_list<T> const& c, T const& v)
 {
     return std::find(c.begin(), c.end(), v) != c.end();
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

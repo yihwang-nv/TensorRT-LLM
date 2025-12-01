@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +17,11 @@
  */
 
 #include "tensorrt_llm/batch_manager/promptTuningBuffers.h"
-#include "tensorrt_llm/batch_manager/llmRequest.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
 using TensorPtr = runtime::ITensor::SharedPtr;
@@ -89,9 +87,12 @@ void PromptTuningBuffers::validate(
 
         if (reqPromptVocabSize > mMaxPromptVocabSize)
         {
-            std::string errStr = "Prompt vocab size" + std::to_string(reqPromptVocabSize)
-                + " is larger than max prompt vocab size of " + std::to_string(mMaxPromptVocabSize)
-                + ". Max prompt vocab size is computed from max_prompt_embedding_table_size / max_batch_size. ";
+            std::string errStr =
+            "Prompt vocab size" + std::to_string(reqPromptVocabSize) +
+            " is larger than max prompt vocab size of " +
+            std::to_string(mMaxPromptVocabSize) +
+            ". Max prompt vocab size is computed from "
+            "max_prompt_embedding_table_size / max_batch_size. ";
             TLLM_LOG_ERROR(errStr);
             throw std::runtime_error(errStr);
         }
@@ -100,7 +101,9 @@ void PromptTuningBuffers::validate(
             // Check that type matches model weights
             if (reqPromptEmbeddingTable->getDataType() != mPromptTuningParams.embeddingTable->getDataType())
             {
-                std::string errStr = "Request embedding table data type doesn't match model weight data type.";
+                std::string errStr
+                    = "Request embedding table data type doesn't "
+                      "match model weight data type.";
                 TLLM_LOG_ERROR(errStr);
                 throw std::runtime_error(errStr);
             }
@@ -108,7 +111,8 @@ void PromptTuningBuffers::validate(
             if (reqPromptEmbeddingTable->getShape().d[1] != reqPromptVocabSize)
             {
                 std::string errStr
-                    = "First dimension of request embedding table is expected to be equal to prompt vocab size";
+                    = "First dimension of request embedding table is "
+                      "expected to be equal to prompt vocab size";
                 TLLM_LOG_ERROR(errStr);
                 throw std::runtime_error(errStr);
             }
@@ -167,7 +171,8 @@ void PromptTuningBuffers::fill(RequestVector const& contextRequests, RequestVect
                     if (mPromptTableOffloading)
                     {
                         // Need to slice the ptable since we don't need the entire buffer
-                        // The size depends on optReqPromptVocabSize which stores how many fake prompts are in the chunk
+                        // The size depends on optReqPromptVocabSize which stores how many
+                        // fake prompts are in the chunk
                         auto slicedPtable = runtime::ITensor::slice(
                             optReqPromptEmbeddingTable.value(), 0, optReqPromptVocabSize.value());
                         slicedPtable->unsqueeze(0);
@@ -194,9 +199,12 @@ void PromptTuningBuffers::fill(RequestVector const& contextRequests, RequestVect
                 auto const promptEmbeddingTableSlice = runtime::ITensor::slice(
                     mPromptTuningParams.embeddingTable, batchIdx * mMaxPromptVocabSize, reqPromptVocabSize);
                 manager.copy(*reqPromptEmbeddingTable, *promptEmbeddingTableSlice);
-                // TODO:       src: 2007040 (llmReq->getPromptEmbeddingTable()) != dst: 1003520 (reqPromptVocabSize)
-                //                                                                      (original shape passed from
-                //                                                                      python == 196 * 5120, fp16)
+                // TODO:       src: 2007040 (llmReq->getPromptEmbeddingTable()) !=
+                // dst: 1003520 (reqPromptVocabSize)
+                //                                                                      (original
+                // shape passed from
+                //                                                                      python
+                // == 196 * 5120, fp16)
                 // VILA mode 1 , 2 images in one request
             }
             ++batchIdx;
@@ -207,7 +215,8 @@ void PromptTuningBuffers::fill(RequestVector const& contextRequests, RequestVect
     std::vector<SizeType32> tasksHostVec(batchSize);
     std::iota(tasksHostVec.begin(), tasksHostVec.end(), 0);
 
-    // Create a tensor that wraps the vector and convert unique_ptr to shared_ptr
+    // Create a tensor that wraps the vector and convert unique_ptr to
+    // shared_ptr
     auto tasksHost = std::shared_ptr<runtime::ITensor>(
         runtime::ITensor::wrap(tasksHostVec, runtime::ITensor::makeShape({batchSize})).release());
 
@@ -323,6 +332,4 @@ void PromptTuningBuffers::clearBufferStartPositions(size_t index)
     }
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

@@ -31,10 +31,7 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 class CopyBeamHypothesesStruct
 {
@@ -388,7 +385,8 @@ void invokeInsertUnfinishedPath(BeamHypotheses& bh, cudaStream_t stream)
 
 __global__ void finalizeKernel(BeamHypotheses bh)
 {
-    // Do index sort on bh.normedScoresCBA, then move buffers from CBA to output by the order of index
+    // Do index sort on bh.normedScoresCBA, then move buffers from CBA to output
+    // by the order of index
     // Data movement:
     // bh.outputIdsCBA       -> bh.outputIds
     // bh.sequenceLengthsCBA -> bh.sequenceLengths
@@ -399,7 +397,8 @@ __global__ void finalizeKernel(BeamHypotheses bh)
     int const tid = threadIdx.x; // Index of Beam
     size_t const nBM{bh.nBeamWidth};
     size_t const nMSL{bh.nMaxSeqLen};
-    int const nCBA{bh.numBeamsCBA[bid]}; // Count of candidates in CBA, nBM <= nCBA <= 2*nBM
+    int const nCBA{bh.numBeamsCBA[bid]}; // Count of candidates in CBA, nBM <=
+                                         // nCBA <= 2*nBM
 
     extern __shared__ char smem[];
     int* smemRank = (int*) (smem);                // [nBM]
@@ -710,8 +709,10 @@ void invokeTransposeLogProbs(float* outputLogProbs, float* outputLogProbsTiled, 
         batchSize, maxBatchSize, beamWidth, maxSeqLen);
 }
 
-} // namespace kernels
+TRTLLM_KERNELS_NAMESPACE_END
 
+namespace tensorrt_llm
+{
 namespace runtime::kernels
 {
 // Must be similar to [cpp/tensorrt_llm/thop/gatherTreeOp.cpp] gatherTree
@@ -804,4 +805,4 @@ void gatherTree(DecodingOutput const& decodingOutput, DecodingInput const& decod
 
 } // namespace runtime::kernels
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

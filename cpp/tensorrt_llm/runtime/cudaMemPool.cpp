@@ -16,7 +16,6 @@
 
 #include "tensorrt_llm/runtime/cudaMemPool.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include <array>
@@ -24,9 +23,7 @@
 #include <memory>
 #include <mutex>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 CudaMemPool::CudaMemPool(cudaMemPool_t pool)
@@ -98,20 +95,26 @@ std::shared_ptr<CudaMemPool> createPrimaryDevicePool(int deviceId)
     return std::make_shared<CudaMemPool>(memPool);
 }
 
-/// @brief The maximum number of devices per node this feature supports. Increase when/if this value becomes too small.
+/// @brief The maximum number of devices per node this feature supports.
+/// Increase when/if this value becomes too small.
 /// Will add a tiny memory usage increase.
 constexpr size_t maxDevicePerNode = 64;
 
 /// @brief Ensures thread safe initialization of the primary device pools.
 std::mutex primaryDevicePoolsMutex{};
 
-/// @brief The primary device memory pool for each discovered device, if the device in question supports memory pools,
-/// initialized on first use, write is mutually exclusive through primaryDevicePoolsMutex.
+/// @brief The primary device memory pool for each discovered device, if the
+/// device in question supports memory pools,
+/// initialized on first use, write is mutually exclusive through
+/// primaryDevicePoolsMutex.
 std::array<std::shared_ptr<CudaMemPool>, maxDevicePerNode> primaryDevicePools{};
 
-/// @brief Whether or not initializing the primary device pool at each device ID has been attempted. If true, then it is
-/// safe to just return whatever is at the same index in primaryDevicePools without locking. Also, prevents repeatedly
-/// trying to initialize the memory pool for a device, if the first attempt failed.
+/// @brief Whether or not initializing the primary device pool at each device
+/// ID has been attempted. If true, then it is
+/// safe to just return whatever is at the same index in primaryDevicePools
+/// without locking. Also, prevents repeatedly
+/// trying to initialize the memory pool for a device, if the first attempt
+/// failed.
 std::array<bool, maxDevicePerNode> primaryDevicePoolInitAttempted{};
 
 } // namespace
@@ -119,7 +122,8 @@ std::array<bool, maxDevicePerNode> primaryDevicePoolInitAttempted{};
 std::shared_ptr<CudaMemPool> CudaMemPool::getPrimaryPoolForDevice(int deviceId)
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
-    // If we've already attempted, successfully or not, to initialize the pool for that device, we just return whatever
+    // If we've already attempted, successfully or not, to initialize the pool
+    // for that device, we just return whatever
     // we have at the device index.
     if (primaryDevicePoolInitAttempted.at(deviceId))
     {
@@ -127,11 +131,13 @@ std::shared_ptr<CudaMemPool> CudaMemPool::getPrimaryPoolForDevice(int deviceId)
         return primaryDevicePools.at(deviceId);
     }
 
-    // Otherwise, we grab the lock as we will need to initialize the pool, and it should be done in a thread safe way.
+    // Otherwise, we grab the lock as we will need to initialize the pool, and
+    // it should be done in a thread safe way.
     {
         std::lock_guard lockGuard{primaryDevicePoolsMutex};
 
-        // Check again that pool has not been initialized while this thread was waiting on the lock.
+        // Check again that pool has not been initialized while this thread was
+        // waiting on the lock.
         if (primaryDevicePoolInitAttempted.at(deviceId))
         {
             TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
@@ -165,6 +171,4 @@ std::shared_ptr<CudaMemPool> CudaMemPool::getPrimaryPoolForDevice(int deviceId)
     }
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

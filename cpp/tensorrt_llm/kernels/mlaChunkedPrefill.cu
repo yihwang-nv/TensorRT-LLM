@@ -64,10 +64,12 @@ struct loadChunkedKVKernelTraits
     static_assert((kHeadSize * kBytesPerElem) % kBytesPerLoad == 0,
         "kHeadSize * kBytesPerElem must be multiple of kBytesPerLoad (16Bytes)");
     static constexpr int kVecPerHead = (kHeadSize * kBytesPerElem) / kBytesPerLoad;
-    static constexpr int kThreadPerHead = kVecPerHead; // for each head, we use kThreadPerHead threads to fetch all the
-                                                       // kv cache data, each thread read kv cache only once.
+    static constexpr int kThreadPerHead = kVecPerHead; // for each head, we use
+                                                       // kThreadPerHead threads
+                                                       // to fetch all the
+    // kv cache data, each thread read kv cache only once.
     static constexpr int kTokenPerBlock
-        = std::is_same_v<T, float> ? 4 : 8;            // for each block, we fetch 8 token for fp16, 4 tokens for fp32.
+        = std::is_same_v<T, float> ? 4 : 8; // for each block, we fetch 8 token for fp16, 4 tokens for fp32.
     static constexpr int kBlockSize = kThreadPerHead * kTokenPerBlock;
     static constexpr int kKVThreadPerHead = (kLoraSize * kBytesPerElem) / kBytesPerLoad;
 };
@@ -291,17 +293,17 @@ __global__ void loadChunkedKVCacheForMLAKernel(T* output_kv_ptr, T* output_k_pe_
 
 } // namespace
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // merged_attn [q_total_len, H=128, D=128] (T)
-// merged_softmax_sum [q_total_len, H, 2] (float), the first part is the max value for each
+// merged_softmax_sum [q_total_len, H, 2] (float), the first part is the max
+// value for each
 // row of P = QK^T, the second part is the softmax sum
-// if merge_op[b] == 0, we just skip this batch, if merge_op[b] == 1, we merge the pre-attn and curr-attn, if
+// if merge_op[b] == 0, we just skip this batch, if merge_op[b] == 1, we merge
+// the pre-attn and curr-attn, if
 // merge_op[b]
-// == 2, we only copy curr_attn and curr_softmax_sum to merged_attn and merged_softmax_sum
+// == 2, we only copy curr_attn and curr_softmax_sum to merged_attn and
+// merged_softmax_sum
 template <typename T>
 void invokeMergeAttnWithSoftmax(T* merged_attn, float* merged_softmax_stats, T const* pre_attn,
     float const* pre_softmax_stats, T const* curr_attn, float const* curr_softmax_stats, int const batch_size,
@@ -351,6 +353,5 @@ void invokeMLALoadChunkedKV(T* output_kv_ptr, T* output_k_pe_ptr, KVBlockArray c
 INSTANTIATE_MLA_CHUNKED_PREFILL_KERNEL(half);
 INSTANTIATE_MLA_CHUNKED_PREFILL_KERNEL(float);
 INSTANTIATE_MLA_CHUNKED_PREFILL_KERNEL(__nv_bfloat16);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

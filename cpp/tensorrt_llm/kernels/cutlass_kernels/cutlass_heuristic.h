@@ -21,10 +21,8 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -46,15 +44,15 @@ constexpr static bool should_filter_tma_warp_specialized_gemm_problem_shape_v
     = should_filter_tma_warp_specialized_gemm_problem_shape<ArchTag, TileShape, ClusterShape, DYNAMIC_CGA,
         ActivationType>::value;
 
-std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> get_candidate_configs(
-    int sm, int const max_split_k, tensorrt_llm::cutlass_extensions::CutlassGemmConfig::CandidateConfigTypeParam const);
+std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> get_candidate_configs(int sm,
+    int const max_split_k,
+    tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig::CandidateConfigTypeParam const);
 
-tensorrt_llm::cutlass_extensions::CutlassGemmConfig estimate_best_config_from_occupancies(
-    std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> const& candidate_configs,
+tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig estimate_best_config_from_occupancies(
+    std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> const& candidate_configs,
     std::vector<int> const& occupancies, int64_t const m, int64_t const n, int64_t const k, int64_t const num_experts,
     int const split_k_limit, size_t const workspace_bytes, int const multi_processor_count, int const is_weight_only);
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

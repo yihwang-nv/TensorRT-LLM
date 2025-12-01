@@ -92,7 +92,8 @@ float compare(void* _pa, void* _pb, int size, float scale)
 #if defined(ENABLE_BF16)
     if constexpr (std::is_same_v<T, __nv_bfloat16>)
     {
-        // bfloat16 has fewer mantissa digits than float16(10 bits for fp16 but only 7 bits for bf16), so the cumulative
+        // bfloat16 has fewer mantissa digits than float16(10 bits for fp16 but
+        // only 7 bits for bf16), so the cumulative
         // error will be larger.
         diff_thres *= 3.f;
     }
@@ -118,17 +119,17 @@ void random_fill(std::vector<T1>& vec, T2 minv, T2 maxv)
 }
 
 template <typename T>
-std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> get_configs(T& runner, int k)
+std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> get_configs(T& runner, int k)
 {
     auto configs = runner.getConfigs();
-    std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> rets;
+    std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> rets;
     for (auto config : configs)
     {
         if (config.stages >= 5)
         {
             continue;
         }
-        if (config.split_k_style != tensorrt_llm::cutlass_extensions::SplitKStyle::NO_SPLIT_K)
+        if (config.split_k_style != tensorrt_llm::kernels::cutlass_extensions::SplitKStyle::NO_SPLIT_K)
         {
             int k_size = (k + config.split_k_factor - 1) / config.split_k_factor;
             if (k_size % 64)
@@ -283,7 +284,8 @@ float run_cutlass_kernel(wo::Params& params, int warmup, int iter)
         {
             std::ostringstream msg;
             msg << "Cannot profile configuration " << cfg_i;
-            if constexpr (std::is_same_v<decltype(config), tensorrt_llm::cutlass_extensions::CutlassGemmConfig>)
+            if constexpr (std::is_same_v<decltype(config),
+                              tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig>)
             {
                 msg << ": " << config.toString();
             }
@@ -391,8 +393,10 @@ bool benchmark_and_verify(int m, int n, int k, int groupsize, int warmup, int it
     d_out.copy_to(h_out2.data());
     float quant_scale = 1.f / (1 << (WSizeInBits - 1));
     bool pass = compare<AType>(h_out1.data(), h_out2.data(), m * n, quant_scale);
-    printf("cuda kernel cost time %.3f us, cutlass kernel cost time %.3f us, cuda speedup %.2f\n\n", time1 * 1000,
-        time2 * 1000, time2 / time1);
+    printf(
+        "cuda kernel cost time %.3f us, cutlass kernel cost time %.3f us, "
+        "cuda speedup %.2f\n\n",
+        time1 * 1000, time2 * 1000, time2 / time1);
     return pass;
 }
 

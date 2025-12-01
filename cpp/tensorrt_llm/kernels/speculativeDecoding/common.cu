@@ -36,9 +36,9 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 template <int32_t BLOCK_SIZE>
 __global__ void packAcceptedPaths(SizeType32* acceptedLengthsCumSum, SizeType32* pathsOffsets,
@@ -161,14 +161,16 @@ __global__ void acceptDraftTokensByIdsWithPaths(TokenIdType* outputIds, TokenIdT
             // Break if path terminates
             if (tokenId == -1)
             {
-                hasEnd = endIds == nullptr ? false
-                                           : targetToken == endId; // check if last token is EOS when path terminates.
+                hasEnd = endIds == nullptr ? false : targetToken == endId; // check if last
+                // token is EOS when
+                // path terminates.
                 acceptedLength = hasEnd ? ti - 1 : ti;
                 break;
             }
             auto const targetTokenIdx = batchSlot * maxDecodingTokens + tokenId;
             auto const draftTokenIdx = batchSlot * (maxDecodingTokens - 1) + tokenId - 1;
-            // In context phase, no draft tokens are given. Set draft token to -1 to get guaranteed rejection
+            // In context phase, no draft tokens are given. Set draft token to -1 to
+            // get guaranteed rejection
             auto const draftToken = tokenId >= numTokensPerStep ? -1 : draftIds[draftTokenIdx];
             // Check if draft tokens are the same as target tokens
             bool const accepted = draftToken == targetToken;
@@ -214,7 +216,8 @@ __global__ void acceptDraftTokensByIdsWithPaths(TokenIdType* outputIds, TokenIdT
         auto const targetSrcTokenIdx = batchSlot * maxDecodingTokens + tokenId;
         auto const outputTokenIdx = batchSlot * maxSeqLen + inputLength + ti;
         auto const targetToken = targetIds[targetSrcTokenIdx];
-        // Copy accepted tokens to the sequence with draft tokens (outputIds === outputIds)
+        // Copy accepted tokens to the sequence with draft tokens (outputIds ===
+        // outputIds)
         outputIds[outputTokenIdx] = targetToken;
     }
 
@@ -233,7 +236,8 @@ __global__ void acceptDraftTokensByIdsWithPaths(TokenIdType* outputIds, TokenIdT
             sequenceLengths[batchSlot] += acceptedLength;
         }
         acceptedLengths[batchSlot] = acceptedLength;
-        // In Medusa decoding step, number of draft tokens is 0 and must be updated for the next steps
+        // In Medusa decoding step, number of draft tokens is 0 and must be updated
+        // for the next steps
         if (curTokensPerStep && targetTokensPerStep && numTokensPerStep == 1)
         {
             curTokensPerStep[batchSlot] = targetTokensPerStep[batchSlot];
@@ -241,7 +245,8 @@ __global__ void acceptDraftTokensByIdsWithPaths(TokenIdType* outputIds, TokenIdT
         bestPathIds[batchSlot] = bestPathIdx;
     }
 
-    // Prepare logits pointers to respective logits from Medusa Heads for the all-top-K sampling kernel
+    // Prepare logits pointers to respective logits from Medusa Heads for the
+    // all-top-K sampling kernel
     if (medusaLogits && logitsPtrs)
     {
         for (auto hi = static_cast<SizeType32>(threadIdx.x); hi < maxDraftPathLen;
@@ -352,10 +357,10 @@ void typicalAcceptanceSampling(TypicalAcceptanceSampling<T> const& params, cudaS
     int8_t* workspaceBytePtr = reinterpret_cast<int8_t*>(params.workspace);
     size_t offset{0};
 
-    int8_t* samplingWorkspace
-        = reinterpret_cast<int8_t*>(tensorrt_llm::common::nextWorkspacePtr(workspaceBytePtr, offset,
-            tensorrt_llm::kernels::getAirTopPWorkspaceSize<T>(
-                params.batchSize * params.maxDecodingTokens, params.vocabSize, /* isDeterministic */ true)));
+    int8_t* samplingWorkspace = reinterpret_cast<int8_t*>(tensorrt_llm::common::nextWorkspacePtr(workspaceBytePtr,
+        offset,
+        tensorrt_llm::kernels::getAirTopPWorkspaceSize<T>(params.batchSize * params.maxDecodingTokens, params.vocabSize,
+            /* isDeterministic */ true)));
 
     float* entropy = reinterpret_cast<float*>(tensorrt_llm::common::nextWorkspacePtr(
         workspaceBytePtr, offset, params.batchSize * params.maxDecodingTokens * sizeof(float)));
@@ -467,8 +472,8 @@ size_t getTypicalAcceptanceWorkspaceSize(SizeType32 batchSize, SizeType32 maxDec
 {
     SizeType32 constexpr NUM_BUFFERS{6};
     size_t workspaces[NUM_BUFFERS];
-    workspaces[0] = tensorrt_llm::kernels::getAirTopPWorkspaceSize<T>(
-        batchSize * maxDecodingTokens, vocabSizePadded, /* isDeterministic */ true);
+    workspaces[0] = tensorrt_llm::kernels::getAirTopPWorkspaceSize<T>(batchSize * maxDecodingTokens, vocabSizePadded,
+        /* isDeterministic */ true);
     // entropy
     workspaces[1] = batchSize * maxDecodingTokens * sizeof(float);
     // runtimeMultinomialTopP
@@ -488,6 +493,6 @@ template size_t getTypicalAcceptanceWorkspaceSize<float>(
 template size_t getTypicalAcceptanceWorkspaceSize<half>(
     SizeType32 batchSize, SizeType32 maxDecodingTokens, SizeType32 vocabSizePadded);
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

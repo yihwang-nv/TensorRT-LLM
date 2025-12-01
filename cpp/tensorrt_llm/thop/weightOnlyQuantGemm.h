@@ -30,7 +30,8 @@
 using namespace tensorrt_llm::kernels::cutlass_kernels;
 using namespace tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -50,9 +51,9 @@ private:
     WeightOnlyQuantGemmRunnerPtr mGemmRunner;
     at::ScalarType mActivationDtype;
     at::ScalarType mWeightDtype;
-    std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> mConfigs;
+    std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> mConfigs;
 };
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

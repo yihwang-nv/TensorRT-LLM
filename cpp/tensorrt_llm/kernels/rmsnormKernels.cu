@@ -22,10 +22,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename Tf, typename T>
 __inline__ __device__ Tf compute_rmsnorm(Tf val, float s_variance, T const* gamma, T const* beta, int i)
@@ -38,7 +35,8 @@ __inline__ __device__ Tf compute_rmsnorm(Tf val, float s_variance, T const* gamm
     return ret;
 }
 
-/* Computes the rmsnorm https://pytorch.org/docs/stable/generated/torch.nn.rmsnorm.html
+/* Computes the rmsnorm
+ *https://pytorch.org/docs/stable/generated/torch.nn.rmsnorm.html
  * normed_output <- ( input / Sqrt(E[input²] + eps) ) * gamma + beta
  * input is [tokens, hidden_dim]. Mean and Variance are per-row (i.e. per-token)
  *
@@ -47,8 +45,10 @@ __inline__ __device__ Tf compute_rmsnorm(Tf val, float s_variance, T const* gamm
  *
  * USE_SHMEM controls if we cache input values into shared memory
  *
- * Optional: with dynamic scaling, the last pass doesn't write immediately but finds the
- *           amax per row. A final pass scales to int8 accordingly, and writes output to
+ * Optional: with dynamic scaling, the last pass doesn't write immediately but
+ *finds the
+ *           amax per row. A final pass scales to int8 accordingly, and writes
+ *output to
  *           normed_output_quant.
  */
 template <typename T, typename QuantT, bool USE_SHMEM>
@@ -283,6 +283,4 @@ INSTANTIATE_GENERAL_RMSNORM(__nv_bfloat16, __nv_fp8_e4m3);
 #endif
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -25,9 +25,9 @@
 #include <mutex>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::jit
+namespace jit
 {
 
 // A thread-safe collection of CubinObjs, with caching functionality.
@@ -112,7 +112,8 @@ public:
         TLLM_CHECK(remaining_buffer_size == 0);
     }
 
-    // Compiles and inserts the cubin if not found in mMap. Does nothing otherwise.
+    // Compiles and inserts the cubin if not found in mMap. Does nothing
+    // otherwise.
     // When initialize is true, also initialize cubins.
     void insertCubinIfNotExists(Key const& key, CompileEngine* compileEngine, bool initialize)
     {
@@ -176,6 +177,6 @@ using CubinObjKey = XQAKernelFullHashKey;
 using CubinObjHasher = XQAKernelFullHasher;
 using CubinObjRegistry = CubinObjRegistryTemplate<CubinObjKey, CubinObjHasher>;
 
-} // namespace kernels::jit
+} // namespace jit
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

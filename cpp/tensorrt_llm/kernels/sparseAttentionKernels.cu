@@ -17,16 +17,14 @@
 #include "tensorrt_llm/kernels/sparseAttentionKernels.h"
 #include <cub/cub.cuh>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <int THREADS_PER_BLOCK, int MAX_NUM_PAGES>
-__global__ void gatherKvPageOffsetsKernel(
-    int32_t* output_kv_page_offsets, // [num_head_kv, batch_size, 2, max_num_pages_per_seq]
-    int32_t* output_seq_lengths,     // [num_head_kv, batch_size]
-    int32_t const* kv_page_offsets,  // [batch_size, 2, max_num_pages_per_seq]
-    int32_t const* seq_lengths,      // [batch_size]
+__global__ void gatherKvPageOffsetsKernel(int32_t* output_kv_page_offsets, // [num_head_kv, batch_size, 2,
+                                                                           // max_num_pages_per_seq]
+    int32_t* output_seq_lengths,                                           // [num_head_kv, batch_size]
+    int32_t const* kv_page_offsets,                                        // [batch_size, 2, max_num_pages_per_seq]
+    int32_t const* seq_lengths,                                            // [batch_size]
     SparseAttentionParams const sparse_params, int32_t const batch_size, int32_t const tokens_per_page,
     int32_t const max_num_pages_per_seq)
 {
@@ -97,7 +95,8 @@ __global__ void gatherKvPageOffsetsKernel(
         }
         __syncthreads();
 
-        // Handle case when loop_num_valid_pages > blockDim.x by processing in chunks
+        // Handle case when loop_num_valid_pages > blockDim.x by processing in
+        // chunks
         int32_t scan_offset = 0;
         int32_t const scan_chunks = (loop_num_valid_pages + blockDim.x - 1) / blockDim.x;
 
@@ -199,6 +198,5 @@ void invokeGatherKvPageOffsets(int32_t* output_kv_page_offsets, int32_t* output_
     gatherKvPageOffsetsKernel<256, 512><<<grid, block, 0, stream>>>(output_kv_page_offsets, output_seq_lengths,
         kv_page_offsets, seq_lengths, sparse_params, batch_size, tokens_per_page, max_num_pages_per_seq);
 }
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

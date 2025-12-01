@@ -33,7 +33,8 @@ namespace tr = tensorrt_llm::runtime;
 namespace tl = tensorrt_llm::layers;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -251,7 +252,8 @@ void FtDynamicDecode<T>::forward(th::Tensor const& logits, int const step, int c
     tr::SizeType32* finishedSumHost = nullptr;
     if (forwardParams->stopCriteriaInputs->sequenceLimitLength && outputParams->finished.has_value())
     {
-        // Skip the initialization and later calculation if there is no limit of sequence length or no finished beam
+        // Skip the initialization and later calculation if there is no limit of
+        // sequence length or no finished beam
         outputParams->finishedSum = mFinishedSum;
         finishedSumHost = tr::bufferCast<tr::SizeType32>(*mFinishedSum);
         for (int32_t bi = 0; bi < localBatchSize; ++bi)
@@ -366,7 +368,8 @@ void DynamicDecodeOp::setup(int64_t const batchSize, int64_t const beamWidth, th
 }
 
 th::Tensor DynamicDecodeOp::forward(
-    // Inputs  BS: batchSize, BM: beamWidth, MSL: maxSeqLength, V: vocabSize, VP: vocabSizePadded
+    // Inputs  BS: batchSize, BM: beamWidth, MSL: maxSeqLength, V: vocabSize,
+    // VP: vocabSizePadded
     th::Tensor const& logits,                        // [BS, BM, VP], T, variables for input
     int64_t const step,                              //
     int64_t const maxInputLength,                    //
@@ -376,12 +379,15 @@ th::Tensor DynamicDecodeOp::forward(
     int64_t const localBatchSize,                    //
     th::Tensor const endId,                          // [BS*BM], int
     th::optional<th::Tensor> embeddingBiasOpt,       // [VP], T
-    th::optional<th::Tensor> inputLengthsOpt,        // [BS*BM], int, length of input contexts
+    th::optional<th::Tensor> inputLengthsOpt,        // [BS*BM], int, length of input
+                                                     // contexts
     th::optional<th::Tensor> sequenceLimitLengthOpt, // [BS, 1], int
-    th::optional<th::Tensor> stopWordsListPtrsOpt,   // [BS][2, stopWordsLength], int64
+    th::optional<th::Tensor> stopWordsListPtrsOpt,   // [BS][2, stopWordsLength],
+                                                     // int64
     th::optional<th::Tensor> stopWordsLensOpt,       // [BS], int
     int64_t const maxStopWordsLen,                   //
-    th::optional<th::Tensor> badWordsListPtrsOpt,    // [BS][2, badWordsLength], int64
+    th::optional<th::Tensor> badWordsListPtrsOpt,    // [BS][2, badWordsLength],
+                                                     // int64
     th::optional<th::Tensor> badWordsLensOpt,        // [BS], int
     int64_t const maxBadWordsLen,                    //
     th::optional<th::Tensor> srcCacheIndirectionOpt, // [localBS, BM, MSL], int
@@ -390,10 +396,13 @@ th::Tensor DynamicDecodeOp::forward(
     th::Tensor newTokens,                                // [BS, BM, 1], int
     th::optional<th::Tensor> finishedInput,              // [BS, BM], uint8
     th::optional<th::Tensor> finishedOutput,             // [BS, BM], uint8
-    th::optional<th::Tensor> sequenceLengthsOpt,         // [BS*BM], int, length of the current sequences
+    th::optional<th::Tensor> sequenceLengthsOpt,         // [BS*BM], int, length of the
+                                                         // current sequences
     th::optional<th::Tensor> cumLogProbsOpt,             // [BS, BM], float
     th::optional<th::Tensor> outputLogProbsOpt,          // [BS, BM, MSL], float
-    th::optional<th::Tensor> outputLogProbsTiledOpt,     // [MSL, BS, BM], float, transpose of outputLogProbsOpt
+    th::optional<th::Tensor> outputLogProbsTiledOpt,     // [MSL, BS, BM], float,
+                                                         // transpose of
+                                                         // outputLogProbsOpt
     th::optional<th::Tensor> parentIdsOpt,               // [BS, BM, MSL], int
     th::optional<th::Tensor> tgtCacheIndirectionOpt,     // [localBS, BM, MSL], int
     th::optional<th::Tensor> beamHypsOutputIdsCbaOpt,    // [BS, BM*2, MSL], int
@@ -409,11 +418,13 @@ th::Tensor DynamicDecodeOp::forward(
 {
     CHECK_INPUT(logits, scalarType_);
     TLLM_CHECK_WITH_INFO(logits.dim() == 3,
-        "logits is of shape (batchSize, beamWidth, vocabSizePadded), but got dim=%d shape=%s", (int) logits.dim(),
-        tensorrt_llm::runtime::ITensor::toString(convert_shape(logits)).c_str());
+        "logits is of shape (batchSize, beamWidth, "
+        "vocabSizePadded), but got dim=%d shape=%s",
+        (int) logits.dim(), tensorrt_llm::runtime::ITensor::toString(convert_shape(logits)).c_str());
     TLLM_CHECK_WITH_INFO(static_cast<size_t>(logits.size(2)) == vocabSizePadded_,
-        "logits is of shape (batchSize, beamWidth, vocabSize(%ld)), but got the last dim=%ld.", vocabSizePadded_,
-        static_cast<size_t>(logits.size(2)));
+        "logits is of shape (batchSize, beamWidth, "
+        "vocabSize(%ld)), but got the last dim=%ld.",
+        vocabSizePadded_, static_cast<size_t>(logits.size(2)));
     CHECK_INPUT(endId, torch::kInt32);
     CHECK_OPTIONAL_INPUT(embeddingBiasOpt, scalarType_);
     CHECK_OPTIONAL_INPUT(inputLengthsOpt, torch::kInt32);
@@ -454,7 +465,7 @@ th::Tensor DynamicDecodeOp::forward(
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto trtllmGptContextDecoderTHS
     = torch::jit::class_<tensorrt_llm::torch_ext::DynamicDecodeOp>("trtllm", "DynamicDecodeOp")

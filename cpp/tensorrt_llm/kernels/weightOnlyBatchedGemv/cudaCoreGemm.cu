@@ -19,10 +19,8 @@
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/cudaCoreGemm.h"
 #include <cub/cub.cuh>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cuda_core_gemm
 {
 template <typename InputType, typename OutputType, SizeType32 TILE_M, SizeType32 TILE_N, SizeType32 BLOCK_SIZE>
@@ -320,7 +318,8 @@ bool cudaCoreGemmDispatcher(Params const& params, cudaStream_t stream)
     if (!dispatched)
     {
         TLLM_LOG_DEBUG(
-            "tensorrt_llm::kernels::cuda_core_gemm::cudaCoreGemmDispatcher failed to dispatch: inputType=%d, "
+            "tensorrt_llm::kernels::cuda_core_gemm::"
+            "cudaCoreGemmDispatcher failed to dispatch: inputType=%d, "
             "outputType=%d, "
             "m=%d, "
             "n=%d, k=%d",
@@ -330,6 +329,5 @@ bool cudaCoreGemmDispatcher(Params const& params, cudaStream_t stream)
 }
 
 } // namespace cuda_core_gemm
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

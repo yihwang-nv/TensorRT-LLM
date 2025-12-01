@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +25,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -108,11 +110,13 @@ th::Tensor dsv3_router_gemm_op(th::Tensor const& mat_a, th::Tensor const& mat_b,
 
 } // end namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("dsv3_router_gemm_op(Tensor mat_a, Tensor mat_b, Tensor? bias, ScalarType? out_dtype) -> (Tensor out)");
+    m.def(
+        "dsv3_router_gemm_op(Tensor mat_a, Tensor mat_b, Tensor? bias, "
+        "ScalarType? out_dtype) -> (Tensor out)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

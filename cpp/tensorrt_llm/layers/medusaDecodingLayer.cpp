@@ -15,7 +15,6 @@
  */
 
 #include "medusaDecodingLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/decodingCommon.h"
 #include "tensorrt_llm/kernels/samplingTopKKernels.h"
@@ -30,9 +29,7 @@ using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::kernels::speculative_decoding;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -228,7 +225,8 @@ void MedusaDecodingLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> c
     auto inputs = std::dynamic_pointer_cast<MedusaDecodingInputs>(baseInputs);
     auto outputs = std::dynamic_pointer_cast<SpeculativeDecodingOutputs>(baseOutputs);
 
-    // TODO add typical acceptance similarly to EagleSampleAndAcceptDraftTokensPlugin::doTypicalAcceptance.
+    // TODO add typical acceptance similarly to
+    // EagleSampleAndAcceptDraftTokensPlugin::doTypicalAcceptance.
     samplePrimeHeadTokens(*outputs, *inputs, workspace);
 
     acceptDraftTokens(*outputs, *inputs, workspace);
@@ -279,8 +277,10 @@ void MedusaDecodingLayer<T>::samplePrimeHeadTokens(SpeculativeDecodingOutputs co
     params.maxSeqLen = mDecoderDomain.getMaxDecodingTokens();
     params.vocabSizePadded = mDecoderDomain.getVocabSizePadded();
 
-    // Sample multiple tokens per request and store them to separate to be accepted/rejected later
-    // Sequence length is not modified, endIds is not checked, outputLogProbs are not supported.
+    // Sample multiple tokens per request and store them to separate to be
+    // accepted/rejected later
+    // Sequence length is not modified, endIds is not checked, outputLogProbs
+    // are not supported.
     // Finished state is not set.
     invokeBatchTopKSampling(params, getStream());
 
@@ -329,8 +329,10 @@ void MedusaDecodingLayer<T>::acceptDraftTokens(SpeculativeDecodingOutputs const&
     TLLM_CHECK_WITH_INFO(
         targetTokensPerStepDevice != nullptr, "Target tokens per step must be provided for MedusaDecoding");
 
-    // Compare draft tokens from outputIds with sampled target tokens at mTargetTokensDevice using paths.
-    // Select the longest accepted path, modify outputIds in-place, increment sequenceLengths accordingly.
+    // Compare draft tokens from outputIds with sampled target tokens at
+    // mTargetTokensDevice using paths.
+    // Select the longest accepted path, modify outputIds in-place, increment
+    // sequenceLengths accordingly.
     // Fill mMedusaSelectedLogitsPtrsDevice with respective Medusa logits
     auto* targetTokensDevicePtr = bufferCast<SizeType32>(*mTargetTokensDevice);
     auto* finishedStatesPtr
@@ -482,6 +484,4 @@ void MedusaDecodingLayer<T>::packAcceptedPaths(SpeculativeDecodingOutputs const&
 template class MedusaDecodingLayer<float>;
 template class MedusaDecodingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

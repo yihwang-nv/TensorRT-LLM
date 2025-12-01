@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +27,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -275,15 +277,19 @@ void extract_real_draft_tokens_op(th::Tensor newDraftTokens, th::Tensor draftTok
     // batchSize: int
     // maxTotalDraftTokens: int
     // maxTopK: int
-    // tokensGatherIdxForDrafterModel: Tensor, int32, indices of the draft tokens that need to be expand this layer
+    // tokensGatherIdxForDrafterModel: Tensor, int32, indices of the draft tokens
+    // that need to be expand this layer
     //     shape: [numTokensExpandThisLayer]
     // topKList: Tensor, int32, top k value for each expandable token
     //     shape: [numTokensExpandThisLayer]
-    // draftTokensIndicesCumsum: Tensor, int32, the cumulative sum of the write back indices for each draft layer
+    // draftTokensIndicesCumsum: Tensor, int32, the cumulative sum of the write
+    // back indices for each draft layer
     //     shape: [maxDraftLen + 1]
-    // newDraftTokens: Tensor, int64, the new draft tokens. We only need to extract this layer's tokens and write back
+    // newDraftTokens: Tensor, int64, the new draft tokens. We only need to
+    // extract this layer's tokens and write back
     // to the draftTokensBuffer
-    //     shape: [batchSize, maxTotalDraftTokens + 1 if curDraftIdx > 0 else 1, maxTopK]
+    //     shape: [batchSize, maxTotalDraftTokens + 1 if curDraftIdx > 0 else 1,
+    // maxTopK]
     // draftTokensBuffer: Tensor, int64, the buffer to store the real draft tokens
     //     shape: [maxBatchSize, maxTotalDraftTokens + 1]
 
@@ -339,14 +345,15 @@ void extract_real_draft_tokens_op(th::Tensor newDraftTokens, th::Tensor draftTok
 
 } // end namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
         "mtp_prepare_drafter_inputs_op(Tensor inputIds, Tensor seqLens, Tensor "
         "mtpPastHiddenStatesPtrs, Tensor mtpPastTokensPtrs, Tensor hiddenStates, "
-        "Tensor acceptedTokens, Tensor numAcceptedTokens, Tensor returnInputIds, Tensor returnHiddenStates, "
+        "Tensor acceptedTokens, Tensor numAcceptedTokens, Tensor returnInputIds, "
+        "Tensor returnHiddenStates, "
         "int numMTPModules, int batchSize, int numContextRequest,"
         "int hiddenSize) -> (Tensor, Tensor)");
 }
@@ -361,9 +368,11 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "mtp_sampling_and_accepted_draft_tokens_op(Tensor logits, Tensor draftTokens, Tensor "
+        "mtp_sampling_and_accepted_draft_tokens_op(Tensor logits, Tensor "
+        "draftTokens, Tensor "
         "targetTokens, int numMTPModules, "
-        "int batchSize, int numContextRequest, int vocabSize) -> (Tensor, Tensor)");
+        "int batchSize, int numContextRequest, int vocabSize) -> (Tensor, "
+        "Tensor)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -377,9 +386,12 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "mtp_update_hidden_states_op(Tensor inputIds, Tensor seqLens, Tensor targetModelHiddenStates, "
-        "Tensor mtpPastHiddenStatesPtrs, Tensor mtpPastTokensPtrs, Tensor numAcceptedTokens, "
-        "int numMTPModules, int batchSize, int numContextRequest, int hiddenSize) -> (Tensor, Tensor)");
+        "mtp_update_hidden_states_op(Tensor inputIds, Tensor seqLens, Tensor "
+        "targetModelHiddenStates, "
+        "Tensor mtpPastHiddenStatesPtrs, Tensor mtpPastTokensPtrs, Tensor "
+        "numAcceptedTokens, "
+        "int numMTPModules, int batchSize, int numContextRequest, int "
+        "hiddenSize) -> (Tensor, Tensor)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -392,10 +404,14 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "mtp_relaxed_acceptance_op(Tensor reqSlotIds, Tensor topKValue, Tensor topKIndices, Tensor draftTokens, "
-        "Tensor mtpRelaxedDelta, Tensor numAcceptedTokens, Tensor acceptedTokens, "
-        "int numMTPModules, int batchSize, int numContextRequest, int relaxedTopK, "
-        "float relaxedDelta, int beginThinkingTokens, int endThinkingTokens) -> (Tensor, Tensor)");
+        "mtp_relaxed_acceptance_op(Tensor reqSlotIds, Tensor topKValue, Tensor "
+        "topKIndices, Tensor draftTokens, "
+        "Tensor mtpRelaxedDelta, Tensor numAcceptedTokens, Tensor "
+        "acceptedTokens, "
+        "int numMTPModules, int batchSize, int numContextRequest, int "
+        "relaxedTopK, "
+        "float relaxedDelta, int beginThinkingTokens, int endThinkingTokens) "
+        "-> (Tensor, Tensor)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -408,9 +424,12 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "extract_real_draft_tokens_op(Tensor newDraftTokens, Tensor draftTokensBuffer, "
-        "Tensor tokensGatherIdxForDrafterModel, Tensor topKList, Tensor draftTokensIndicesCumsum, "
-        "int curDraftIdx, int batchSize, int maxDraftLen, int maxTotalDraftTokens, int maxTopK) -> ()");
+        "extract_real_draft_tokens_op(Tensor newDraftTokens, Tensor "
+        "draftTokensBuffer, "
+        "Tensor tokensGatherIdxForDrafterModel, Tensor topKList, Tensor "
+        "draftTokensIndicesCumsum, "
+        "int curDraftIdx, int batchSize, int maxDraftLen, int "
+        "maxTotalDraftTokens, int maxTopK) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

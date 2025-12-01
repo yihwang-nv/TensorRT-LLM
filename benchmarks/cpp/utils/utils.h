@@ -1,6 +1,7 @@
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +31,8 @@
 
 #pragma once
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace benchmark
 {
@@ -242,4 +244,4 @@ std::vector<double> computeTimeDelays(BenchmarkParams const& benchmarkParams, in
 
 } // namespace benchmark
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

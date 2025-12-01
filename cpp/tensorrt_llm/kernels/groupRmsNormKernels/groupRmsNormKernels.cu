@@ -24,11 +24,12 @@
 #include "tensorrt_llm/common/reduceKernelUtils.cuh"
 #include "tensorrt_llm/kernels/groupRmsNormKernels/groupRmsNormKernels.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::group_rms_norm
+namespace group_rms_norm
 {
-// Helper function to calculate the number of warps to launch for GroupRMSNormBase
+// Helper function to calculate the number of warps to launch for
+// GroupRMSNormBase
 template <typename DType, int n>
 uint32_t calculateNumWarpsBase(GroupRMSParams<n> const& params)
 {
@@ -60,7 +61,8 @@ struct LargeBatchWarpsInfo
     uint32_t rounds_1;              // Rounds for second input
 };
 
-// Helper function to calculate the number of warps to launch for GroupRMSNormKernelLargeBatch
+// Helper function to calculate the number of warps to launch for
+// GroupRMSNormKernelLargeBatch
 template <typename DType, int n>
 LargeBatchWarpsInfo<DType, n> calculateNumWarpsLargeBatch(GroupRMSParams<n> const& params)
 {
@@ -153,7 +155,8 @@ __global__ void GroupRMSNormBaseKernel(GroupRMSParams<n> params, int rounds)
     }
 
     // Process round1+
-    // If input dtype is fp16, round1+ is needed when input_dim > 8192, which is uncommon
+    // If input dtype is fp16, round1+ is needed when input_dim > 8192, which is
+    // uncommon
     if constexpr (MultiRounds)
     {
         for (uint32_t i = 1; i < rounds; i++)
@@ -178,7 +181,8 @@ __global__ void GroupRMSNormBaseKernel(GroupRMSParams<n> params, int rounds)
         smem_warp_sum_sqs[warp_idx] = warp_sum;
     }
 
-// Extra _syncwarp for sm < 900, needed to avoid race condition on smem_input_mask write.
+// Extra _syncwarp for sm < 900, needed to avoid race condition on
+// smem_input_mask write.
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ < 900)
     __syncwarp();
 #endif
@@ -359,7 +363,8 @@ __global__ void GroupRMSNormKernelLargeBatch(
     }
 
     // Process round1+
-    // If input dtype is fp16, round1+ is needed when input_dim > 8192, which is uncommon
+    // If input dtype is fp16, round1+ is needed when input_dim > 8192, which is
+    // uncommon
     if constexpr (MultiRounds_0)
     {
         for (uint32_t i = 1; i < rounds_0; i++)
@@ -575,7 +580,8 @@ void GroupRMSNormBaseKernel(GroupRMSParams<n>& params)
     // Kernel assertions
     constexpr uint32_t kPackedSize = sizeof(float4) / sizeof(DType);
     TLLM_CHECK_WITH_INFO(params.num_inputs <= 2,
-        "Only up to 2 inputs are supported with performance guarantees. Kernels with more than 2 inputs can be "
+        "Only up to 2 inputs are supported with performance "
+        "guarantees. Kernels with more than 2 inputs can be "
         "instantiated.");
     int rounded_input_dims[n];
     uint32_t input_chunk_per_warp = 32 * kPackedSize;
@@ -584,7 +590,8 @@ void GroupRMSNormBaseKernel(GroupRMSParams<n>& params)
         TLLM_CHECK_WITH_INFO(
             params.input_last_dims[i] % 32 == 0, "The last dimension of input must be divisible by 32.");
         TLLM_CHECK_WITH_INFO(params.input_last_dims[i] % kPackedSize == 0,
-            "Input[%u] dimension %u is not divisible by %u (128b / sizeof(dype)). Finer granularity is not "
+            "Input[%u] dimension %u is not divisible by %u (128b "
+            "/ sizeof(dype)). Finer granularity is not "
             "supported yet.",
             i, params.input_last_dims[i], kPackedSize);
         // Make rounded_input_dims[i] a multiple of 32 * kPackedSize
@@ -681,7 +688,8 @@ void GroupRMSNormKernelLargeBatch(GroupRMSParams<n>& params)
         TLLM_CHECK_WITH_INFO(
             params.input_last_dims[i] % 32 == 0, "The last dimension of input must be divisible by 32.");
         TLLM_CHECK_WITH_INFO(params.input_last_dims[i] % kPackedSize == 0,
-            "Input[%u] dimension %u is not divisible by %u (128b / sizeof(dype)). Finer granularity is not "
+            "Input[%u] dimension %u is not divisible by %u (128b "
+            "/ sizeof(dype)). Finer granularity is not "
             "supported yet.",
             i, params.input_last_dims[i], kPackedSize);
     }
@@ -791,7 +799,8 @@ bool prefer_base_kernel(int batch, int base_warps, float scheduling_efficiency_r
     if (!found_match)
     {
         TLLM_LOG_INFO(
-            "GroupRMSNorm: Failed to find heuristic for GPU compute capability %d. Falling back to the base kernel.",
+            "GroupRMSNorm: Failed to find heuristic for GPU compute "
+            "capability %d. Falling back to the base kernel.",
             sm_major);
     }
     return true;
@@ -833,20 +842,27 @@ void GroupRMSNormKernelLauncherWithHeuristic(GroupRMSParams<n>& params)
 
         /*
          * Kernel Selection Logic:
-         * We use trained Logistic Regression models to determine which kernel variant to use based on performance
+         * We use trained Logistic Regression models to determine which kernel
+         *variant to use based on performance
          * characteristics:
          *
          * - base_warps: Proportional to the sum of last dimensions of inputs
          * - large_batch_warps: Proportional to the max of last dimensions of inputs
          *
          * Trade-offs:
-         * - With equal concurrent blocks per SM, base_warps achieves better compute efficiency
-         * - However, large_batch_warps allows more concurrent blocks to be scheduled:
-         *   - concurrent_block_per_sm_base: Maximum blocks of base kernel schedulable per SM
-         *   - concurrent_block_per_sm_large_batch: Maximum blocks of large batch kernel schedulable per SM
+         * - With equal concurrent blocks per SM, base_warps achieves better compute
+         *efficiency
+         * - However, large_batch_warps allows more concurrent blocks to be
+         *scheduled:
+         *   - concurrent_block_per_sm_base: Maximum blocks of base kernel
+         *schedulable per SM
+         *   - concurrent_block_per_sm_large_batch: Maximum blocks of large batch
+         *kernel schedulable per SM
          *
-         * The large batch kernel is preferred when the scheduling efficiency advantage outweighs
-         * the compute efficiency advantage of the base kernel, particularly at larger batch sizes.
+         * The large batch kernel is preferred when the scheduling efficiency
+         *advantage outweighs
+         * the compute efficiency advantage of the base kernel, particularly at
+         *larger batch sizes.
          */
         if (concurrent_block_per_sm_large_batch > concurrent_block_per_sm_base)
         {
@@ -879,6 +895,6 @@ void GroupRMSNormKernelLauncherWithHeuristic(GroupRMSParams<n>& params)
 INSTANTIATE_GROUP_RMS_NORM_WITH_HEURISTIC(1)
 INSTANTIATE_GROUP_RMS_NORM_WITH_HEURISTIC(2)
 
-} // namespace kernels::group_rms_norm
+} // namespace group_rms_norm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -44,16 +44,14 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 using namespace cute;
 
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
 template <typename Arch, typename T, typename CTA_M_, typename CTA_N_, typename CTA_K_>
 size_t dispatchNVFP4xNVFP4GemmClusterShapeSm10x(T* D, void const* A, void const* B, void const* input_sf,
@@ -108,7 +106,9 @@ size_t dispatchNVFP4xNVFP4GemmClusterShapeSm10x(T* D, void const* A, void const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][FP4][dispatch_gemm_cluster_shape] Config is invalid for FP4 GEMM.");
+            "[TensorRT LLM "
+            "Error][FP4][dispatch_gemm_cluster_shape] Config "
+            "is invalid for FP4 GEMM.");
         break;
     }
 }
@@ -121,11 +121,11 @@ size_t dispatchNVFP4xNVFP4GemmCTAShapeSm10x(T* D, void const* A, void const* B, 
 {
 
     TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
-    // Several constraints:
-    // Cta N should be one of 128/192/256.
-    // M-mode size should be 128 or 256 for 2 CTA cluster MMA;
-    // M-mode size should be 128 for 1 CTA cluster OMMA.
-    // K256 looks to be better than K128
+// Several constraints:
+// Cta N should be one of 128/192/256.
+// M-mode size should be 128 or 256 for 2 CTA cluster MMA;
+// M-mode size should be 128 for 1 CTA cluster OMMA.
+// K256 looks to be better than K128
 #define CTA_CASE(M, N, K)                                                                                              \
     case tkc::CutlassTileConfigSM100::CtaShape##M##x##N##x##K##B:                                                      \
         return dispatchNVFP4xNVFP4GemmClusterShapeSm10x<Arch, T, cute::Int<M>, cute::Int<N>, cute::Int<K>>(D, A, B,    \
@@ -133,16 +133,23 @@ size_t dispatchNVFP4xNVFP4GemmCTAShapeSm10x(T* D, void const* A, void const* B, 
             occupancy);
 #define CTA_CASE_DEFAULT                                                                                               \
     case tkc::CutlassTileConfigSM100::Undefined:                                                                       \
-        throw std::runtime_error("[TensorRT-LLM Error][FP4][dispatch_gemm_cta_shape] Gemm config undefined.");         \
+        throw std::runtime_error(                                                                                      \
+            "[TensorRT-LLM "                                                                                           \
+            "Error][FP4][dispatch_gemm_cta_shape] Gemm "                                                               \
+            "config undefined.");                                                                                      \
         break;                                                                                                         \
     case tkc::CutlassTileConfigSM100::ChooseWithHeuristic:                                                             \
         throw std::runtime_error(                                                                                      \
-            "[TensorRT-LLM Error][FP4][dispatch_gemm_cta_shape] Gemm config should have already been set by "          \
+            "[TensorRT-LLM "                                                                                           \
+            "Error][FP4][dispatch_gemm_cta_shape] Gemm "                                                               \
+            "config should have already been set by "                                                                  \
             "heuristic.");                                                                                             \
         break;                                                                                                         \
     default:                                                                                                           \
         throw std::runtime_error(                                                                                      \
-            "[TensorRT-LLM Error][FP4][dispatch_gemm_cta_shape] Config is invalid for FP4 GEMM.");                     \
+            "[TensorRT-LLM "                                                                                           \
+            "Error][FP4][dispatch_gemm_cta_shape] Config is "                                                          \
+            "invalid for FP4 GEMM.");                                                                                  \
         break;
     if constexpr (std::is_same_v<Arch, cutlass::arch::Sm100>)
     {
@@ -167,7 +174,9 @@ size_t dispatchNVFP4xNVFP4GemmCTAShapeSm10x(T* D, void const* A, void const* B, 
     else
     {
         throw std::runtime_error(
-            "[TensorRT-LLM Error][FP4][dispatch_gemm_cta_shape] Architecture not supported for FP4 GEMM.");
+            "[TensorRT-LLM "
+            "Error][FP4][dispatch_gemm_cta_shape] "
+            "Architecture not supported for FP4 GEMM.");
     }
 }
 
@@ -189,7 +198,9 @@ size_t dispatchNVFP4xNVFP4GemmClusterShapeSm120(T* D, void const* A, void const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][FP4][dispatch_gemm_cluster_shape] Config is invalid for FP4 GEMM.");
+            "[TensorRT LLM "
+            "Error][FP4][dispatch_gemm_cluster_shape] Config "
+            "is invalid for FP4 GEMM.");
         break;
     }
 }
@@ -217,16 +228,23 @@ size_t dispatchNVFP4xNVFP4GemmCTAShapeSm120(T* D, void const* A, void const* B, 
             occupancy);
         break;
     case tkc::CutlassTileConfigSM120::Undefined:
-        throw std::runtime_error("[TensorRT LLM Error][FP4][sm120][dispatch_gemm_cta_shape] Gemm config undefined.");
+        throw std::runtime_error(
+            "[TensorRT LLM "
+            "Error][FP4][sm120][dispatch_gemm_cta_shape] Gemm "
+            "config undefined.");
         break;
     case tkc::CutlassTileConfigSM120::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][FP4][sm120][dispatch_gemm_cta_shape] Gemm config should have already been set by "
+            "[TensorRT LLM "
+            "Error][FP4][sm120][dispatch_gemm_cta_shape] Gemm "
+            "config should have already been set by "
             "heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][FP4][sm120][dispatch_gemm_cta_shape] Config is invalid for FP4 GEMM.");
+            "[TensorRT LLM "
+            "Error][FP4][sm120][dispatch_gemm_cta_shape] "
+            "Config is invalid for FP4 GEMM.");
         break;
     }
 }
@@ -269,7 +287,9 @@ size_t dispatchMXFP8xMXFP4GemmClusterShapeSm100(T* D, void const* A, void const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][FP4][dispatch_gemm_cluster_shape] Config is invalid for FP4 GEMM.");
+            "[TensorRT LLM "
+            "Error][FP4][dispatch_gemm_cluster_shape] Config "
+            "is invalid for FP4 GEMM.");
         break;
     }
 }
@@ -305,15 +325,23 @@ size_t dispatchMXFP8xMXFP4GemmCTAShapeSm100(T* D, void const* A, void const* B, 
             occupancy);
         break;
     case tkc::CutlassTileConfigSM100::Undefined:
-        throw std::runtime_error("[TensorRT LLM Error][FP4][dispatch_gemm_cta_shape] Gemm config undefined.");
+        throw std::runtime_error(
+            "[TensorRT LLM "
+            "Error][FP4][dispatch_gemm_cta_shape] Gemm config "
+            "undefined.");
         break;
     case tkc::CutlassTileConfigSM100::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][FP4][dispatch_gemm_cta_shape] Gemm config should have already been set by "
+            "[TensorRT LLM "
+            "Error][FP4][dispatch_gemm_cta_shape] Gemm config "
+            "should have already been set by "
             "heuristic.");
         break;
     default:
-        throw std::runtime_error("[TensorRT LLM Error][FP4][dispatch_gemm_cta_shape] Config is invalid for FP4 GEMM.");
+        throw std::runtime_error(
+            "[TensorRT LLM "
+            "Error][FP4][dispatch_gemm_cta_shape] Config is "
+            "invalid for FP4 GEMM.");
         break;
     }
 }
@@ -350,7 +378,9 @@ size_t CutlassFp4GemmRunner<T, fp4GemmType>::dispatchToArch(T* D, void const* A,
         else
         {
             throw std::runtime_error(
-                "[TensorRT LLM Error][CutlassFp4GemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS FP4 GEMM");
+                "[TensorRT LLM "
+                "Error][CutlassFp4GemmRunner][GEMM Dispatch] "
+                "Arch unsupported for CUTLASS FP4 GEMM");
         }
     }
     else if constexpr (fp4GemmType == FP4GemmType::W4A4_NVFP4_NVFP4)
@@ -378,13 +408,17 @@ size_t CutlassFp4GemmRunner<T, fp4GemmType>::dispatchToArch(T* D, void const* A,
         else
         {
             throw std::runtime_error(
-                "[TensorRT LLM Error][CutlassFp4GemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS FP4 GEMM");
+                "[TensorRT LLM "
+                "Error][CutlassFp4GemmRunner][GEMM Dispatch] "
+                "Arch unsupported for CUTLASS FP4 GEMM");
         }
     }
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp4GemmRunner][GEMM Dispatch] FP4 Gemm type unsupported for CUTLASS FP4 GEMM");
+            "[TensorRT LLM Error][CutlassFp4GemmRunner][GEMM "
+            "Dispatch] FP4 Gemm type unsupported for CUTLASS "
+            "FP4 GEMM");
     }
 }
 
@@ -453,7 +487,6 @@ std::vector<tkc::CutlassGemmConfig> CutlassFp4GemmRunner<T, fp4GemmType>::getCon
             // tkc::CutlassTileConfigSM120::CtaShape128x128x128B,
             tkc::CutlassTileConfigSM120::CtaShape128x128x256B,
             tkc::CutlassTileConfigSM120::CtaShape256x128x128B,
-
         };
         tkc::ClusterShape clusterShape = tkc::ClusterShape::ClusterShape_1x1x1;
         for (auto const& tile_config : tilesSm120)
@@ -528,6 +561,5 @@ size_t CutlassFp4GemmRunner<T, fp4GemmType>::getWorkspaceSize(
 }
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

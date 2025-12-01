@@ -24,7 +24,8 @@
 
 #include "cute/tensor.hpp"
 #include "cutlass/conv/convolution.h"
-// Order matters here, packed_stride.hpp is missing cute and convolution includes
+// Order matters here, packed_stride.hpp is missing cute and convolution
+// includes
 #include "cutlass/util/packed_stride.hpp"
 
 #include "cutlass/epilogue/collective/default_epilogue.hpp"
@@ -43,10 +44,8 @@
 #pragma GCC diagnostic pop
 #endif          // __GNUC__
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 using namespace cute;
@@ -59,37 +58,41 @@ struct DeviceGemmGatedSm90
     static_assert(std::is_same_v<ElementType, cutlass::float_e4m3_t>, "ElementType must be FP8(e4m3)");
 
     // A matrix configuration
-    using ElementA = ElementType;                      // Element type for A matrix operand
-    using LayoutA = cutlass::layout::RowMajor;         // Layout type for A matrix operand
-    static constexpr int AlignmentA
-        = 128 / cutlass::sizeof_bits<ElementA>::value; // Memory access granularity/alignment of A
-                                                       // matrix in units of elements (up to 16 bytes)
+    using ElementA = ElementType;                                                  // Element type for A matrix operand
+    using LayoutA = cutlass::layout::RowMajor;                                     // Layout type for A matrix operand
+    static constexpr int AlignmentA = 128 / cutlass::sizeof_bits<ElementA>::value; // Memory access
+                                                                                   // granularity/alignment of A
+    // matrix in units of elements (up to 16 bytes)
 
     // B matrix configuration
-    using ElementB = ElementType;                      // Element type for B matrix operand
-    using LayoutB = cutlass::layout::ColumnMajor;      // Layout type for B matrix operand
-    static constexpr int AlignmentB
-        = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access granularity/alignment of B
-                                                       // matrix in units of elements (up to 16 bytes)
+    using ElementB = ElementType;                                                  // Element type for B matrix operand
+    using LayoutB = cutlass::layout::ColumnMajor;                                  // Layout type for B matrix operand
+    static constexpr int AlignmentB = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access
+                                                                                   // granularity/alignment of B
+    // matrix in units of elements (up to 16 bytes)
 
     // C/D matrix configuration
     using ElementC = ElementType; // Element type for C matrix operands
-    // using LayoutC = cutlass::layout::RowMajor;         // Layout type for C matrix operands
+    // using LayoutC = cutlass::layout::RowMajor;         // Layout type for C
+    // matrix operands
     using LayoutC = cute::conditional_t<SwapAB, cutlass::layout::ColumnMajor, cutlass::layout::RowMajor>;
-    static constexpr int AlignmentC
-        = 128 / cutlass::sizeof_bits<ElementC>::value; // Memory access granularity/alignment of C matrices in units of
-                                                       // elements (up to 16 bytes)
+    static constexpr int AlignmentC = 128 / cutlass::sizeof_bits<ElementC>::value; // Memory access
+                                                                                   // granularity/alignment of C
+                                                                                   // matrices in units of
+                                                                                   // elements (up to 16 bytes)
 
     // Output matrix configuration
     using ElementOutput = ElementType; // Element type for output matrix operands
-    // using LayoutOutput = cutlass::layout::RowMajor; // Layout type for output matrix operands
+    // using LayoutOutput = cutlass::layout::RowMajor; // Layout type for output
+    // matrix operands
     using LayoutOutput = cute::conditional_t<SwapAB, cutlass::layout::ColumnMajor, cutlass::layout::RowMajor>;
     static constexpr int AlignmentOutput = 128 / cutlass::sizeof_bits<ElementOutput>::value;
 
     // Multiply-accumulate blocking/pipelining details
-    using ElementAccumulator = AccumElementType; // Element type for internal accumulation
-    using ElementCompute = float;                // Element type for compute
-    using ArchTag = cutlass::arch::Sm90;         // Tag indicating the minimum SM that supports the intended feature
+    using ElementAccumulator = AccumElementType;          // Element type for internal accumulation
+    using ElementCompute = float;                         // Element type for compute
+    using ArchTag = cutlass::arch::Sm90;                  // Tag indicating the minimum SM that
+                                                          // supports the intended feature
     using OperatorClass = cutlass::arch::OpClassTensorOp; // Operator class tag
     using TileShape = CTAShape;                           // Threadblock-level tile size
     using KernelSchedule = MainloopScheduleType;
@@ -118,6 +121,5 @@ struct DeviceGemmGatedSm90
 };
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

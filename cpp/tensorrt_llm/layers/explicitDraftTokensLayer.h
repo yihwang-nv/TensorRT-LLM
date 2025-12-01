@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/layers/decodingParams.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -24,12 +23,11 @@
 
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
-//! \brief Decoding layer for speculative decoding technique, when all tokens are generated, decoded and accepted in the
+//! \brief Decoding layer for speculative decoding technique, when all tokens
+// are generated, decoded and accepted in the
 //! engine.
 template <typename T>
 class ExplicitDraftTokensLayer : public BaseLayer
@@ -89,6 +87,4 @@ private:
     std::optional<nvinfer1::DataType> mDecoderDtype{std::nullopt};
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

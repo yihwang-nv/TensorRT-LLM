@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/runtime/ipcNvlsMemory.h"
 #include "tensorrt_llm/runtime/ipcSocket.h"
@@ -52,12 +51,11 @@
         }                                                                                                              \
     } while (0)
 
-// if n is already a multiple of "multiple", n is returned unchanged, otherwise round up to next multiple.
+// if n is already a multiple of "multiple", n is returned unchanged, otherwise
+// round up to next multiple.
 #define ROUND_UP(n, multiple) (((n + multiple - 1) / multiple) * multiple)
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 using namespace tensorrt_llm::mpi;
 
@@ -201,12 +199,14 @@ public:
         mcprop.handleTypes = handle_type;
         mcprop.flags = 0;
 
-        // Round up allocation size to the nearest multiple of the unicast allocation granularity.
+        // Round up allocation size to the nearest multiple of the unicast
+        // allocation granularity.
         size_t granularity = 0;
         CUCHECK(cuMemGetAllocationGranularity(&granularity, &prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM));
         size = ROUND_UP(size, granularity);
 
-        // Round up allocation size to the nearest multiple of the multicast allocation granularity.
+        // Round up allocation size to the nearest multiple of the multicast
+        // allocation granularity.
         size_t mc_granularity = 0;
         CUCHECK(cuMulticastGetGranularity(&mc_granularity, &mcprop, CU_MULTICAST_GRANULARITY_MINIMUM));
         size = ROUND_UP(size, mc_granularity);
@@ -328,7 +328,9 @@ private:
         if (!fabric_supported)
         {
             TLLM_LOG_TRACE(
-                "checking fabric support... CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED not supported.");
+                "checking fabric support... "
+                "CU_DEVICE_ATTRIBUTE_HANDLE_TYPE_FABRIC_SUPPORTED not "
+                "supported.");
             return CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
         }
 
@@ -342,7 +344,9 @@ private:
         // Check if the fabric is fully initialized.
         if (fabric_info.state != NVML_GPU_FABRIC_STATE_COMPLETED || fabric_info.status != NVML_SUCCESS)
         {
-            TLLM_LOG_TRACE("checking fabric support... fabric state is NOT COMPLETE: state=%u status=%u.",
+            TLLM_LOG_TRACE(
+                "checking fabric support... fabric state is NOT "
+                "COMPLETE: state=%u status=%u.",
                 fabric_info.state, fabric_info.status);
             return CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR;
         }
@@ -373,7 +377,8 @@ private:
             CUCHECK(err);
         }
 
-        // Check if fabric handles can be exported & imported by IMEX (Internode Memory Exchange)
+        // Check if fabric handles can be exported & imported by IMEX (Internode
+        // Memory Exchange)
         CUmemFabricHandle fh;
         err = cuMemExportToShareableHandle(&fh, handle, CU_MEM_HANDLE_TYPE_FABRIC, 0);
         if (err != CUDA_SUCCESS
@@ -540,6 +545,4 @@ void ipcNvlsFree(IpcNvlsHandle* handle)
 #endif
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

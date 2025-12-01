@@ -16,7 +16,6 @@
 #include "tllmRuntime.h"
 #include "common.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/common/safetensors.h"
@@ -81,7 +80,9 @@ void setWeightStreaming(nvinfer1::ICudaEngine& engine, float const gpuWeightsPer
     {
         int64_t streamableSize = engine.getStreamableWeightsSize();
         int64_t budget = gpuWeightsPercent * streamableSize;
-        TLLM_LOG_INFO("Set gpu weights percent to %f, which is %lld bytes. Valid range: %lld bytes - %lld bytes.",
+        TLLM_LOG_INFO(
+            "Set gpu weights percent to %f, which is %lld bytes. Valid "
+            "range: %lld bytes - %lld bytes.",
             gpuWeightsPercent, budget, 0, streamableSize);
         engine.setWeightStreamingBudgetV2(budget);
     }
@@ -99,14 +100,14 @@ public:
 
 void assessLikelihoodOfRuntimeAllocation(
     nvinfer1::ICudaEngine const& engine, nvinfer1::IEngineInspector const& engineInspector)
-
 {
     TLLM_LOG_INFO("Inspecting the engine to identify potential runtime issues...");
     auto const profilingVerbosity = engine.getProfilingVerbosity();
     if (profilingVerbosity != nvinfer1::ProfilingVerbosity::kDETAILED)
     {
         TLLM_LOG_INFO(
-            "The profiling verbosity of the engine does not allow this analysis to proceed. Re-build the engine with "
+            "The profiling verbosity of the engine does not allow this "
+            "analysis to proceed. Re-build the engine with "
             "'detailed' profiling verbosity to get more diagnostics.");
         return;
     }
@@ -123,7 +124,8 @@ void assessLikelihoodOfRuntimeAllocation(
             auto const* const layerInfo
                 = engineInspector.getLayerInformation(idx, nvinfer1::LayerInformationFormat::kJSON);
 
-            // Needs to be copied explicitly, see documentation of `getLayerInformation`.
+            // Needs to be copied explicitly, see documentation of
+            // `getLayerInformation`.
             auto const layerInfoCopy = std::string(layerInfo);
             auto const jsonLayerInfo = nlohmann::json::parse(layerInfoCopy);
             auto const layerJsonType = jsonLayerInfo.type();
@@ -169,7 +171,8 @@ void assessLikelihoodOfRuntimeAllocation(
         {
             auto const layerName = layerInfo->value().name.value_or("");
             TLLM_LOG_WARNING(
-                "Layer '%s' has type '%s', which could lead to large runtime memory allocations. Performance "
+                "Layer '%s' has type '%s', which could lead to large runtime memory "
+                "allocations. Performance "
                 "might be degraded and / or you might run out of memory.",
                 layerName.c_str(), layerInfo->value().type.c_str());
         }
@@ -178,7 +181,8 @@ void assessLikelihoodOfRuntimeAllocation(
     if (numWarnings > 0)
     {
         TLLM_LOG_WARNING(
-            "There were a total of %i layers with type 'allocate'. Some warnings might have been silenced to keep the "
+            "There were a total of %i layers with type 'allocate'. "
+            "Some warnings might have been silenced to keep the "
             "output concise.",
             numWarnings);
     }
@@ -265,7 +269,9 @@ nvinfer1::IExecutionContext& TllmRuntime::addContext(std::int32_t profileIndex)
     {
         if (mEngine->getStreamableWeightsSize() > 0)
         {
-            TLLM_THROW("Failed to allocate memory for weights. Please try reducing --gpu_weights_percent.");
+            TLLM_THROW(
+                "Failed to allocate memory for weights. Please try reducing "
+                "--gpu_weights_percent.");
         }
         else
         {
@@ -287,7 +293,8 @@ nvinfer1::IExecutionContext& TllmRuntime::addContext(std::int32_t profileIndex)
     if (context.getNvtxVerbosity() == nvinfer1::ProfilingVerbosity::kDETAILED)
     {
         TLLM_LOG_INFO(
-            "The engine was built with kDETAILED profiling verbosity, which may result in small overheads at runtime.");
+            "The engine was built with kDETAILED profiling verbosity, "
+            "which may result in small overheads at runtime.");
     }
     return context;
 }
@@ -522,7 +529,8 @@ void TllmRuntime::setInputTensorsImpl(SizeType32 contextIndex, TensorMap const& 
         auto const& tensor = pos->second;
         auto const tensorDtype = tensor->getDataType();
         auto const engineDtype = mEngine->getTensorDataType(name.c_str());
-        // WAR: TRT does not support mixed FP8 and FP16 input, so engine expects FP16 tensors.
+        // WAR: TRT does not support mixed FP8 and FP16 input, so engine expects
+        // FP16 tensors.
         TLLM_CHECK_WITH_INFO(tensorDtype == engineDtype
                 || (tensorDtype == nvinfer1::DataType::kFP8 && engineDtype == nvinfer1::DataType::kHALF),
             "%s: expected type %d, provided type %d", name.c_str(), static_cast<std::int32_t>(engineDtype),
@@ -531,7 +539,8 @@ void TllmRuntime::setInputTensorsImpl(SizeType32 contextIndex, TensorMap const& 
         auto tensorShape = tensor->getShape();
 
         // Change shape of `cache_indirection` for Variable-Beam-Width-Search
-        // TODO: remove this hack if beamWidth of each request are passed into GptAttentionPlugin by input tensor
+        // TODO: remove this hack if beamWidth of each request are passed into
+        // GptAttentionPlugin by input tensor
         if (name == "cache_indirection" && mCurrentBeamWidths.size() > 0)
         {
             SizeType32 const beamWidth = getCurrentBeamWidth();
@@ -638,7 +647,8 @@ void TllmRuntime::setOutputTensors(SizeType32 contextIndex, TensorMap& tensorMap
     NVTX3_FUNC_RANGE();
     if (isUserBufferEnabled())
     {
-        // This function will identify the output tensors in the network that need to be bound as UB buffers
+        // This function will identify the output tensors in the network that need
+        // to be bound as UB buffers
         // and bind the corresponding buffers to them based on their names.
         setUserBufferTensors(contextIndex, tensorMap);
     }
@@ -652,7 +662,8 @@ void TllmRuntime::setOutputTensors(SizeType32 contextIndex, TensorMap& tensorMap
         {
             auto const& tensor = pos->second;
             auto const tensorDtype = tensor->getDataType();
-            // WAR: TRT does not support mixed FP8 and FP16 input, so engine expects FP16 tensors.
+            // WAR: TRT does not support mixed FP8 and FP16 input, so engine expects
+            // FP16 tensors.
             TLLM_CHECK_WITH_INFO(tensorDtype == engineDtype
                     || (tensorDtype == nvinfer1::DataType::kFP8 && engineDtype == nvinfer1::DataType::kHALF),
                 "%s: expected type %d, provided type %d", name.c_str(), static_cast<std::int32_t>(engineDtype),
@@ -674,7 +685,10 @@ void TllmRuntime::setOutputTensors(SizeType32 contextIndex, TensorMap& tensorMap
         }
         else
         {
-            TLLM_THROW("Tensor %s is not found in tensorMap and shape inference is not allowed", name.c_str());
+            TLLM_THROW(
+                "Tensor %s is not found in tensorMap and shape inference is "
+                "not allowed",
+                name.c_str());
         }
     }
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
@@ -742,13 +756,16 @@ void TllmRuntime::initializeUserBuffer(tensorrt_llm::runtime::WorldConfig const&
     {
         return;
     }
-    // The hidden size returned by ModelConfig is the real hidden size divided by the TP size.
+    // The hidden size returned by ModelConfig is the real hidden size divided by
+    // the TP size.
     auto const tpSize = world_config.getTensorParallelism();
     size_t const realHiddenSize = hiddenSize * tpSize;
     size_t const tokensNum = maxNumTokens.value_or(maxBatchSize * maxBeamWidth * maxSequenceLength);
     TLLM_CHECK(tokensNum > 0);
     size_t const elemNum = tokensNum * realHiddenSize;
-    TLLM_LOG_INFO("[UserBuffer] MaxBatchSize %d, maxBeamWidth %d, maxSequenceLength %d, maxNumTokens %d, select %lu",
+    TLLM_LOG_INFO(
+        "[UserBuffer] MaxBatchSize %d, maxBeamWidth %d, "
+        "maxSequenceLength %d, maxNumTokens %d, select %lu",
         maxBatchSize, maxBeamWidth, maxSequenceLength, maxNumTokens.has_value() ? maxNumTokens.value() : 0, tokensNum);
     tensorrt_llm::runtime::ub::ub_initialize(world_config);
     tensorrt_llm::runtime::ub::ub_allocate(elemNum * sizeof(half));

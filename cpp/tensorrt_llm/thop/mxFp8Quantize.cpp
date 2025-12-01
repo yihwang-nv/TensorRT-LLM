@@ -24,18 +24,21 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
 // self: [M, K], fp16/bf16/fp8_quantized
 // mxfp8: sfVecSize = 32
 // alignment: sfVecSize
-// isSfSwizzledLayout: bool, if true, the scale factors are stored in swizzled layout, otherwise in linear layout.
+// isSfSwizzledLayout: bool, if true, the scale factors are stored in swizzled
+// layout, otherwise in linear layout.
 // See QuantizationSFLayout enum for more details about the two layouts.
 // returns self_mxfp8, self_block_scale_factors
 // self_mxfp8: [M, K], Float8_e4m3fn
-// self_block_scale_factors: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE
+// self_block_scale_factors: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4,
+// SF_DTYPE
 std::tuple<at::Tensor, at::Tensor> mxfp8_quantize(
     at::Tensor const& self, bool isSfSwizzledLayout, int64_t alignment = 32)
 {
@@ -68,8 +71,8 @@ std::tuple<at::Tensor, at::Tensor> mxfp8_quantize(
     int64_t SFSize = isSfSwizzledLayout ? tensorrt_llm::computeSwizzledLayoutSFSize(m, padded_k / SF_VEC_SIZE)
                                         : tensorrt_llm::computeLinearLayoutSFSize(m, padded_k / SF_VEC_SIZE);
 
-    at::Tensor scaleFP8SF
-        = at::detail::empty_cuda({SFSize}, SF_DTYPE, self.device(), /* stride */ std::nullopt); // 1D tensor
+    at::Tensor scaleFP8SF = at::detail::empty_cuda({SFSize}, SF_DTYPE, self.device(),
+        /* stride */ std::nullopt); // 1D tensor
 
     const thread_local int mMultiProcessorCount = tensorrt_llm::common::getMultiProcessorCount();
 
@@ -104,7 +107,7 @@ std::tuple<at::Tensor, at::Tensor> mxfp8_quantize(
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

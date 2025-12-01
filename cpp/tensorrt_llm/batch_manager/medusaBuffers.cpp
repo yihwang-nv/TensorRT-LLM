@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +17,11 @@
  */
 
 #include "tensorrt_llm/batch_manager/medusaBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/medusaModule.h"
 #include "tensorrt_llm/runtime/utils/speculativeChoicesUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 MedusaBuffers::MedusaBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth, runtime::BufferManager const& manager,
@@ -58,7 +56,8 @@ MedusaBuffers::MedusaBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth, r
     // Note: reserved for variable sequence length support.
     medusaGenerationLengthsHost
         = runtime::BufferManager::pinned(ITensor::makeShape({maxNumSequences}), nvinfer1::DataType::kINT32);
-    // TODO: pack batch and tokensPerStep into one dim to support variable sequence length without padddings.
+    // TODO: pack batch and tokensPerStep into one dim to support variable
+    // sequence length without padddings.
     attentionPackedMaskHost = runtime::BufferManager::pinned(
         ITensor::makeShape({maxNumSequences, maxDecodingTokens, numPackedMasks}), nvinfer1::DataType::kINT32);
     medusaPositionOffsetsHost = runtime::BufferManager::pinned(
@@ -99,7 +98,8 @@ MedusaBuffers::MedusaBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth, r
     scatterToBatch(attentionPackedMaskHost);
 
     // Copy buffers to device
-    // 1st dimension of packed mask is num_total_generation_tokens now (packed without paddings).
+    // 1st dimension of packed mask is num_total_generation_tokens now (packed
+    // without paddings).
     attentionPackedMaskHost->reshape(ITensor::makeShape({maxNumSequences * maxDecodingTokens, numPackedMasks}));
     attentionPackedMaskDevice = manager.copyFrom(*attentionPackedMaskHost, runtime::MemoryType::kGPU);
     medusaGenerationLengthsDevice = manager.copyFrom(*medusaGenerationLengthsHost, runtime::MemoryType::kGPU);
@@ -145,6 +145,4 @@ void MedusaBuffers::insertInputTensors(
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

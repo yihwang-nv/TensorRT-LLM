@@ -44,9 +44,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 /// @brief Enumeration of different error codes for request-specific exceptions
 enum class RequestErrorCode : uint32_t
 {
@@ -105,7 +102,5 @@ private:
     uint64_t mRequestID;
     RequestErrorCode mErrorCode;
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

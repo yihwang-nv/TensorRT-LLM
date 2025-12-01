@@ -24,7 +24,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common::stl_utils
+namespace stl_utils
 {
 
 template <typename TInputIt, typename TOutputIt, typename TBinOp>
@@ -123,6 +123,6 @@ std::string toString(std::optional<T> const& t, typename std::enable_if_t<HasOpe
     return oss.str();
 }
 
-} // namespace common::stl_utils
+} // namespace stl_utils
 
 TRTLLM_NAMESPACE_END

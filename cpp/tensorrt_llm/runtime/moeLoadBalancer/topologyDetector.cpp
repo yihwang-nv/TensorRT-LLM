@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
-
-#include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/runtime/moeLoadBalancer/topologyDetector.h"
+
+#include "tensorrt_llm/common/assert.h"
+#include "tensorrt_llm/common/cudaUtils.h"
 
 #include <algorithm> // For std::for_each, std::sort, std::unique
 #include <filesystem>
@@ -40,9 +39,7 @@
 #include <sched.h>
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 TopologyDetector::TopologyDetector()
@@ -82,7 +79,7 @@ TopologyDetector::~TopologyDetector()
 
 void TopologyDetector::detectCpuTopology()
 {
-    // Detect CPU architecture
+// Detect CPU architecture
 #if defined(__x86_64__) || defined(_M_X64)
     mCpuArchitecture = "x86_64";
 #elif defined(__aarch64__) || defined(_M_ARM64)
@@ -93,12 +90,14 @@ void TopologyDetector::detectCpuTopology()
     mCpuArchitecture = "unknown";
 #endif
 
-    // Detect NUMA topology on Linux systems using libnuma
+// Detect NUMA topology on Linux systems using libnuma
 #ifdef __linux__
     if (numa_available() == -1)
     {
         // libnuma not available, fall back to default behavior
-        TLLM_LOG_WARNING("libnuma not available. Falling back to default CPU topology detection.");
+        TLLM_LOG_WARNING(
+            "libnuma not available. Falling back to default CPU "
+            "topology detection.");
         mNumaToCpuCountMap[0] = std::thread::hardware_concurrency();
         return;
     }
@@ -107,7 +106,9 @@ void TopologyDetector::detectCpuTopology()
     if (maxNode < 0)
     {
         // Failed to get max node, fall back to default behavior
-        TLLM_LOG_WARNING("Failed to get max NUMA node. Falling back to default CPU topology detection.");
+        TLLM_LOG_WARNING(
+            "Failed to get max NUMA node. Falling back to default "
+            "CPU topology detection.");
         mNumaToCpuCountMap[0] = std::thread::hardware_concurrency();
         return;
     }
@@ -123,7 +124,8 @@ void TopologyDetector::detectCpuTopology()
             continue; // Skip to the next node if allocation fails
         }
 
-        // Attempt to get CPUs for node i. If numa_node_to_cpus returns 0, it's successful.
+        // Attempt to get CPUs for node i. If numa_node_to_cpus returns 0, it's
+        // successful.
         if (numa_node_to_cpus(i, cpus) == 0)
         {
             int cpuCount = 0;
@@ -139,8 +141,10 @@ void TopologyDetector::detectCpuTopology()
                 tempNumaToCpuCountMap[i] = cpuCount;
             }
         }
-        // If numa_node_to_cpus failed (returned -1), node 'i' might be invalid or an error occurred.
-        // In this case, we simply don't add it to our map, effectively skipping it.
+        // If numa_node_to_cpus failed (returned -1), node 'i' might be invalid or
+        // an error occurred.
+        // In this case, we simply don't add it to our map, effectively skipping
+        // it.
 
         numa_free_cpumask(cpus); // Always free the allocated mask
     }
@@ -148,10 +152,12 @@ void TopologyDetector::detectCpuTopology()
 
     if (mNumaToCpuCountMap.empty())
     {
-        // If no NUMA nodes with CPUs were detected (e.g. libnuma error or unusual configuration),
+        // If no NUMA nodes with CPUs were detected (e.g. libnuma error or unusual
+        // configuration),
         // default to a single NUMA node with all hardware concurrency.
         TLLM_LOG_WARNING(
-            "No NUMA nodes with CPUs detected via libnuma, or libnuma error. Defaulting to single NUMA node.");
+            "No NUMA nodes with CPUs detected via libnuma, or "
+            "libnuma error. Defaulting to single NUMA node.");
         mNumaToCpuCountMap[0] = std::thread::hardware_concurrency();
     }
 
@@ -193,7 +199,8 @@ void TopologyDetector::detectGpuTopology()
                 {
                     numaFile >> numaNode;
                     numaFile.close();
-                    // If NUMA node is -1, it means no specific NUMA information, use node 0
+                    // If NUMA node is -1, it means no specific NUMA information, use
+                    // node 0
                     if (numaNode < 0)
                     {
                         numaNode = 0;
@@ -202,7 +209,9 @@ void TopologyDetector::detectGpuTopology()
                 else
                 {
                     // Fallback if sysfs path is not available or readable
-                    TLLM_LOG_DEBUG("Could not open %s to determine NUMA node for GPU %d. Defaulting to node 0.",
+                    TLLM_LOG_DEBUG(
+                        "Could not open %s to determine NUMA node for GPU "
+                        "%d. Defaulting to node 0.",
                         pciPath, deviceId);
                     numaNode = 0;
                 }
@@ -276,7 +285,10 @@ void TopologyDetector::precomputeCpuAffinityMasks()
         auto itGpuNuma = mGpuToNumaMap.find(gpuId);
         if (itGpuNuma == mGpuToNumaMap.end())
         {
-            TLLM_LOG_WARNING("GPU %d not found in mGpuToNumaMap during mask precomputation. Skipping.", gpuId);
+            TLLM_LOG_WARNING(
+                "GPU %d not found in mGpuToNumaMap during mask "
+                "precomputation. Skipping.",
+                gpuId);
             continue;
         }
         int gpuNumaNode = itGpuNuma->second;
@@ -291,7 +303,8 @@ void TopologyDetector::precomputeCpuAffinityMasks()
                 if (numa_node_to_cpus(gpuNumaNode, strictMask) != 0)
                 {
                     TLLM_LOG_WARNING(
-                        "Failed to get CPUs for GPU %d's NUMA node %d for strict mask. Strict mask will be empty.",
+                        "Failed to get CPUs for GPU %d's NUMA node %d for "
+                        "strict mask. Strict mask will be empty.",
                         gpuId, gpuNumaNode);
                     numa_bitmask_clearall(strictMask); // Ensure it's empty on failure
                 }
@@ -351,14 +364,17 @@ void TopologyDetector::bindThreadByCurrentGpu()
 
         if (!maskIsClear)
         {
-            // Create a mutable copy of the targetMask to pass to numa_sched_setaffinity
+            // Create a mutable copy of the targetMask to pass to
+            // numa_sched_setaffinity
             struct bitmask* mutableCopyForAffinity = numa_allocate_cpumask();
             if (mutableCopyForAffinity)
             {
                 bitmask_copy_manual(mutableCopyForAffinity, targetMask);
                 if (numa_sched_setaffinity(0, mutableCopyForAffinity) == -1)
                 { // 0 refers to the current thread
-                    TLLM_LOG_WARNING("Failed to set thread affinity for GPU %d using precomputed mask. Error: %s",
+                    TLLM_LOG_WARNING(
+                        "Failed to set thread affinity for GPU %d using "
+                        "precomputed mask. Error: %s",
                         currentDevice, strerror(errno));
                 }
                 numa_free_cpumask(mutableCopyForAffinity);
@@ -366,7 +382,8 @@ void TopologyDetector::bindThreadByCurrentGpu()
             else
             {
                 TLLM_LOG_WARNING(
-                    "Failed to allocate temporary bitmask for setting affinity. Cannot bind thread for GPU %d.",
+                    "Failed to allocate temporary bitmask for setting "
+                    "affinity. Cannot bind thread for GPU %d.",
                     currentDevice);
             }
         }
@@ -377,11 +394,16 @@ void TopologyDetector::bindThreadByCurrentGpu()
     }
     else
     {
-        TLLM_LOG_WARNING("Precomputed CPU affinity mask not found for GPU %d. Cannot bind thread.", currentDevice);
+        TLLM_LOG_WARNING(
+            "Precomputed CPU affinity mask not found for GPU %d. "
+            "Cannot bind thread.",
+            currentDevice);
     }
 
 #else
-    TLLM_LOG_DEBUG("Thread binding by GPU NUMA node is only supported on Linux with libnuma.");
+    TLLM_LOG_DEBUG(
+        "Thread binding by GPU NUMA node is only supported on Linux "
+        "with libnuma.");
 #endif
 }
 
@@ -397,7 +419,9 @@ int TopologyDetector::getCurrentGpuNumaCpuCount()
         }
     }
     TLLM_LOG_DEBUG(
-        "CPU count for GPU's NUMA node %d not found or node invalid. Returning total hardware concurrency.", numaId);
+        "CPU count for GPU's NUMA node %d not found or node "
+        "invalid. Returning total hardware concurrency.",
+        numaId);
     return std::thread::hardware_concurrency();
 }
 
@@ -426,7 +450,9 @@ int TopologyDetector::getCurrentGpuMemoryNumaId()
         return it->second;
     }
     TLLM_LOG_WARNING(
-        "NUMA node for current GPU Memory %d not found in map. Defaulting to node -1 (No Memory Node).", currentDevice);
+        "NUMA node for current GPU Memory %d not found in map. "
+        "Defaulting to node -1 (No Memory Node).",
+        currentDevice);
     return -1;
 }
 
@@ -462,6 +488,4 @@ std::string TopologyDetector::getCpuArchitecture()
     return mCpuArchitecture;
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

@@ -20,7 +20,8 @@
 #include <cuda_runtime_api.h>
 
 #if ENABLE_MULTI_DEVICE
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -73,10 +74,13 @@ bool ub_supported()
     return mc_support;
 }
 }; // namespace runtime::ub
+} // namespace tensorrt_llm
 
-namespace kernels::ub
+TRTLLM_KERNELS_NAMESPACE_BEGIN
+
+namespace ub
 {
-using namespace tensorrt_llm::runtime::ub;
+using namespace ::tensorrt_llm::runtime::ub;
 
 void allreduce2_userbuff_inplace_launcher(int const handler, size_t const offset, size_t const elements,
     nvinfer1::DataType dataType, communicator* comm, cudaStream_t stream)
@@ -118,11 +122,13 @@ int allreduce2_userbuff_inplace_rmsnorm_quant_fp4_launcher(int const handler, si
         scale_offset, elements, hidden_size, beta, gamma, eps, scalefactor, residual_in, residual_out, dataType, comm,
         stream);
 }
-} // namespace kernels::ub
+} // namespace ub
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
+
 #else
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -157,8 +163,11 @@ bool ub_supported()
     return false;
 }
 }; // namespace runtime::ub
+} // namespace tensorrt_llm
 
-namespace kernels::ub
+TRTLLM_KERNELS_NAMESPACE_BEGIN
+
+namespace ub
 {
 using namespace tensorrt_llm::runtime::ub;
 
@@ -189,7 +198,7 @@ int allreduce2_userbuff_inplace_rmsnorm_quant_fp4_launcher(int const handler, si
 {
     return 0;
 }
-} // namespace kernels::ub
+} // namespace ub
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 #endif

@@ -20,9 +20,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 // CuBLAS >= 12.9.1 requires 256-byte alignment.
 std::uintptr_t constexpr kCudaMemAlign = 256;
 
@@ -87,7 +84,5 @@ inline size_t calculateTotalWorkspaceSize(
     }
     return total;
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

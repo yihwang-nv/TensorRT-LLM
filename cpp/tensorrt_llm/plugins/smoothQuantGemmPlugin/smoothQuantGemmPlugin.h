@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/int8_gemm/int8_gemm.h"
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
@@ -27,19 +27,18 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
-using perfMapType = std::unordered_map<int, tensorrt_llm::cutlass_extensions::CutlassGemmConfig>;
+using perfMapType = std::unordered_map<int, tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig>;
 using SqGemmRunnerPtr = std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassInt8GemmRunnerInterface>;
 
-class SmoothQuantGemmPluginProfiler : public GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
-                                          SqGemmRunnerPtr, GemmIdCore, GemmIdCoreHash>
+class SmoothQuantGemmPluginProfiler
+    : public GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig, SqGemmRunnerPtr,
+          GemmIdCore, GemmIdCoreHash>
 {
 public:
-    using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
 
     void setQuantMode(tensorrt_llm::common::QuantMode const& quantMode)
     {
@@ -140,6 +139,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

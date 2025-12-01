@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -32,9 +31,7 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/kernels/moeLoadBalance/moeLoadBalanceCommon.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 struct MoeWeight
@@ -61,11 +58,13 @@ struct MoePlacementCpuInfo
     std::vector<int> expertReplicaCount;
 
     // rankExpertIds[i][j] is the list of expert ids for rank i's j-th slot
-    // all ranks have the same number of slots, so rankExpertIds is a vector of vectors.
+    // all ranks have the same number of slots, so rankExpertIds is a vector of
+    // vectors.
     // it can also be a tensor of shape [epSize, slotCountPerRank]
     std::vector<std::vector<int>> rankExpertIds;
 
-    // oldRankExpertIds[i][j] is the list of old rank ids for expert i's j-th replica
+    // oldRankExpertIds[i][j] is the list of old rank ids for expert i's j-th
+    // replica
     // same as rankExpertIds but holding the last iteration's rank ids
     std::vector<std::vector<int>> oldRankExpertIds;
 
@@ -300,7 +299,8 @@ private:
     bool mWorkerThreadStopped = true;
     int64_t mWarmUpUntilIter = -1;
 
-    // we use a separate thread to compute and update weights to avoid possible blocking for next layer due to slow
+    // we use a separate thread to compute and update weights to avoid possible
+    // blocking for next layer due to slow
     // compute.
     void computeAndUpdateThread();
     std::mutex mUpdateQueueMutex;
@@ -351,6 +351,4 @@ void doReplication(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaInfo, float
 void doPlacement(tensorrt_llm::kernels::MoeLoadBalanceMetaInfo metaInfo, float* const expertLoadFactor,
     MoePlacementCpuInfo* cpuPlacement);
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

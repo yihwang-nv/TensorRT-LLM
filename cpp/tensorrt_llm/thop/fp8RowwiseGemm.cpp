@@ -34,7 +34,8 @@
 using tensorrt_llm::kernels::cutlass_kernels::CutlassFp8RowwiseGemmRunner;
 using tensorrt_llm::kernels::cutlass_kernels::CutlassFp8RowwiseGemmRunnerInterface;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -118,7 +119,8 @@ torch::Tensor fp8_rowwise_gemm_dispatch(torch::Tensor const& mat1, torch::Tensor
     torch::Tensor const& mat1Scale, torch::Tensor const& mat2Scale, at::ScalarType outDataType,
     bool to_userbuffers = false, tkc::CutlassGemmConfig const* maybe_config = nullptr)
 {
-    // The functional version of this op does not do any profiling; use the profiler class below instead for
+    // The functional version of this op does not do any profiling; use the
+    // profiler class below instead for
     // better performance.
     // Note that we can still add a heuristic here.
     switch (outDataType)
@@ -185,7 +187,7 @@ private:
 };
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

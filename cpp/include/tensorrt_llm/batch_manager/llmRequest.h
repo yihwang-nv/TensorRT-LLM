@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
@@ -37,21 +36,19 @@
 #include <utility>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 /**
  * @brief The state of the request.
  *
- * Enum order must follow chronological order for state dependency check, @see hasReachedState().
+ * Enum order must follow chronological order for state dependency check, @see
+ *hasReachedState().
  */
 enum class LlmRequestState : int32_t
 {
     kUNKNOWN = 0,                             ///< Unknown state
     kENCODER_INIT = 1,                        ///< Encoder phase starts (for encoder-decoder models)
-
     kDISAGG_GENERATION_INIT = 8,              ///< New Generation request arrived at generation model
     kDISAGG_GENERATION_TRANS_IN_PROGRESS = 9, ///< Transmitting the kv cache
 
@@ -75,7 +72,9 @@ enum class LlmRequestState : int32_t
 
 enum LlmRequestType
 {
-    LLMREQUEST_TYPE_CONTEXT_AND_GENERATION = 0, // Normal request will inference both context phase and generation phase
+    LLMREQUEST_TYPE_CONTEXT_AND_GENERATION = 0, // Normal request will inference
+                                                // both context phase and
+                                                // generation phase
     LLMREQUEST_TYPE_CONTEXT_ONLY = 1,           // Only inference context phase
     LLMREQUEST_TYPE_GENERATION_ONLY = 2         // only inference generation phase
 };
@@ -318,10 +317,15 @@ public:
         if (mIsStreaming && mSamplingConfig.beamWidth > 1 && !mReturnAllGeneratedTokens)
         {
             TLLM_LOG_WARNING(
-                "Setting mReturnAllGeneratedTokens to True since streaming AND beam search are done simultaneously. "
-                "Returning the full beams at each streaming step is needed because beam search + streaming can change "
-                "previous outputs. Initialize request with mReturnAllGeneratedTokens = True to dismiss this error. "
-                "WARNING: using this option may increase network usage significantly (quadratically w.r.t output "
+                "Setting mReturnAllGeneratedTokens to True since "
+                "streaming AND beam search are done simultaneously. "
+                "Returning the full beams at each streaming step is "
+                "needed because beam search + streaming can change "
+                "previous outputs. Initialize request with "
+                "mReturnAllGeneratedTokens = True to dismiss this "
+                "error. "
+                "WARNING: using this option may increase network "
+                "usage significantly (quadratically w.r.t output "
                 "length).");
             mReturnAllGeneratedTokens = true;
         }
@@ -329,8 +333,10 @@ public:
         if (mIsStreaming && mSamplingConfig.beamWidth > 1 && mReturnGenerationLogits)
         {
             TLLM_LOG_WARNING(
-                "Returning generation logits when streaming is enabled and beamWidth > 1 is not allowed. "
-                "This is because the logits may appear in irrelevant order when the beams are gathered, "
+                "Returning generation logits when streaming is enabled and "
+                "beamWidth > 1 is not allowed. "
+                "This is because the logits may appear in irrelevant order when "
+                "the beams are gathered, "
                 "since logits are not. Disabling returnGenerationLogits.");
             mReturnGenerationLogits = false;
         }
@@ -526,8 +532,10 @@ public:
         return mTokens.at(beam).size() - mNumPreDecodedTokens[beam];
     }
 
-    /// @brief Get the number of subrequests, the expected number of responses under non-streaming mode. In sampling
-    /// mode, it will be equal to mSamplingConfig.numReturnSequences, while it will be equal to 1 in beam search.
+    /// @brief Get the number of subrequests, the expected number of responses
+    /// under non-streaming mode. In sampling
+    /// mode, it will be equal to mSamplingConfig.numReturnSequences, while it
+    /// will be equal to 1 in beam search.
     /// @return  The number of subrequests in total  request size.
     [[nodiscard]] SizeType32 getNumSubRequests() const
     {
@@ -587,7 +595,8 @@ public:
 
     /// @brief Get the unique tokens at a given beam index
     /// @param beam The beam index
-    /// @return A vector of UniqueTokens for this beam index, includes the prompt
+    /// @return A vector of UniqueTokens for this beam index, includes the
+    /// prompt
     [[nodiscard]] VecUniqueTokens const& getUniqueTokens(SizeType32 beam) const
     {
         return mUniqueTokens.at(beam);
@@ -634,10 +643,13 @@ public:
             return getEncoderTokens().value()->size();
         }
 
-        TLLM_THROW("GenericLlmRequest::getEncoderInputLen - Do not have encoder length!");
+        TLLM_THROW(
+            "GenericLlmRequest::getEncoderInputLen - Do not have encoder "
+            "length!");
     }
 
-    /// @brief Get length of encoder output. Fall back to encoder input length if not present
+    /// @brief Get length of encoder output. Fall back to encoder input length
+    /// if not present
     /// @return An integer.
     [[nodiscard]] SizeType32 getEncoderOutputLen() const
     {
@@ -676,13 +688,15 @@ public:
     }
 
     /// @brief Get the maximum number of generated tokens among all rays in beam
-    /// @return The number of generated tokens (doesn't include the prompt tokens)
+    /// @return The number of generated tokens (doesn't include the prompt
+    /// tokens)
     [[nodiscard]] SizeType32 getMaxNumGeneratedTokens() const
     {
         return getMaxBeamNumTokens() - mPromptLen;
     }
 
-    /// @brief Returns true if request reaches max number of tokens in the next iteration.
+    /// @brief Returns true if request reaches max number of tokens in the next
+    /// iteration.
     [[nodiscard]] bool willCompleteNextIteration() const
     {
         return getMaxNumGeneratedTokens() + mNumTokensPerIteration >= mMaxNewTokens;
@@ -693,7 +707,8 @@ public:
         return mLlmRequestType;
     }
 
-    /// @brief Add new generated tokens to the vector of tokens and set mLastTokens
+    /// @brief Add new generated tokens to the vector of tokens and set
+    /// mLastTokens
     /// @param token The token to add
     /// @param beam The beam to which to add the new token
     /// @return  The number of tokens after the new token is added
@@ -706,8 +721,10 @@ public:
         return getNumTokens(beam);
     }
 
-    /// @brief Add new generated tokens to the vector of tokens and set mLastTokens
-    /// @param beamTokens A vector containing the tokens to add for each beam index
+    /// @brief Add new generated tokens to the vector of tokens and set
+    /// mLastTokens
+    /// @param beamTokens A vector containing the tokens to add for each beam
+    /// index
     ///                   beamTokens is expected to be of size beamWidth
     void addNewTokens(VecTokens const& beamTokens)
     {
@@ -740,8 +757,10 @@ public:
         }
     }
 
-    /// @brief Sets the generated tokens for all beams after gatherTree. Erases all previous generated tokens.
-    /// @param generatedBeamTokens The generated tokens for all beams (vector of vector of tokens)
+    /// @brief Sets the generated tokens for all beams after gatherTree. Erases
+    /// all previous generated tokens.
+    /// @param generatedBeamTokens The generated tokens for all beams (vector of
+    /// vector of tokens)
     void setGeneratedTokens(BeamTokens const& generatedBeamTokens)
     {
         TLLM_LOG_DEBUG("Setting generated tokens for request %ld", mRequestId);
@@ -769,7 +788,8 @@ public:
         TLLM_CHECK_WITH_INFO(
             numReturnSequences > 0, "numReturnSequences should be a positive integer, got %d.", numReturnSequences);
         TLLM_CHECK_WITH_INFO(mChildRequests.size() <= static_cast<size_t>(numReturnSequences),
-            "Cannot set numReturnSequences %d smaller than the number %ld of child requests that have already created.",
+            "Cannot set numReturnSequences %d smaller than the number %ld of "
+            "child requests that have already created.",
             numReturnSequences, mChildRequests.size());
         mSamplingConfig.numReturnSequences = numReturnSequences;
         mSequenceFinalVec->resize(numReturnSequences);
@@ -838,7 +858,8 @@ public:
             mPromptLen = newPromptLen;
         }
 
-        // for enc-dec models, pause means saving generated tokens to prompt but need to re-do encoder phase
+        // for enc-dec models, pause means saving generated tokens to prompt but
+        // need to re-do encoder phase
         mState = mEncoderTokens.has_value() || mEncoderInputFeatures ? LlmRequestState::kENCODER_INIT
                                                                      : LlmRequestState::kCONTEXT_INIT;
         mContextCurrentPositionTarget = 0;
@@ -849,7 +870,8 @@ public:
         mSeqSlot.reset();
     }
 
-    /// @brief Get the maximum length of tokens returned to the client. Use to ensure we don't return to
+    /// @brief Get the maximum length of tokens returned to the client. Use to
+    /// ensure we don't return to
     /// client duplicated tokens.
     /// @return The maximum length of the tokens sent to the client.
     [[nodiscard]] SizeType32 getMaxSentTokenLen() const
@@ -857,7 +879,8 @@ public:
         return mMaxSentTokenLen;
     }
 
-    /// @brief Sets the maximum length of tokens returned to the client. Use to ensure we don't return to
+    /// @brief Sets the maximum length of tokens returned to the client. Use to
+    /// ensure we don't return to
     /// client duplicated tokens.
     /// @param maxSentLength The new maximum length.
     void setMaxSentTokenLen(SizeType32 maxSentLength)
@@ -1070,16 +1093,20 @@ public:
     void setPrepopulatedPromptLen(SizeType32 prepopulatedPromptLen, SizeType32 kvTokensPerBlock)
     {
         // Add debug log for prepopulatedPromptLen
-        TLLM_LOG_DEBUG("Setting pre-populated prompt length for request %lu to %i (promptLen=%i).", mRequestId,
-            prepopulatedPromptLen, getPromptLen());
+        TLLM_LOG_DEBUG(
+            "Setting pre-populated prompt length for request %lu to "
+            "%i (promptLen=%i).",
+            mRequestId, prepopulatedPromptLen, getPromptLen());
 
         auto const promptLen = getPromptLen();
 
-        // This check is make sure prepopulated prompt length (tokens already cached in KV cache) is less than prompt
+        // This check is make sure prepopulated prompt length (tokens already
+        // cached in KV cache) is less than prompt
         // length (total tokens in the prompt)
         TLLM_CHECK_WITH_INFO(prepopulatedPromptLen < promptLen,
-            "Invalid state: prepopulatedPromptLen (%d) >= promptLen (%d) for request %lu", prepopulatedPromptLen,
-            promptLen, mRequestId);
+            "Invalid state: prepopulatedPromptLen (%d) >= "
+            "promptLen (%d) for request %lu",
+            prepopulatedPromptLen, promptLen, mRequestId);
 
         auto& prePromptLen = mUseDraftModel ? mPrepopulatedPromptLenDraft : mPrepopulatedPromptLenTarget;
         auto& contextCurrentPosition = mUseDraftModel ? mContextCurrentPositionDraft : mContextCurrentPositionTarget;
@@ -1087,8 +1114,10 @@ public:
 
         if (prepopulatedPromptLen > 0)
         {
-            // Currently, the runtime process is to apply for cache first and then determine prepopulation.
-            // Use the prepopulated length to advance the context position and decrease chunk size if necessary.
+            // Currently, the runtime process is to apply for cache first and then
+            // determine prepopulation.
+            // Use the prepopulated length to advance the context position and
+            // decrease chunk size if necessary.
             auto chunkSize = getContextChunkSize();
             if (prepopulatedPromptLen + chunkSize < promptLen)
             {
@@ -1104,7 +1133,8 @@ public:
             if (!isLastContextChunk())
             {
                 TLLM_CHECK_WITH_INFO((getContextCurrentPosition() + getContextChunkSize()) % kvTokensPerBlock == 0,
-                    "To prevent cache fragmentation, the context position after current chunk should be divisible "
+                    "To prevent cache fragmentation, the context position after "
+                    "current chunk should be divisible "
                     "by the number of tokens per block, except for the last chunk.");
             }
         }
@@ -1282,7 +1312,8 @@ public:
     void setReturnAllGeneratedTokens(bool const returnAllGeneratedTokens)
     {
         TLLM_CHECK_WITH_INFO(!mIsStreaming || mSamplingConfig.beamWidth == 1 || returnAllGeneratedTokens,
-            "returnAllGeneratedTokens must be true if streaming AND beam search are used.");
+            "returnAllGeneratedTokens must be true if streaming "
+            "AND beam search are used.");
         mReturnAllGeneratedTokens = returnAllGeneratedTokens;
     }
 
@@ -1309,7 +1340,8 @@ public:
     void setReturnGenerationLogits(bool const returnGenerationLogits)
     {
         TLLM_CHECK_WITH_INFO(!(mIsStreaming && mSamplingConfig.beamWidth > 1 && returnGenerationLogits),
-            "returnGenerationLogits must be false if streaming AND beam search are used.");
+            "returnGenerationLogits must be false if streaming "
+            "AND beam search are used.");
         mReturnGenerationLogits = returnGenerationLogits;
     }
 
@@ -1341,7 +1373,8 @@ public:
     }
 
     /// @param generationLogitsHost Expected shape
-    /// * [beamWidth, maxNewTokens, vocabSizePadded] for non-speculative decoding
+    /// * [beamWidth, maxNewTokens, vocabSizePadded] for non-speculative
+    /// decoding
     /// * [1, numDraftTokens + 1, vocabSizePadded] for speculative decoding
     void setGenerationLogitsHost(TensorPtr generationLogitsHost)
     {
@@ -1352,9 +1385,12 @@ public:
     {
         if (mIsStreaming)
         {
-            // If streaming mode, the complete generation logits shape will be [1, beamWidth, vocabSizePadded],
-            // or [allGeneratedTokens, beamWidth, vocabSizePadded] if mReturnAllGeneratedTokens is True.
-            // This could reduce unnecessary format conversions and allows the data to be returned directly.
+            // If streaming mode, the complete generation logits shape will be [1,
+            // beamWidth, vocabSizePadded],
+            // or [allGeneratedTokens, beamWidth, vocabSizePadded] if
+            // mReturnAllGeneratedTokens is True.
+            // This could reduce unnecessary format conversions and allows the data
+            // to be returned directly.
             mGenerationLogitsHost = runtime::BufferManager::pinnedPool(
                 runtime::ITensor::makeShape({mMaxNewTokens, mSamplingConfig.beamWidth, vocabSizePadded}),
                 logitsDataType);
@@ -1543,7 +1579,8 @@ public:
         mContextCurrentPositionTarget = contextCurrentPosition;
     }
 
-    /// When chunked, the position of the current chunk is returned. Otherwise, only the beginning
+    /// When chunked, the position of the current chunk is returned. Otherwise,
+    /// only the beginning
     /// or end of the context is returned.
     [[nodiscard]] SizeType32 getContextCurrentPosition() const noexcept
     {
@@ -1560,23 +1597,28 @@ public:
     {
         TLLM_CHECK_WITH_INFO(
             isContextInitState() || isDisaggGenerationInitState() || isDisaggGenerationTransmissionComplete(),
-            "getContextChunkSize is only possible during the context phase or generation init phase.");
+            "getContextChunkSize is only possible during the "
+            "context phase or generation init phase.");
         return mContextChunkSize;
     }
 
-    /// To set the context chunk size, throw an exception when the chunk size is negative. If the chunk
-    /// size is greater than the remaining length of the context, the size will be reduced to fit the
+    /// To set the context chunk size, throw an exception when the chunk size is
+    /// negative. If the chunk
+    /// size is greater than the remaining length of the context, the size will
+    /// be reduced to fit the
     /// remaining length.
     void setContextChunkSize(SizeType32 size)
     {
         TLLM_CHECK_WITH_INFO(
             isContextInitState() || isDisaggGenerationInitState() || isDisaggGenerationTransmissionComplete(),
-            "setContextChunkSize is only possible during the context phase or generation init phase.");
+            "setContextChunkSize is only possible during the "
+            "context phase or generation init phase.");
         TLLM_CHECK_WITH_INFO(size >= 0, "The chunk size of context (%d) can't be negative.", size);
         mContextChunkSize = std::min(size, getContextRemainingLength());
     }
 
-    /// Determines whether the current position is only one chunk away from the end of the context.
+    /// Determines whether the current position is only one chunk away from the
+    /// end of the context.
     [[nodiscard]] bool isLastContextChunk() const
     {
         return isDisaggGenerationInitState() || isDisaggGenerationTransmissionComplete()
@@ -1591,7 +1633,8 @@ public:
         return getContextCurrentPosition() == getPrepopulatedPromptLen();
     }
 
-    /// Move the cursor forward one chunk. When not chunked, move forward to the end of the context.
+    /// Move the cursor forward one chunk. When not chunked, move forward to the
+    /// end of the context.
     void moveToNextContextChunk()
     {
         TLLM_CHECK_WITH_INFO(isContextInitState(), "Chunking is only possible during the context phase.");
@@ -1618,8 +1661,10 @@ public:
         mDecodingIter++;
     }
 
-    /// @brief  Return the average number of decoded tokens per iteration. For standard model it is 1.
-    /// For speculative decoding model >= 1 -- number of draft tokens accepted per step + 1.
+    /// @brief  Return the average number of decoded tokens per iteration. For
+    /// standard model it is 1.
+    /// For speculative decoding model >= 1 -- number of draft tokens accepted
+    /// per step + 1.
     [[nodiscard]] float getAvgDecodedTokensPerIter() const noexcept
     {
         if (mDecodingIter == 0)
@@ -1630,32 +1675,46 @@ public:
     }
 
     /// @brief Get the beam width of the current decoding step.
-    /// @details Return `mSamplingConfig.beamWidth` in decoding modes beside Variable-Beam-Width-Search (VBWS).
-    /// Or returns a scalar value from `mSamplingConfig.beamWidthArray` indexing by `mDecodingIter` in VBWS.
+    /// @details Return `mSamplingConfig.beamWidth` in decoding modes beside
+    /// Variable-Beam-Width-Search (VBWS).
+    /// Or returns a scalar value from `mSamplingConfig.beamWidthArray` indexing
+    /// by `mDecodingIter` in VBWS.
     ///
-    /// Calling in context phase, it returns the beam width of the first generation step, which is used for copying
+    /// Calling in context phase, it returns the beam width of the first
+    /// generation step, which is used for copying
     /// logits (function `copyGenerationLogits` as example).
     ///
-    /// Calling in generation phase, it returns the beam width of the input tokens in the current generation step, which
-    /// is used for computing I/O tensor shapes for TRT engine (function `RuntimeBuffers::setBufferSizes` as example).
+    /// Calling in generation phase, it returns the beam width of the input
+    /// tokens in the current generation step, which
+    /// is used for computing I/O tensor shapes for TRT engine (function
+    /// `RuntimeBuffers::setBufferSizes` as example).
     ///
-    /// For example, we have a request with beamWidthArray = [2,3,4], the generation process can be:
+    /// For example, we have a request with beamWidthArray = [2,3,4], the
+    /// generation process can be:
     ///
     /// input_ids[1,inputLength] --->
-    /// ---> [Forward, step == 0] ---> logits[1, 1, vocabSize] ---> [BeamSearchDecoder] ---> tokens[1, 2]
+    /// ---> [Forward, step == 0] ---> logits[1, 1, vocabSize] --->
+    /// [BeamSearchDecoder] ---> tokens[1, 2]
     ///     Context Phase, getBeamWidthByIter() returns 2 for copying logits
     ///     Decoder uses beamWidthIn=2, beamWidthOut=2 to get top 2 tokens
-    /// ---> [Forward, step == 1] ---> logits[1, 2, vocabSize] ---> [BeamSearchDecoder] ---> tokens[1, 3]
-    ///     Generation phase, getBeamWidthByIter() returns 2 for computing tensor shapes
+    /// ---> [Forward, step == 1] ---> logits[1, 2, vocabSize] --->
+    /// [BeamSearchDecoder] ---> tokens[1, 3]
+    ///     Generation phase, getBeamWidthByIter() returns 2 for computing
+    /// tensor shapes
     ///     Decoder uses beamWidthIn=2, beamWidthOut=3 to get top 3 tokens
-    /// ---> [Forward, step == 2] ---> logits[1, 3, vocabSize] ---> [BeamSearchDecoder] ---> tokens[1, 4]
-    ///     Generation phase, getBeamWidthByIter() returns 3 for computing tensor shapes
+    /// ---> [Forward, step == 2] ---> logits[1, 3, vocabSize] --->
+    /// [BeamSearchDecoder] ---> tokens[1, 4]
+    ///     Generation phase, getBeamWidthByIter() returns 3 for computing
+    /// tensor shapes
     ///     Decoder uses beamWidthIn=3, beamWidthOut=4 to get top 4 tokens
-    /// ---> [Forward, step == 3] ---> logits[1, 4, vocabSize] ---> [BeamSearchDecoder] ---> tokens[1, 4]
-    ///     Generation phase, getBeamWidthByIter() returns 4 for computing tensor shapes
+    /// ---> [Forward, step == 3] ---> logits[1, 4, vocabSize] --->
+    /// [BeamSearchDecoder] ---> tokens[1, 4]
+    ///     Generation phase, getBeamWidthByIter() returns 4 for computing
+    /// tensor shapes
     ///     Decoder uses beamWidthIn=4, beamWidthOut=4 to get top 4 tokens
     ///     i.e. the same as normal Beam Search of `beamWidth==4`
-    /// @param: forNextIteration: get beam width for next step rather than current beam width.
+    /// @param: forNextIteration: get beam width for next step rather than
+    /// current beam width.
     [[nodiscard]] SizeType32 getBeamWidthByIter(bool forNextIteration = false);
 
     [[nodiscard]] bool isFinished() const noexcept
@@ -1678,8 +1737,10 @@ public:
         }
         auto const currentTime = std::chrono::steady_clock::now();
         auto const elapsed = (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - mStartTime));
-        TLLM_LOG_DEBUG("Checked timeOut for request %ld with allotted Time %ld after time %ld and got %d", mRequestId,
-            mAllottedTimeMs->count(), elapsed.count(), (elapsed >= mAllottedTimeMs));
+        TLLM_LOG_DEBUG(
+            "Checked timeOut for request %ld with allotted Time %ld "
+            "after time %ld and got %d",
+            mRequestId, mAllottedTimeMs->count(), elapsed.count(), (elapsed >= mAllottedTimeMs));
 
         return elapsed >= *mAllottedTimeMs;
     }
@@ -1716,7 +1777,8 @@ public:
 
     [[nodiscard]] double getKvCacheTransferTimeMS() const
     {
-        // get max with 0 in case this function is called while end time is not recorded
+        // get max with 0 in case this function is called while end time is not
+        // recorded
         return std::max(0.0,
             std::chrono::duration<double, std::milli>(
                 mPerfMetrics.timingMetrics.kvCacheTransferEnd - mPerfMetrics.timingMetrics.kvCacheTransferStart)
@@ -1787,7 +1849,8 @@ public:
         return std::vector<SizeType32>(inputLength, reqLanguageAdapterUid);
     }
 
-    /// @brief mark all beams as finished by the given reason. Marks only unfinished beams.
+    /// @brief mark all beams as finished by the given reason. Marks only
+    /// unfinished beams.
     void finishByReason(executor::FinishReason finishReason)
     {
         if (finishReason == executor::FinishReason::kTIMED_OUT)
@@ -1868,7 +1931,8 @@ public:
         return mUseDraftModel;
     }
 
-    // If sGlobalSteadyClockOffset is set, return a global steady clock time point, otherwise return local steady clock
+    // If sGlobalSteadyClockOffset is set, return a global steady clock time
+    // point, otherwise return local steady clock
     // time point
     [[nodiscard]] static TimePoint getSteadyClockNow()
     {
@@ -1891,7 +1955,8 @@ public:
 
     LlmRequestState mState{LlmRequestState::kCONTEXT_INIT};
 
-    // current position of the prompt tuning table (only used in chunked prefill mode)
+    // current position of the prompt tuning table (only used in chunked prefill
+    // mode)
     SizeType32 mPtableCurrentPosition{0};
 
     // The offset between local steady clock and global steady clock (at rank 0)
@@ -1900,20 +1965,26 @@ public:
 protected:
     bool mIsStreaming;
 
-    // List of tokens generated at the current step, used as the input tokens to the next step, [beamSize]
-    // `mLastTokens[beam]` is not equal to `mTokens.back()[beam]` in "Streaming + Beam Search" mode
+    // List of tokens generated at the current step, used as the input tokens to
+    // the next step, [beamSize]
+    // `mLastTokens[beam]` is not equal to `mTokens.back()[beam]` in "Streaming
+    // + Beam Search" mode
     // since `mTokens` will be overwritten by the gathered tokens.
     VecTokens mLastTokens;
 
-    // List of tokens including input prompt and generated part, [beamSize, mPromptLen + getMaxNumGeneratedTokens()]
+    // List of tokens including input prompt and generated part, [beamSize,
+    // mPromptLen + getMaxNumGeneratedTokens()]
     BeamTokens mTokens;
 
     // Length of input prompt tokens, never changes during generation process.
     SizeType32 mOrigPromptLen;
 
-    // List of numbers of pre-deocded tokens on the last PP rank when using pipeline parallelism.
-    // It is introduced as a WAR to solve the hanging problem caused by overestimating the used KV cache on the last PP
-    // rank (because new tokens are decoded earlier). By excluding the numbers of pre-decoded tokens, the used KV cache
+    // List of numbers of pre-deocded tokens on the last PP rank when using
+    // pipeline parallelism.
+    // It is introduced as a WAR to solve the hanging problem caused by
+    // overestimating the used KV cache on the last PP
+    // rank (because new tokens are decoded earlier). By excluding the numbers
+    // of pre-decoded tokens, the used KV cache
     // can be estimated correctly.
     std::vector<SizeType32> mNumPreDecodedTokens;
 
@@ -1949,7 +2020,8 @@ protected:
     std::optional<executor::KvCacheRetentionConfig> mKvCacheRetentionConfig{std::nullopt};
 
     // Paged-KV-Cache must be enabled while enabling Chunked-Context.
-    // The size of the context chunk must be multiple of the KV-Cache block size except the last one.
+    // The size of the context chunk must be multiple of the KV-Cache block size
+    // except the last one.
     // Value `0` means Chunked-Context is disabled.
     SizeType32 mContextChunkSize{0};
     SizeType32 mContextCurrentPositionTarget{0};
@@ -1961,14 +2033,16 @@ protected:
     std::optional<TensorPtr> mDraftLogits{std::nullopt};
     SizeType32 mNumTokensPerIteration{1};
 
-    // whether to return the full beams on each iteration. True when doing streaming + beamsearch
+    // whether to return the full beams on each iteration. True when doing
+    // streaming + beamsearch
     bool mReturnAllGeneratedTokens;
     // Save logits
     bool mReturnContextLogits;
     bool mReturnGenerationLogits;
     bool mReturnLogProbs;
     TensorPtr mContextLogitsHost;    // [mPromptLen, vocabSizePadded]
-    TensorPtr mGenerationLogitsHost; // [beamSize, mMaxNewTokens, vocabSizePadded]
+    TensorPtr mGenerationLogitsHost; // [beamSize, mMaxNewTokens,
+                                     // vocabSizePadded]
     std::vector<TensorPtr> mGenerationLogitsFragments;
 
     bool mExcludeInputFromOutput;
@@ -1981,7 +2055,8 @@ protected:
 
     // Encoder output, used to compute cross attention KV-Cache.
     TensorPtr mEncoderOutput;       // [numTokens, hidden_size]
-    TensorPtr mEncoderHiddenStates; // [numTokens, hiddenSize] for for Pipeline-Parallelism
+    TensorPtr mEncoderHiddenStates; // [numTokens, hiddenSize] for for
+                                    // Pipeline-Parallelism
     TensorPtr mEncoderOutputHost;   // [mEncoderOutputLength, encoderHiddenSize]
 
     SizeType32 mDecodingIter{0};
@@ -1994,7 +2069,8 @@ protected:
     std::optional<TensorPtr> mEncoderInputFeatures{std::nullopt};
 
     // Setting buffer sizes correctly for models like Whisper,
-    // which encoder output shape cannot be inferred from encoder input shape due to downsampling.
+    // which encoder output shape cannot be inferred from encoder input shape
+    // due to downsampling.
     std::optional<SizeType32> mEncoderOutputLength{std::nullopt};
 
     // Input cross attention mask.
@@ -2029,7 +2105,8 @@ protected:
 
     std::optional<TensorPtr> mSkipCrossAttnBlocks{std::nullopt};
 
-    // Performance metrics. Should be updatable even from a const LlmRequest reference.
+    // Performance metrics. Should be updatable even from a const LlmRequest
+    // reference.
     bool mReturnPerfMetrics{false};
     mutable executor::RequestPerfMetrics mPerfMetrics;
 
@@ -2040,7 +2117,8 @@ protected:
 
     // Timepoint at which the request started. Used for tracking the timeout
     std::chrono::steady_clock::time_point mStartTime;
-    // Time in milliseconds after which the model is finished with a `timeout` finishReason.
+    // Time in milliseconds after which the model is finished with a `timeout`
+    // finishReason.
     std::optional<MillisecondsType> mAllottedTimeMs{std::nullopt};
 
     // Tensors containing the additional context output.
@@ -2075,7 +2153,9 @@ private:
         {
             if (mInputTokenExtraIds.value()->size() != inputTokens.size())
             {
-                TLLM_THROW("inputTokenExtraIds vector size (%lu) must be the same as input token vector size (%lu).",
+                TLLM_THROW(
+                    "inputTokenExtraIds vector size (%lu) must be the same as "
+                    "input token vector size (%lu).",
                     mInputTokenExtraIds.value()->size(), inputTokens.size());
             }
             std::transform(inputTokens.cbegin(), inputTokens.cend(), mInputTokenExtraIds.value()->cbegin(),
@@ -2111,7 +2191,8 @@ private:
             || (!mPromptEmbeddingTable.has_value() && mPromptVocabSize.has_value()))
         {
             std::string errStr
-                = "Prompt embedding table and prompt vocab size tensors must both be provided for requests with "
+                = "Prompt embedding table and prompt vocab size "
+                  "tensors must both be provided for requests with "
                   "prompt "
                   "tuning enabled.";
             TLLM_THROW(errStr);
@@ -2130,15 +2211,18 @@ private:
             if (!mSamplingConfig.numReturnSequences)
             {
                 TLLM_LOG_WARNING(
-                    "In the Executor class, mNumReturnSequences is deprecated. Please set numReturnSequences in "
+                    "In the Executor class, mNumReturnSequences is "
+                    "deprecated. Please set numReturnSequences in "
                     "SamplingConfig directly.");
             }
             else if (mSamplingConfig.numReturnSequences
                 && mSamplingConfig.numReturnSequences.value() != mNumReturnSequences)
             {
                 TLLM_THROW(
-                    "In the Executor class, both mSamplingConfig.numReturnSequences (%d) and mNumReturnSequences (%d) "
-                    "are provided but unmatched. Please use numReturnSequences in SamplingConfig directly.",
+                    "In the Executor class, both mSamplingConfig.numReturnSequences "
+                    "(%d) and mNumReturnSequences (%d) "
+                    "are provided but unmatched. Please use numReturnSequences in "
+                    "SamplingConfig directly.",
                     mSamplingConfig.numReturnSequences.value(), mNumReturnSequences);
             }
             mSamplingConfig.numReturnSequences = mNumReturnSequences;
@@ -2146,13 +2230,15 @@ private:
 
         if (!isChild())
         {
-            // Initialize result states unless it is a child and a child request should share parent's one.
+            // Initialize result states unless it is a child and a child request
+            // should share parent's one.
             mSequenceFinalVec = std::make_shared<std::vector<bool>>(getNumSubRequests(), false);
         }
 
         if (mReturnPerfMetrics)
         {
-            // arrivalTime is assumed to be recorded at the rank 0, so no need to convert it to global clock
+            // arrivalTime is assumed to be recorded at the rank 0, so no need to
+            // convert it to global clock
             mPerfMetrics.timingMetrics.arrivalTime = arrivalTime.value_or(getSteadyClockNow());
         }
         mStartTime = std::chrono::steady_clock::now();
@@ -2298,7 +2384,8 @@ public:
     LlmRequest(LlmRequest const& request) = default;
 
     /// @brief  Create a Response from the current state of the request
-    /// @details Note that there is some dependency on the order of operations in this method. Modify with care!
+    /// @details Note that there is some dependency on the order of operations
+    /// in this method. Modify with care!
     /// @return An optional Response
     std::optional<executor::Response> createResponse(bool useFastLogits = false, int32_t mpiWorldRank = 0);
 
@@ -2307,8 +2394,10 @@ public:
     void createSerializedResult(
         std::vector<char>& serializedResult, bool& isFinal, bool useFastLogits = false, int32_t mpiWorldRank = 0);
 
-    /// @brief Check if the (user-provided) tokens fall within the vocabulary range.
-    /// @details Currently only supports invocation before context phase is completed.
+    /// @brief Check if the (user-provided) tokens fall within the vocabulary
+    /// range.
+    /// @details Currently only supports invocation before context phase is
+    /// completed.
     /// @return True if tokens are within range.
     bool checkTokenIdRange(SizeType32 vocabSize);
 
@@ -2325,6 +2414,4 @@ public:
     void removeLoraTensors();
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

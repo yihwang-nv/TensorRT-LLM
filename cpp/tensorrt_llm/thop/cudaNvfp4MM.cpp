@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (out) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (out) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +25,8 @@
 
 using torch::Tensor;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -105,8 +107,10 @@ Tensor& cuda_core_nvfp4_gemm_out(Tensor const& mat_a, Tensor const& mat_b, Tenso
 // mat_a: [M, K / 2], FLOAT4_E2M1X2
 // mat_b: [N, K / 2], FLOAT4_E2M1X2
 // out: [M, N], fp16/bf16/fp32
-// scale_a: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
-// scale_b: ceil(N / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
+// scale_a: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3
+// or UE8M0)
+// scale_b: ceil(N / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3
+// or UE8M0)
 // bias: fp16/bf16/fp32
 // out_dtype: fp16/bf16/fp32
 Tensor cuda_core_nvfp4_gemm(Tensor const& mat_a, Tensor const& mat_b, Tensor const& scale_a, Tensor const& scale_b,
@@ -133,12 +137,13 @@ Tensor cuda_core_nvfp4_gemm(Tensor const& mat_a, Tensor const& mat_b, Tensor con
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "cuda_core_nvfp4_gemm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor scale_b, Tensor alpha, Tensor? bias,"
+        "cuda_core_nvfp4_gemm(Tensor mat_a, Tensor mat_b, Tensor scale_a, "
+        "Tensor scale_b, Tensor alpha, Tensor? bias,"
         " ScalarType? out_dtype, bool to_userbuffers=False) -> (Tensor out)");
 }
 

@@ -18,14 +18,13 @@
 
 #include "gdrwrap.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 
 #include <dlfcn.h>
 #include <pthread.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
+namespace tensorrt_llm
+{
 namespace runtime
 {
 namespace gdrcopy
@@ -108,7 +107,8 @@ static void initialize_internal()
     if (libMajor < 2 || (libMajor == 2 && libMinor < 1) || drvMajor < 2 || (drvMajor == 2 && drvMinor < 1))
     {
         TLLM_LOG_WARNING(
-            "GDRCopy library version (%d.%d) or driver version (%d.%d) is too old. Required >= 2.1. GDRCopy support "
+            "GDRCopy library version (%d.%d) or driver version "
+            "(%d.%d) is too old. Required >= 2.1. GDRCopy support "
             "is disabled.",
             libMajor, libMinor, drvMajor, drvMinor);
         dlclose(gGdrApiHandle);
@@ -246,7 +246,9 @@ void gdrCudaMalloc(void** ptr, void** devPtr, size_t mapSize, GdrMemDesc** memDe
     if (devPtr)
         *devPtr = (void*) (devMem + off + align);
 
-    TLLM_LOG_DEBUG("GDRCOPY : allocated devMem %p gdrMap %p offset %lx mh %lx mapSize %zu at %p",
+    TLLM_LOG_DEBUG(
+        "GDRCOPY : allocated devMem %p gdrMap %p offset %lx mh %lx "
+        "mapSize %zu at %p",
         (*memDesc)->gdrDeviceMem, (*memDesc)->gdrMap, (*memDesc)->gdrOffset, (*memDesc)->gdrMh.h,
         (*memDesc)->gdrMapSize, *ptr);
 }
@@ -265,6 +267,6 @@ void gdrCudaFree(GdrMemDesc* memDesc, gdr_t handle)
 
 } // namespace gdrcopy
 } // namespace runtime
+} // namespace tensorrt_llm
 
-TRTLLM_NAMESPACE_END
 #endif // _WIN32

@@ -23,10 +23,8 @@
 
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 void invokeIndexerTopKDecode(float const* logits, int const* seqLens, int* indices, float* outLogitsAux,
     int* outIndicesAux, int const splitWorkThreshold, int const numRows, int const numColumns, int const stride0,
     int const stride1, int const next_n, int const topK = 2048, cudaStream_t const stream = 0);
@@ -35,6 +33,4 @@ void invokeIndexerTopKPrefill(float const* logits, int const* rowStarts, int con
     int const numRows, int const numColumns, int const stride0, int const stride1, int const topK = 2048,
     cudaStream_t const stream = 0);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

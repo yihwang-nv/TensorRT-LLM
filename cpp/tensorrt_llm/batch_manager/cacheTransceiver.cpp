@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +16,11 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/batch_manager/cacheTransceiver.h"
-#include "tensorrt_llm/batch_manager/cacheFormatter.h"
+#include "tensorrt_llm/executor/cache_transmission/agent_utils/connection.h"
+#include "tensorrt_llm/executor/types.h"
 #include <cstdint>
 #include <limits>
 #include <sstream>
-
-#include "tensorrt_llm/batch_manager/contextProgress.h"
 #define UCX_WRAPPER_LIB_NAME "tensorrt_llm_ucx_wrapper"
 #if defined(_WIN32)
 #include <windows.h>
@@ -35,19 +34,19 @@
 #define dllGetSym(handle, name) dlsym(handle, name)
 #endif // defined(_WIN32)
 
+#include "tensorrt_llm/batch_manager/cacheFormatter.h"
+#include "tensorrt_llm/batch_manager/cacheTransceiver.h"
+#include "tensorrt_llm/batch_manager/contextProgress.h"
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/batch_manager/kvCacheType.h"
 #include "tensorrt_llm/batch_manager/kvCacheUtils.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/batch_manager/mlaCacheFormatter.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
-#include "tensorrt_llm/executor/cache_transmission/agent_utils/connection.h"
 #include "tensorrt_llm/executor/cache_transmission/mpi_utils/connection.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/executor/serializeUtils.h"
-#include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
 #include "tensorrt_llm/runtime/utils/pgUtils.h"
 #include <algorithm>
@@ -55,9 +54,7 @@
 #include <numeric>
 #include <unordered_set>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 std::mutex CacheTransceiver::mDllMutex;
@@ -89,7 +86,9 @@ std::unique_ptr<BaseCacheTransceiver> CacheTransceiverFactory::createCacheTransc
         {
             backendType = executor::CacheTransceiverConfig::BackendType::MPI;
             TLLM_LOG_INFO("Enable MPI KV cache transport.");
-            TLLM_LOG_WARNING("MPI KV cache transport is deprecated, please use UCX or NIXL instead.");
+            TLLM_LOG_WARNING(
+                "MPI KV cache transport is deprecated, please use UCX "
+                "or NIXL instead.");
         }
         else
         {
@@ -195,8 +194,11 @@ CacheTransceiver::CacheTransceiver(kv_cache_manager::BaseKVCacheManager* cacheMa
         {
             void* ret = dllGetSym(handle, name);
             TLLM_CHECK_WITH_INFO(ret != nullptr,
-                "Unable to load UCX wrapper library symbol, possible cause is that TensorRT LLM library is not "
-                "built with UCX support, please rebuild in UCX-enabled environment.");
+                "Unable to load UCX wrapper library symbol, "
+                "possible cause is that TensorRT LLM library is "
+                "not "
+                "built with UCX support, please rebuild in "
+                "UCX-enabled environment.");
             return ret;
         };
         std::unique_ptr<tensorrt_llm::executor::kv_cache::ConnectionManager> (*makeUcxConnectionManager)();
@@ -470,7 +472,8 @@ void CacheTransceiver::checkContextTransferStatus(std::optional<int> const& atLe
         }
     }
 
-    // Make sure there are at least atLeastRequestNum requests in toCompleteIdSet.
+    // Make sure there are at least atLeastRequestNum requests in
+    // toCompleteIdSet.
     // This will preserve the order of insertion for KVCache transfer requests.
     for (auto it = mSenderFutures.begin();
          atLeastRequestNum.value_or(0) > static_cast<int>(toCompleteIdSet.size()) && it != mSenderFutures.end(); ++it)
@@ -497,14 +500,18 @@ void CacheTransceiver::checkContextTransferStatus(std::optional<int> const& atLe
                 }
                 else if (status == std::future_status::timeout)
                 {
-                    TLLM_LOG_WARNING("Timed out waiting for context KV cache transfer after %d milliseconds.",
+                    TLLM_LOG_WARNING(
+                        "Timed out waiting for context KV cache transfer "
+                        "after %d milliseconds.",
                         senderFutureTimeoutMs.value());
                     ++it;
                 }
                 else
                 {
                     TLLM_LOG_ERROR(
-                        "Future returned unexpected status for request %ld. Marking as error", request->mRequestId);
+                        "Future returned unexpected status for request %ld. "
+                        "Marking as error",
+                        request->mRequestId);
 
                     request->setState(LlmRequestState::kDISAGG_TRANS_ERROR);
                     it = mSenderFutures.erase(it);
@@ -597,13 +604,15 @@ void CacheTransceiver::checkGenTransferStatus(std::optional<int> const& atLeastR
             if (useMPI())
             {
                 TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-                    " checkGenTransferStatus at least from RequesterFuture requestId: %zu atLeastRequestNum:%d",
+                    " checkGenTransferStatus at least from "
+                    "RequesterFuture requestId: %zu atLeastRequestNum:%d",
                     mRequesterFutures.at(idx).first->mRequestId, atLeastRequestNum.value_or(0));
             }
             else
             {
                 TLLM_LOG_DEBUG(tensorrt_llm::pg_utils::get_world_pg()->getRank(),
-                    " checkGenTransferStatus at least from RequesterFuture requestId: %zu atLeastRequestNum:%d",
+                    " checkGenTransferStatus at least from "
+                    "RequesterFuture requestId: %zu atLeastRequestNum:%d",
                     mRequesterFutures.at(idx).first->mRequestId, atLeastRequestNum.value_or(0));
             }
         }
@@ -629,14 +638,16 @@ void CacheTransceiver::checkGenTransferStatus(std::optional<int> const& atLeastR
     if (useMPI())
     {
         TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-            " checkGenTransferStatus toCompleteIdSet size: %zu, atLeastRequestNum: %d ", toCompleteIdSet.size(),
-            atLeastRequestNum.value_or(0));
+            " checkGenTransferStatus toCompleteIdSet size: %zu, "
+            "atLeastRequestNum: %d ",
+            toCompleteIdSet.size(), atLeastRequestNum.value_or(0));
     }
     else
     {
         TLLM_LOG_DEBUG(tensorrt_llm::pg_utils::get_world_pg()->getRank(),
-            " checkGenTransferStatus toCompleteIdSet size: %zu, atLeastRequestNum: %d ", toCompleteIdSet.size(),
-            atLeastRequestNum.value_or(0));
+            " checkGenTransferStatus toCompleteIdSet size: %zu, "
+            "atLeastRequestNum: %d ",
+            toCompleteIdSet.size(), atLeastRequestNum.value_or(0));
     }
     for (auto it = mRequesterFutures.begin(); it != mRequesterFutures.end();)
     {
@@ -647,7 +658,8 @@ void CacheTransceiver::checkGenTransferStatus(std::optional<int> const& atLeastR
                 it->second.get();
                 it->first->setState(LlmRequestState::kDISAGG_GENERATION_TRANS_COMPLETE);
 
-                // Gather the kv cache transfer time from all workers and update to leader rank
+                // Gather the kv cache transfer time from all workers and update to
+                // leader rank
                 if (!common::getEnvKVCacheTimeOutputPath().empty())
                 {
                     auto syncComm = mCacheState->getParallelConfig().mEnableAttentionDP ? mGroupDataComm : mGroupComm;
@@ -663,13 +675,15 @@ void CacheTransceiver::checkGenTransferStatus(std::optional<int> const& atLeastR
             if (useMPI())
             {
                 TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-                    "**** it->first->mRequestId: %ld, context request ID: %ld ******** get feature ***",
+                    "**** it->first->mRequestId: %ld, context request ID: "
+                    "%ld ******** get feature ***",
                     it->first->mRequestId, it->first->getContextPhaseParams().value().getReqId());
             }
             else
             {
                 TLLM_LOG_DEBUG(tensorrt_llm::pg_utils::get_world_pg()->getRank(),
-                    "**** it->first->mRequestId: %ld, context request ID: %ld ******** get feature ***",
+                    "**** it->first->mRequestId: %ld, context request ID: "
+                    "%ld ******** get feature ***",
                     it->first->mRequestId, it->first->getContextPhaseParams().value().getReqId());
             }
             it = mRequesterFutures.erase(it);
@@ -699,6 +713,4 @@ bool CacheTransceiver::cancelRequest(LlmRequest* llmRequest)
     return false;
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

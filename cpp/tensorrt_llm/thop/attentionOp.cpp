@@ -29,7 +29,8 @@
 #include <torch/extension.h>
 #include <unordered_set>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -68,7 +69,8 @@ public:
     virtual int64_t getWorkspaceSize(AttentionOp const& op, int const num_tokens, int const max_attention_window_size,
         int const num_gen_tokens, int const max_blocks_per_sequence) const
         = 0;
-    // typically, we use single qkv input, but for context MLA, we use separate qkv inputs
+    // typically, we use single qkv input, but for context MLA, we use separate
+    // qkv inputs
     virtual void run(AttentionOp& op, bool const is_context, int32_t const seq_offset, int32_t const num_seqs,
         int32_t const token_offset, int32_t const num_tokens, int32_t const predicted_tokens_per_seq,
         torch::Tensor workspace, torch::Tensor output, torch::optional<torch::Tensor> output_sf, torch::Tensor qkv_or_q,
@@ -112,10 +114,13 @@ public:
 
         op.prepareEnqueueGeneration<T, KVBlockArray>(enqueueParams);
 
-        // Always reserve SemaphoreArray (for multi-block mode) as MMHA may enable multi-block mode when shared memory
+        // Always reserve SemaphoreArray (for multi-block mode) as MMHA may enable
+        // multi-block mode when shared memory
         // is not enough.
-        // The attention kernel might split the heads into multiple blocks, so we might need to reserve more semaphores.
-        // Use mMultiProcessorCount as the lower-bound to make sure we reserve enough semaphores.
+        // The attention kernel might split the heads into multiple blocks, so we
+        // might need to reserve more semaphores.
+        // Use mMultiProcessorCount as the lower-bound to make sure we reserve
+        // enough semaphores.
         op.reserveSemaphoreArray(std::max(op.mNumHeads * max_num_requests, op.getMultiProcessorCount()));
     }
 
@@ -184,7 +189,9 @@ public:
         if (op.isMLAEnabled())
         {
             TORCH_CHECK(mla_tensor_params.size() == 1,
-                "Expecting 1 tensor for custom MLA tensor params: helix_position_offsets.");
+                "Expecting 1 tensor for "
+                "custom MLA tensor params: "
+                "helix_position_offsets.");
             if (is_context && op.mUseSparseAttention)
             {
                 if (latent_cache.has_value())
@@ -276,20 +283,24 @@ public:
 
         int const* context_lengths_ptr = context_lengths.slice(0, seq_offset).data_ptr<int>();
         int const* sequence_lengths_ptr = sequence_length.slice(0, seq_offset).data_ptr<int>();
-        // Note we still need context length during generation for MMHA optimization.
+        // Note we still need context length during generation for MMHA
+        // optimization.
         int32_t const max_context_q_len
             = host_context_lengths.slice(0, seq_offset, seq_offset + num_seqs).max().item<int32_t>();
         int32_t const max_past_kv_length
             = host_past_key_value_lengths.slice(0, seq_offset, seq_offset + num_seqs).max().item<int32_t>();
 
-        // Commonly, cyclic_attention_window_size, and max_attention_window_size will be the same
+        // Commonly, cyclic_attention_window_size, and max_attention_window_size
+        // will be the same
         // unless each layer has different attention window sizes.
         // the kv_cache capacity.
         int const max_attention_window_size = beam_width == 1 ? attention_window_size
             : cache_indirection.has_value()                   ? cache_indirection.value().size(2)
                                                               : attention_window_size;
-        // The cyclic_attention_window_size will determine the cyclic kv cache position of new tokens.
-        // Note that this cyclic_attention_window_size might be smaller than the actual kv cache capactity.
+        // The cyclic_attention_window_size will determine the cyclic kv cache
+        // position of new tokens.
+        // Note that this cyclic_attention_window_size might be smaller than the
+        // actual kv cache capactity.
         int const cyclic_attention_window_size = attention_window_size;
         bool const can_use_one_more_block = beam_width > 1;
 
@@ -329,7 +340,8 @@ public:
         if (use_nvfp4_kv_cache)
         {
             // For NVFP4 KV cache, extra block scales are stored in separate pools.
-            // The layout of host_kv_cache_pool_pointers is [num_pools, 2 (primary and secondary), 2 (data and scale)].
+            // The layout of host_kv_cache_pool_pointers is [num_pools, 2 (primary
+            // and secondary), 2 (data and scale)].
             TORCH_CHECK(host_kv_cache_pool_pointers.value().dim() == 3);
             host_primary_pool_pointer = reinterpret_cast<void*>(
                 reinterpret_cast<char*>(host_kv_cache_pool_pointers.value().index({pool_index, 0, 0}).item<int64_t>())
@@ -483,7 +495,9 @@ public:
             int32_t const num_requests = batch_beam / beam_width;
 
             TLLM_CHECK_WITH_INFO(num_tokens % num_seqs == 0,
-                "seq_len should be same for all generation requests, num_tokens=%d, num_seqs=%d", num_tokens, num_seqs);
+                "seq_len should be same for all generation "
+                "requests, num_tokens=%d, num_seqs=%d",
+                num_tokens, num_seqs);
             int32_t const input_seq_length = num_tokens / num_seqs;
 
             common_enqueue_params.input_seq_length = input_seq_length;
@@ -508,9 +522,13 @@ public:
                 if (useTllmGen)
                 {
                     TORCH_CHECK(spec_decoding_tensor_params.size() == 6,
-                        "Expecting 6 tensors for spec-dec mode, spec_decoding_generation_lengths, "
-                        "spec_decoding_position_offsets, spec_decoding_packed_mask, spec_decoding_bl_tree_mask_offset, "
-                        "spec_decoding_bl_tree_mask and spec_bl_tree_first_sparse_mask_offset_kv.");
+                        "Expecting 6 tensors for spec-dec mode, "
+                        "spec_decoding_generation_lengths, "
+                        "spec_decoding_position_offsets, "
+                        "spec_decoding_packed_mask, "
+                        "spec_decoding_bl_tree_mask_offset, "
+                        "spec_decoding_bl_tree_mask and "
+                        "spec_bl_tree_first_sparse_mask_offset_kv.");
                     TORCH_CHECK(spec_decoding_tensor_params[0].has_value(),
                         "Expecting spec_decoding_generation_lengths spec-dec mode.");
                     TORCH_CHECK(spec_decoding_tensor_params[1].has_value(),
@@ -522,7 +540,8 @@ public:
                     TORCH_CHECK(spec_decoding_tensor_params[4].has_value(),
                         "Expecting spec_decoding_bl_tree_mask spec-dec mode.");
                     TORCH_CHECK(spec_decoding_tensor_params[5].has_value(),
-                        "Expecting spec_bl_tree_first_sparse_mask_offset_kv spec-dec mode.");
+                        "Expecting spec_bl_tree_first_sparse_mask_offset_kv "
+                        "spec-dec mode.");
                     enqueue_params.spec_decoding_bl_tree_mask_offset
                         = spec_decoding_tensor_params[3].value().data_ptr<int64_t>();
                     enqueue_params.spec_decoding_bl_tree_mask
@@ -533,8 +552,10 @@ public:
                 else
                 {
                     TORCH_CHECK(spec_decoding_tensor_params.size() == 3,
-                        "Expecting 3 tensors for spec-dec mode, spec_decoding_generation_lengths, "
-                        "spec_decoding_position_offsets and spec_decoding_packed_mask.");
+                        "Expecting 3 tensors for spec-dec mode, "
+                        "spec_decoding_generation_lengths, "
+                        "spec_decoding_position_offsets and "
+                        "spec_decoding_packed_mask.");
                     TORCH_CHECK(spec_decoding_tensor_params[0].has_value(),
                         "Expecting spec_decoding_generation_lengths spec-dec mode.");
                     TORCH_CHECK(spec_decoding_tensor_params[1].has_value(),
@@ -552,7 +573,8 @@ public:
                 enqueue_params.spec_decoding_max_generation_length = spec_decoding_tensor_params[1].value().sizes()[1];
             }
 
-            // Current mlaGeneration will using fmha to do attention, so we don't go into enqueueGeneration
+            // Current mlaGeneration will using fmha to do attention, so we don't go
+            // into enqueueGeneration
             if (op.isMLAEnabled())
             {
                 if (op.mUseGenFlashMLA == true)
@@ -646,8 +668,12 @@ void attention(torch::Tensor q, std::optional<torch::Tensor> k, std::optional<to
     }
     if (!is_fused_qkv && update_kv_cache)
     {
-        TLLM_CHECK_WITH_INFO(k.has_value(), "The k tensor should be provided if updating KV cache with unfused K/V");
-        TLLM_CHECK_WITH_INFO(v.has_value(), "The v tensor should be provided if updating KV cache with unfused K/V");
+        TLLM_CHECK_WITH_INFO(k.has_value(),
+            "The k tensor should be provided if "
+            "updating KV cache with unfused K/V");
+        TLLM_CHECK_WITH_INFO(v.has_value(),
+            "The v tensor should be provided if "
+            "updating KV cache with unfused K/V");
     }
 
     auto const dtype = tensorrt_llm::runtime::TorchUtils::dataType(qkv_or_q.scalar_type());
@@ -739,7 +765,8 @@ void attention(torch::Tensor q, std::optional<torch::Tensor> k, std::optional<to
     op->mAttentionChunkSize = attention_chunk_size;
 
     TORCH_CHECK(spec_decoding_bool_params.size() == 3,
-        "Expecting 3 bools for spec-dec mode, is_spec_decoding_enabled, use_spec_decoding, and is_spec_dec_tree.");
+        "Expecting 3 bools for spec-dec mode, is_spec_decoding_enabled, "
+        "use_spec_decoding, and is_spec_dec_tree.");
     op->mIsSpecDecodingEnabled = spec_decoding_bool_params[0]; // is_spec_decoding_enabled
     op->mUseSpecDecoding = spec_decoding_bool_params[1];       // use_spec_decoding
     op->mIsSpecDecTree = spec_decoding_bool_params[2];         // is_spec_dec_tree
@@ -782,11 +809,14 @@ void attention(torch::Tensor q, std::optional<torch::Tensor> k, std::optional<to
             && op->mKVCacheQuantMode.hasFp8KvCache();
         op->mIsGenerationMLA = head_size == op->mMLAParams.kv_lora_rank + op->mMLAParams.qk_rope_head_dim;
         op->mFP8GenerationMLA = op->mKVCacheQuantMode.hasFp8KvCache();
-        // only enable flash mla on sm90 and head_size == 576 and tokens_per_block == 64
+        // only enable flash mla on sm90 and head_size == 576 and tokens_per_block
+        // == 64
         op->mUseGenFlashMLA = tensorrt_llm::common::getSMVersion() == 90 && tokens_per_block == 64;
 
-        // The following two parameters are used to compute kvcache related parameters such as kvcache block_size. So
-        // they need to be set to 1 and 512 + 64 for both context and generation. For MLA attention kernel configs,
+        // The following two parameters are used to compute kvcache related
+        // parameters such as kvcache block_size. So
+        // they need to be set to 1 and 512 + 64 for both context and generation.
+        // For MLA attention kernel configs,
         // mNumKVHeads/mHeadSize are overwritten in common/attentionOp.cpp.
         op->mNumKVHeads = 1;
         op->mHeadSize = op->mMLAParams.kv_lora_rank + op->mMLAParams.qk_rope_head_dim;
@@ -858,7 +888,9 @@ void attention(torch::Tensor q, std::optional<torch::Tensor> k, std::optional<to
     {
         if (workspace_.value().numel() < workspace_size)
         {
-            TLLM_LOG_WARNING("Attention workspace size is not enough, increase the size from %ld bytes to %ld bytes",
+            TLLM_LOG_WARNING(
+                "Attention workspace size is not enough, increase the "
+                "size from %ld bytes to %ld bytes",
                 workspace_.value().numel(), workspace_size);
             workspace_.value().resize_({workspace_size});
         }
@@ -961,7 +993,7 @@ bool attention_supports_nvfp4_output(int64_t const num_heads, int64_t const num_
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

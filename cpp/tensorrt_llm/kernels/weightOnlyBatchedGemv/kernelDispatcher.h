@@ -20,14 +20,13 @@
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/common.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/kernel.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 // TODO:
-// Using a mechanism similar to the gemm config profiler, dynamically search for the optimal configuration during the
+// Using a mechanism similar to the gemm config profiler, dynamically search for
+// the optimal configuration during the
 // build engine process.
 template <typename Details, int GroupSize, bool EnableActScale, bool EnableZero, bool EnableBias,
     bool ApplyAlphaInAdvance>
@@ -46,41 +45,41 @@ void dispatcher(Params& params, cudaStream_t s)
     if constexpr (EnableZero)
     {
         // clang-format off
-        DISPATCHER_FOR_M(1, 1, 4, 128);
-        DISPATCHER_FOR_M(2, 2, 4, 128);
-        DISPATCHER_FOR_M(3, 3, 4, 128);
-        DISPATCHER_FOR_M(4, 4, 4, 128);
-        DISPATCHER_FOR_M(5, 5, 4, 128);
-        DISPATCHER_FOR_M(6, 6, 4, 128);
-        DISPATCHER_FOR_M(7, 7, 4, 128);
-        DISPATCHER_FOR_M(8, 8, 4, 128);
-        DISPATCHER_FOR_M(9, 9, 4, 128);
-        DISPATCHER_FOR_M(10, 10, 4, 128);
-        DISPATCHER_FOR_M(11, 11, 4, 128);
-        DISPATCHER_FOR_M(12, 12, 4, 128);
-        DISPATCHER_FOR_M(13, 13, 4, 128);
-        DISPATCHER_FOR_M(14, 14, 4, 128);
-        DISPATCHER_FOR_M(15, 15, 4, 128);
+      DISPATCHER_FOR_M(1, 1, 4, 128);
+      DISPATCHER_FOR_M(2, 2, 4, 128);
+      DISPATCHER_FOR_M(3, 3, 4, 128);
+      DISPATCHER_FOR_M(4, 4, 4, 128);
+      DISPATCHER_FOR_M(5, 5, 4, 128);
+      DISPATCHER_FOR_M(6, 6, 4, 128);
+      DISPATCHER_FOR_M(7, 7, 4, 128);
+      DISPATCHER_FOR_M(8, 8, 4, 128);
+      DISPATCHER_FOR_M(9, 9, 4, 128);
+      DISPATCHER_FOR_M(10, 10, 4, 128);
+      DISPATCHER_FOR_M(11, 11, 4, 128);
+      DISPATCHER_FOR_M(12, 12, 4, 128);
+      DISPATCHER_FOR_M(13, 13, 4, 128);
+      DISPATCHER_FOR_M(14, 14, 4, 128);
+      DISPATCHER_FOR_M(15, 15, 4, 128);
         // clang-format on
     }
     else
     {
         // clang-format off
-        DISPATCHER_FOR_M(1, 1, 8, 128);
-        DISPATCHER_FOR_M(2, 2, 8, 128);
-        DISPATCHER_FOR_M(3, 3, 8, 128);
-        DISPATCHER_FOR_M(4, 4, 8, 128);
-        DISPATCHER_FOR_M(5, 5, 8, 128);
-        DISPATCHER_FOR_M(6, 6, 8, 128);
-        DISPATCHER_FOR_M(7, 7, 8, 128);
-        DISPATCHER_FOR_M(8, 8, 8, 128);
-        DISPATCHER_FOR_M(9, 9, 8, 128);
-        DISPATCHER_FOR_M(10, 10, 8, 128);
-        DISPATCHER_FOR_M(11, 11, 8, 128);
-        DISPATCHER_FOR_M(12, 12, 8, 128);
-        DISPATCHER_FOR_M(13, 13, 8, 128);
-        DISPATCHER_FOR_M(14, 14, 8, 128);
-        DISPATCHER_FOR_M(15, 15, 8, 128);
+    DISPATCHER_FOR_M(1, 1, 8, 128);
+    DISPATCHER_FOR_M(2, 2, 8, 128);
+    DISPATCHER_FOR_M(3, 3, 8, 128);
+    DISPATCHER_FOR_M(4, 4, 8, 128);
+    DISPATCHER_FOR_M(5, 5, 8, 128);
+    DISPATCHER_FOR_M(6, 6, 8, 128);
+    DISPATCHER_FOR_M(7, 7, 8, 128);
+    DISPATCHER_FOR_M(8, 8, 8, 128);
+    DISPATCHER_FOR_M(9, 9, 8, 128);
+    DISPATCHER_FOR_M(10, 10, 8, 128);
+    DISPATCHER_FOR_M(11, 11, 8, 128);
+    DISPATCHER_FOR_M(12, 12, 8, 128);
+    DISPATCHER_FOR_M(13, 13, 8, 128);
+    DISPATCHER_FOR_M(14, 14, 8, 128);
+    DISPATCHER_FOR_M(15, 15, 8, 128);
         // clang-format on
     }
     throw std::runtime_error("unsupported m");
@@ -171,6 +170,5 @@ void select_gs(Params& params, cudaStream_t s)
     template void select_gs<kernel_type_traits<KType>::isGroupwise,                                                    \
         KernelDetails<A, B, Layout, ConverterInterleave, KTile>>(Params & params, cudaStream_t s);
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

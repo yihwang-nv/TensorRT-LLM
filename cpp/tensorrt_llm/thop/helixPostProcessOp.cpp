@@ -21,7 +21,8 @@
 #include <cuda_bf16.h>
 #include <cuda_fp16.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -33,7 +34,9 @@ torch::Tensor helix_post_process(torch::Tensor const& gathered_o, torch::Tensor 
     CHECK_TH_CUDA(gathered_stats);
     CHECK_CONTIGUOUS(gathered_stats);
 
-    TORCH_CHECK(gathered_o.dim() == 3, "gathered_o must be 3D tensor [cp_size, num_tokens, num_heads * kv_lora_rank]");
+    TORCH_CHECK(gathered_o.dim() == 3,
+        "gathered_o must be 3D tensor [cp_size, "
+        "num_tokens, num_heads * kv_lora_rank]");
     TORCH_CHECK(gathered_stats.dim() == 4, "gathered_stats must be 4D tensor [cp_size, num_tokens, num_heads, 2]");
 
     auto const cp_size = gathered_stats.sizes()[0];
@@ -57,7 +60,8 @@ torch::Tensor helix_post_process(torch::Tensor const& gathered_o, torch::Tensor 
         "gathered_o must be half or bfloat16");
     TORCH_CHECK(gathered_stats.scalar_type() == at::ScalarType::Float, "gathered_stats must be float32");
 
-    // Check alignment requirements for gathered_o (16-byte aligned for async memcpy)
+    // Check alignment requirements for gathered_o (16-byte aligned for async
+    // memcpy)
     TORCH_CHECK(reinterpret_cast<uintptr_t>(gathered_o.data_ptr()) % 16 == 0, "gathered_o must be 16-byte aligned");
 
     // Check that kv_lora_rank * sizeof(data_type) is a multiple of 16
@@ -87,7 +91,9 @@ torch::Tensor helix_post_process(torch::Tensor const& gathered_o, torch::Tensor 
 #ifdef ENABLE_BF16
         CALL_CPP_OP(__nv_bfloat16);
 #else
-        TLLM_THROW("BFloat16 must be enabled to use helix_post_process with bf16 tensors.");
+        TLLM_THROW(
+            "BFloat16 must be enabled to use helix_post_process with bf16 "
+            "tensors.");
 #endif
     }
 
@@ -101,7 +107,9 @@ torch::Tensor helix_post_process(torch::Tensor const& gathered_o, torch::Tensor 
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("helix_post_process(Tensor gathered_o, Tensor gathered_stats, float scale) -> Tensor");
+    m.def(
+        "helix_post_process(Tensor gathered_o, Tensor gathered_stats, float "
+        "scale) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -111,4 +119,4 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

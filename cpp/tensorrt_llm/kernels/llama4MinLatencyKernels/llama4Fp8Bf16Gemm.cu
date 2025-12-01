@@ -22,14 +22,16 @@
 #include "tensorrt_llm/kernels/llama4MinLatencyKernels/llama4Utils.cuh"
 #include <stdexcept>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_fp8_bf16_gemm
+namespace llama4_min_latency::llama4_fp8_bf16_gemm
 {
 
 DEFINE_GET_PER_BLOCK_FUNC_PTR(/*HIDDEN_IN=*/5120, /*ALIGNED=*/true);
-DEFINE_GET_PER_BLOCK_ATTN_SCALING_FUNC_PTR(/*HIDDEN_IN=*/5120, /*ALIGNED=*/true, /*POS_IDS_INT64=*/false);
-DEFINE_GET_PER_BLOCK_ATTN_SCALING_FUNC_PTR(/*HIDDEN_IN=*/5120, /*ALIGNED=*/true, /*POS_IDS_INT64=*/true);
+DEFINE_GET_PER_BLOCK_ATTN_SCALING_FUNC_PTR(
+    /*HIDDEN_IN=*/5120, /*ALIGNED=*/true, /*POS_IDS_INT64=*/false);
+DEFINE_GET_PER_BLOCK_ATTN_SCALING_FUNC_PTR(
+    /*HIDDEN_IN=*/5120, /*ALIGNED=*/true, /*POS_IDS_INT64=*/true);
 
 void llama4_fp8_bf16_gemm_launcher(void const* A, void const* B, void* C, void const* scaling_factor, int num_tokens,
     int hidden_in, int hidden_out, cudaStream_t stream)
@@ -38,56 +40,64 @@ void llama4_fp8_bf16_gemm_launcher(void const* A, void const* B, void* C, void c
         (void*) &hidden_in, (void*) &hidden_out};
     if (num_tokens == 1)
     {
-        // When num_tokens == 1, the best tiling size is tile_token == 1 and tile_out == 1.
+        // When num_tokens == 1, the best tiling size is tile_token == 1 and
+        // tile_out == 1.
         dim3 const grid_size = dim3(div_up(hidden_out, 1), div_up(num_tokens, 1), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(1, 1);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 2)
     {
-        // When num_tokens == 2, the best tiling size is tile_token == 2 and tile_out == 1.
+        // When num_tokens == 2, the best tiling size is tile_token == 2 and
+        // tile_out == 1.
         dim3 const grid_size = dim3(div_up(hidden_out, 1), div_up(num_tokens, 2), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(2, 1);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 3)
     {
-        // When num_tokens == 3, the best tiling size is tile_token == 1 and tile_out == 4.
+        // When num_tokens == 3, the best tiling size is tile_token == 1 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 1), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(1, 4);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 4)
     {
-        // When num_tokens == 4, the best tiling size is tile_token == 2 and tile_out == 2.
+        // When num_tokens == 4, the best tiling size is tile_token == 2 and
+        // tile_out == 2.
         dim3 const grid_size = dim3(div_up(hidden_out, 2), div_up(num_tokens, 2), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(2, 2);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 5)
     {
-        // When num_tokens == 5, the best tiling size is tile_token == 1 and tile_out == 4.
+        // When num_tokens == 5, the best tiling size is tile_token == 1 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 1), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(1, 4);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 6)
     {
-        // When num_tokens == 6, the best tiling size is tile_token == 3 and tile_out == 4.
+        // When num_tokens == 6, the best tiling size is tile_token == 3 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 3), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(3, 4);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 7)
     {
-        // When num_tokens == 7, the best tiling size is tile_token == 1 and tile_out == 4.
+        // When num_tokens == 7, the best tiling size is tile_token == 1 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 1), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(1, 4);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
     }
     else if (num_tokens == 8)
     {
-        // When num_tokens == 8, the best tiling size is tile_token == 2 and tile_out == 4.
+        // When num_tokens == 8, the best tiling size is tile_token == 2 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 2), 1);
         void* kernel_func = get_per_block_func_ptr_aligned_true_5120_(2, 4);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 7);
@@ -115,56 +125,64 @@ void llama4_fp8_bf16_gemm_attn_scaling_launcher(void const* A, void const* B, vo
         (void*) &attn_scale, (void*) &num_tokens, (void*) &hidden_in, (void*) &hidden_out, (void*) &q_hidden_out};
     if (num_tokens == 1)
     {
-        // When num_tokens == 1, the best tiling size is tile_token == 1 and tile_out == 1.
+        // When num_tokens == 1, the best tiling size is tile_token == 1 and
+        // tile_out == 1.
         dim3 const grid_size = dim3(div_up(hidden_out, 1), div_up(num_tokens, 1), 1);
         void* kernel_func = get_kernel_func(1, 1, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 2)
     {
-        // When num_tokens == 2, the best tiling size is tile_token == 2 and tile_out == 2.
+        // When num_tokens == 2, the best tiling size is tile_token == 2 and
+        // tile_out == 2.
         dim3 const grid_size = dim3(div_up(hidden_out, 2), div_up(num_tokens, 2), 1);
         void* kernel_func = get_kernel_func(2, 2, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 3)
     {
-        // When num_tokens == 3, the best tiling size is tile_token == 1 and tile_out == 4.
+        // When num_tokens == 3, the best tiling size is tile_token == 1 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 1), 1);
         void* kernel_func = get_kernel_func(1, 4, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 4)
     {
-        // When num_tokens == 4, the best tiling size is tile_token == 2 and tile_out == 2.
+        // When num_tokens == 4, the best tiling size is tile_token == 2 and
+        // tile_out == 2.
         dim3 const grid_size = dim3(div_up(hidden_out, 2), div_up(num_tokens, 2), 1);
         void* kernel_func = get_kernel_func(2, 2, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 5)
     {
-        // When num_tokens == 5, the best tiling size is tile_token == 1 and tile_out == 4.
+        // When num_tokens == 5, the best tiling size is tile_token == 1 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 1), 1);
         void* kernel_func = get_kernel_func(1, 4, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 6)
     {
-        // When num_tokens == 6, the best tiling size is tile_token == 2 and tile_out == 4.
+        // When num_tokens == 6, the best tiling size is tile_token == 2 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 2), 1);
         void* kernel_func = get_kernel_func(2, 4, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 7)
     {
-        // When num_tokens == 7, the best tiling size is tile_token == 1 and tile_out == 4.
+        // When num_tokens == 7, the best tiling size is tile_token == 1 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 1), 1);
         void* kernel_func = get_kernel_func(1, 4, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
     }
     else if (num_tokens == 8)
     {
-        // When num_tokens == 8, the best tiling size is tile_token == 2 and tile_out == 4.
+        // When num_tokens == 8, the best tiling size is tile_token == 2 and
+        // tile_out == 4.
         dim3 const grid_size = dim3(div_up(hidden_out, 4), div_up(num_tokens, 2), 1);
         void* kernel_func = get_kernel_func(2, 4, pos_ids_int64);
         launch_kernel_pdl(dim3(grid_size), dim3(BLOCK_SIZE), stream, kernel_func, args, 11);
@@ -189,6 +207,6 @@ void llama4_fp8_bf16_gemm_op(void const* A, void const* B, void* C, void const* 
     }
 }
 
-} // namespace kernels::llama4_min_latency::llama4_fp8_bf16_gemm
+} // namespace llama4_min_latency::llama4_fp8_bf16_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

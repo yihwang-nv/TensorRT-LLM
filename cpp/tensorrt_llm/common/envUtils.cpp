@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +28,6 @@
 #include <string>
 
 TRTLLM_NAMESPACE_BEGIN
-
-namespace common
-{
 
 std::optional<int32_t> getIntEnv(char const* name)
 {
@@ -210,7 +208,8 @@ int getEnvMmhaBlocksPerSequence()
                 if (mmhaBlocksPerSequence <= 0)
                 {
                     TLLM_LOG_WARNING(
-                        "Invalid value for TRTLLM_MMHA_BLOCKS_PER_SEQUENCE. Will use default values instead!");
+                        "Invalid value for TRTLLM_MMHA_BLOCKS_PER_SEQUENCE. "
+                        "Will use default values instead!");
                 }
             }
         });
@@ -233,7 +232,8 @@ int getEnvMmhaKernelBlockSize()
                 if (mmhaKernelBlockSize <= 0)
                 {
                     TLLM_LOG_WARNING(
-                        "Invalid value for TRTLLM_MMHA_KERNEL_BLOCK_SIZE. Will use default values instead!");
+                        "Invalid value for TRTLLM_MMHA_KERNEL_BLOCK_SIZE. "
+                        "Will use default values instead!");
                 }
             }
         });
@@ -256,7 +256,8 @@ bool getEnvEnablePDL()
         {
             if (getSMVersion() >= 90)
             {
-                // PDL will be enabled by setting the env variables `TRTLLM_ENABLE_PDL` to `1`
+                // PDL will be enabled by setting the env variables `TRTLLM_ENABLE_PDL` to
+                // `1`
                 enablePDL = getBoolEnv("TRTLLM_ENABLE_PDL");
             }
         });
@@ -530,7 +531,5 @@ bool getEnvEplbForceGdrcopy()
 {
     return getBoolEnv("TRTLLM_EPLB_FORCE_GDRCOPY");
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

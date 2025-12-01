@@ -21,14 +21,15 @@
 
 #include "cute/tensor.hpp"
 #include "cutlass/conv/convolution.h"
-// Order matters here, packed_stride.hpp is missing cute and convolution includes
+// Order matters here, packed_stride.hpp is missing cute and convolution
+// includes
 #include "cutlass/util/packed_stride.hpp"
 
 #include "tensorrt_llm/common/logger.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels
+namespace cutlass_kernels
 {
 std::array<size_t, 20> TmaWarpSpecializedGroupedGemmInput::workspaceBuffers(
     int num_experts, FpXBlockScalingType scaling_type)
@@ -169,6 +170,6 @@ std::string TmaWarpSpecializedGroupedGemmInput::toString() const
 
     return ss.str();
 }
-} // namespace kernels::cutlass_kernels
+} // namespace cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

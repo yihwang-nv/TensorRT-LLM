@@ -48,15 +48,13 @@
 #include "tensorrt_llm/kernels/cutlass_kernels/cutlass_type_conversion.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/launchers/fpA_intB_launcher_sm90.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels_oss
 {
 using namespace tensorrt_llm::kernels::cutlass_kernels;
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
 using namespace cute;
 
@@ -103,14 +101,16 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
         using LayoutB = cutlass::layout::ColumnMajor; // Layout type for B matrix operand
         constexpr int AlignmentB = 128 / cutlass::sizeof_bits<CutlassWeightType>::value;
 
-        // This example manually swaps and transposes, so keep transpose of input layouts
+        // This example manually swaps and transposes, so keep transpose of input
+        // layouts
         using LayoutA_Transpose = typename cutlass::layout::LayoutTranspose<LayoutA>::type;
         using LayoutB_Transpose = typename cutlass::layout::LayoutTranspose<LayoutB>::type;
 
         using ElementZero = CutlassScaleZeroType;
         using ElementScale = CutlassScaleZeroType;
 
-        // C/D matrix configuration. We reuse the C operand for the bias and set the stride for broadcast.
+        // C/D matrix configuration. We reuse the C operand for the bias and set
+        // the stride for broadcast.
         using LayoutBias = cutlass::layout::RowMajor;
         constexpr int AlignmentBias = 128 / cutlass::sizeof_bits<CutlassBiasType>::value;
 
@@ -119,9 +119,10 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
         constexpr int AlignmentOutput = 128 / cutlass::sizeof_bits<CutlassOutputType>::value;
 
         // Core kernel configurations
-        using ElementAccumulator = float;    // Element type for internal accumulation
-        using ElementCompute = float;        // Element type for epilogue computation
-        using ArchTag = cutlass::arch::Sm90; // Tag indicating the minimum SM that supports the intended feature
+        using ElementAccumulator = float;                     // Element type for internal accumulation
+        using ElementCompute = float;                         // Element type for epilogue computation
+        using ArchTag = cutlass::arch::Sm90;                  // Tag indicating the minimum SM that
+                                                              // supports the intended feature
         using OperatorClass = cutlass::arch::OpClassTensorOp; // Operator class tag
         using TileShape = CTAShape;                           // Threadblock-level tile size
         using KernelSchedule = MainloopScheduleType;
@@ -129,24 +130,25 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
 
         // Shrink the N dimension to match CTA_N if needed
         constexpr int epi_tile_M = cute::min(shape<0>(TileShape{}), 128); // 64 or 128
-        constexpr int epi_tile_N = cute::min(shape<1>(TileShape{}), 32);  // Allow this to be 16 for some small N tiles.
+        constexpr int epi_tile_N = cute::min(shape<1>(TileShape{}),
+            32);                                                          // Allow this to be 16 for some small N tiles.
         using EpilogueTileType = cute::Shape<cute::Int<epi_tile_M>, cute::Int<epi_tile_N>>;
 
         static constexpr auto RoundStyle = cutlass::FloatRoundStyle::round_to_nearest;
-        static_assert(std::is_same_v<EpilogueTag, tensorrt_llm::cutlass_extensions::EpilogueOpBias>, "");
+        static_assert(std::is_same_v<EpilogueTag, tensorrt_llm::kernels::cutlass_extensions::EpilogueOpBias>, "");
         using EVT_bias_addition = cutlass::epilogue::fusion::Sm90EVT<
             cutlass::epilogue::fusion::Sm90Compute<cutlass::homogeneous_multiply_add, CutlassOutputType, ElementCompute,
                 RoundStyle>,                                                    // alpha * acc + bias
             cutlass::epilogue::fusion::Sm90ScalarBroadcast<ElementAccumulator>, // alpha
             cutlass::epilogue::fusion::Sm90AccFetch,                            // acc
             cutlass::epilogue::fusion::Sm90ColBroadcast<0, TileShape, CutlassBiasType, CutlassBiasType,
-                Stride<_1, _0, _0>,
-                AlignmentBias> // bias
+                Stride<_1, _0, _0>, AlignmentBias>                              // bias
             >;
 
         using CollectiveEpilogue = typename cutlass::epilogue::collective::CollectiveBuilder<ArchTag, OperatorClass,
             TileShape, ClusterShape, EpilogueTileType, ElementAccumulator, ElementAccumulator,
-            // Transpose layout of D here since we use the explicit swap + transpose trick
+            // Transpose layout of D here since we use the explicit swap +
+            // transpose trick
             // Void C since we don't use it. Prevents smem allocation.
             void, typename cutlass::layout::LayoutTranspose<LayoutBias>::type, AlignmentBias, CutlassOutputType,
             typename cutlass::layout::LayoutTranspose<LayoutOutput>::type, AlignmentOutput, EpilogueSchedule,
@@ -172,7 +174,7 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
 
         if (occupancy != nullptr)
         {
-            *occupancy = tensorrt_llm::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel, true>();
+            *occupancy = tensorrt_llm::kernels::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel, true>();
             return;
         }
 
@@ -202,14 +204,18 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
             {
                 if (weight_zero_points != nullptr)
                 {
-                    throw std::runtime_error("Weight zero pointer must be a nullptr for scale only fine grained");
+                    throw std::runtime_error(
+                        "Weight zero pointer must be a "
+                        "nullptr for scale only fine grained");
                 }
             }
             else if constexpr (QuantOp == cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS)
             {
                 if (weight_zero_points == nullptr)
                 {
-                    throw std::runtime_error("Weight zero pointer must be valid for scale and bias fine grained");
+                    throw std::runtime_error(
+                        "Weight zero pointer must be valid "
+                        "for scale and bias fine grained");
                 }
             }
         }
@@ -222,7 +228,9 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
 
             if (weight_zero_points != nullptr)
             {
-                throw std::runtime_error("Weight zero-points must be null when running per column scaling");
+                throw std::runtime_error(
+                    "Weight zero-points must be null when "
+                    "running per column scaling");
             }
         }
 
@@ -232,7 +240,8 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
         StrideD stride_D = cutlass::make_cute_packed_stride(StrideD{}, cute::make_shape(n, m, 1));
         StrideS stride_S = cutlass::make_cute_packed_stride(StrideS{}, cute::make_shape(n, cutlass_scale_k, 1));
 
-        // Use the output as the bias to avoid making a tma descriptor with a nullptr.
+        // Use the output as the bias to avoid making a tma descriptor with a
+        // nullptr.
         auto output_as_bias_type = reinterpret_cast<CutlassBiasType const*>(C);
 
         typename Gemm::Arguments args{cutlass::gemm::GemmUniversalMode::kGemm, {n, m, k, 1},
@@ -251,7 +260,9 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
         Gemm gemm;
         if (gemm.get_workspace_size(args) > workspace_bytes)
         {
-            TLLM_LOG_ERROR("[TensorRT LLM Error][fpA_intB Runner] given workspace size insufficient.");
+            TLLM_LOG_ERROR(
+                "[TensorRT LLM Error][fpA_intB Runner] given workspace "
+                "size insufficient.");
         }
 
         auto can_implement = gemm.can_implement(args);
@@ -292,12 +303,13 @@ void sm90_generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType 
 
 #else  // COMPILE_HOPPER_TMA_GEMMS
     throw std::runtime_error(
-        "[TensorRT LLM Error][fpA_intB Runner] Please recompile with support for hopper by passing 90-real as an arch "
+        "[TensorRT LLM Error][fpA_intB Runner] Please "
+        "recompile with support for hopper by passing "
+        "90-real as an arch "
         "to build_wheel.py.");
 #endif // COMPILE_HOPPER_TMA_GEMMS
 }
 
 } // namespace cutlass_kernels_oss
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

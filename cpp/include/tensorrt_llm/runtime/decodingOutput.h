@@ -16,25 +16,21 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/eagleBuffers.h"
 #include "tensorrt_llm/runtime/explicitDraftTokensBuffers.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/lookaheadBuffers.h"
-
 #include <optional>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class LookaheadDecodingBuffers;
-} // namespace batch_manager
+} // namespace tensorrt_llm::batch_manager
 
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class DecodingOutput
 {
@@ -73,12 +69,15 @@ public:
     DecodingOutput() = default;
 
     //! Mandatory parameters
-    //! Previously generated token ids for all steps before DecodingInput.step, [BS, BM, MSL]
+    //! Previously generated token ids for all steps before DecodingInput.step,
+    //[BS, BM, MSL]
     TensorPtr ids;
     //! The tokens computed during the gatherTree step, [BS, BM, MSL]
-    //! Necessary for "Streaming + Beam Search" mode since beam search kernels store ungathered tokens in `ids`.
+    //! Necessary for "Streaming + Beam Search" mode since beam search kernels
+    // store ungathered tokens in `ids`.
     TensorPtr gatheredIds;
-    //! New tokens at each generated token of maxTokensPerStep, [maxTokensPerStep, BS, BM]
+    //! New tokens at each generated token of maxTokensPerStep,
+    //[maxTokensPerStep, BS, BM]
     TensorPtr newTokensSteps;
     //! A view of newTokensSteps for the current token, [BS, BM]
     TensorPtr newTokens;
@@ -86,7 +85,8 @@ public:
     std::vector<TensorPtr> newTokensVec;
 
     //! Optional parameters
-    //! FinishedState by decoding if any of the stop conditions are met or if DecodingInput.finished is true, [BS, BM]
+    //! FinishedState by decoding if any of the stop conditions are met or if
+    // DecodingInput.finished is true, [BS, BM]
     TensorPtr finishReasons;
     //! The sum of finished sequences per request, in pinned memory, [BS]
     TensorPtr finishedSum;
@@ -128,6 +128,4 @@ public:
     std::optional<EagleBuffers::Inputs> eagleBuffers;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

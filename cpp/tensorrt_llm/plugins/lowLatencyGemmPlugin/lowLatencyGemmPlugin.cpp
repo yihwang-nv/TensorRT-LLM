@@ -19,7 +19,6 @@
 #include "lowLatencyGemmPlugin.h"
 #include "low_latency_gemm.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaFp8Utils.h"
 #include "tensorrt_llm/common/logger.h"
 #include <NvInferRuntime.h>
@@ -144,7 +143,6 @@ void LowLatencyGemmPlugin::init(nvinfer1::DataType type)
         m_lowLatencyGemmRunner = std::make_shared<CutlassLowLatencyFp8GemmRunner<half>>();
     }
 #ifdef ENABLE_BF16
-
     else if (mType == nvinfer1::DataType::kBF16)
     {
         m_lowLatencyGemmRunner = std::make_shared<CutlassLowLatencyFp8GemmRunner<__nv_bfloat16>>();

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 
@@ -39,9 +38,7 @@ namespace nvinfer1
 class IExecutionContext;
 }
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class ITensor : virtual public IBuffer
@@ -67,7 +64,8 @@ public:
     [[nodiscard]] virtual Shape const& getShape() const = 0;
 
     //!
-    //! \brief Returns the tensor n-th dimension. If n is negative, returns the (nbDims - n)th dimension.
+    //! \brief Returns the tensor n-th dimension. If n is negative, returns the
+    //(nbDims - n)th dimension.
     //! TODO: replace with constexpr parameter when moving to C++20.
     //!
     template <SizeType32 n>
@@ -75,7 +73,8 @@ public:
     {
         auto const shape = getShape();
         static_assert(n < shape.MAX_DIMS && n >= -shape.MAX_DIMS,
-            "Trying to access the dimension of a tensor, when its maximal shape cannot have that dimension.");
+            "Trying to access the dimension of a tensor, when its "
+            "maximal shape cannot have that dimension.");
         if constexpr (n < 0)
         {
             return shape.d[shape.nbDims + n];
@@ -87,7 +86,8 @@ public:
     }
 
     //!
-    //! \brief Sets the tensor dimensions. The new size of the tensor will be `volume(dims)`
+    //! \brief Sets the tensor dimensions. The new size of the tensor will be
+    //`volume(dims)`
     //!
     virtual void reshape(Shape const& dims) = 0;
 
@@ -110,7 +110,8 @@ public:
     ITensor& operator=(ITensor const&) = delete;
 
     //!
-    //! \brief Returns the volume of the dimensions. Returns -1 if `d.nbDims < 0`.
+    //! \brief Returns the volume of the dimensions. Returns -1 if `d.nbDims <
+    // 0`.
     //!
     static std::int64_t volume(Shape const& dims)
     {
@@ -186,7 +187,8 @@ public:
     }
 
     //!
-    //! \brief Creates a sliced view on the underlying `tensor`. The view will have the same data type as `tensor`.
+    //! \brief Creates a sliced view on the underlying `tensor`. The view will
+    // have the same data type as `tensor`.
     //!
     //! \param tensor The tensor to view.
     //! \param offset The offset of the view w.r.t. dimension 0 of the tensor.
@@ -219,10 +221,12 @@ public:
     //!
     //! \param tensor The tensor to view.
     //! \param offsetDims The offset dimensions of the view.
-    //! \param size The size of the view w.r.t. the last dimension in offsetDims.
+    //! \param size The size of the view w.r.t. the last dimension in
+    // offsetDims.
     //! \return A view of shape [size, the rest dimensions]
     //!         or [size] when \param offsetDims specifies all dimensions.
-    //! \throw Whenever offset overflows or the last dimension offset+size overflows.
+    //! \throw Whenever offset overflows or the last dimension offset+size
+    // overflows.
     //!
     static UniquePtr slice(SharedPtr tensor, Shape const& offsetDims, DimType64 size);
 
@@ -304,7 +308,8 @@ public:
     }
 
     //!
-    //! \brief Returns a view on the underlying `buffer` (or tensor) with the given shape.
+    //! \brief Returns a view on the underlying `buffer` (or tensor) with the
+    // given shape.
     //!
     //! \param tensor The tensor to view.
     //! \param shape The shape of the view.
@@ -319,7 +324,8 @@ public:
     }
 
     //!
-    //! \brief Returns a view on the underlying `tensor` which can be independently reshaped.
+    //! \brief Returns a view on the underlying `tensor` which can be
+    // independently reshaped.
     //!
     //! \param tensor The tensor to view.
     //! \return A view on the `tensor`.
@@ -331,10 +337,12 @@ public:
     }
 
     //!
-    //! \brief Returns a flattened view on the underlying `tensor` which can be independently reshaped.
+    //! \brief Returns a flattened view on the underlying `tensor` which can be
+    // independently reshaped.
     //!
     //! \param tensor The tensor to flatten.
-    //! \param sliceN Slice the first N elements after flattening. -1 means take the whole flattened tensor.
+    //! \param sliceN Slice the first N elements after flattening. -1 means take
+    // the whole flattened tensor.
     //! \return A flatten view on the `tensor`.
     //!
     static UniquePtr flattenN(SharedPtr tensor, std::int64_t sliceN = -1)
@@ -348,7 +356,8 @@ public:
     }
 
     //!
-    //! \brief Wraps the given `data` in an `ITensor`. The `ITensor` will not own the underlying `data` and cannot
+    //! \brief Wraps the given `data` in an `ITensor`. The `ITensor` will not
+    // own the underlying `data` and cannot
     //! be reshaped beyond `capacity`.
     //!
     //! \param data The data to wrap.
@@ -382,12 +391,14 @@ public:
     }
 
     //!
-    //! \brief A convenience function to create a tensor shape with the given dimensions.
+    //! \brief A convenience function to create a tensor shape with the given
+    // dimensions.
     //!
     static Shape makeShape(std::initializer_list<DimType64> const& dims);
 
     //!
-    //! \brief A convenience function for converting a tensor shape to a `string`.
+    //! \brief A convenience function for converting a tensor shape to a
+    //`string`.
     //!
     static std::string toString(Shape const& dims);
 
@@ -444,9 +455,11 @@ inline std::ostream& operator<<(std::ostream& output, ITensor::Shape const& dims
 //! \brief Utility function to print a tensor with its shape.
 std::ostream& operator<<(std::ostream& output, ITensor const& tensor);
 
-/// @brief Retrieves a T const typed pointer to the underlying data of the tensor pointed to by the tensorPtr, or
+/// @brief Retrieves a T const typed pointer to the underlying data of the
+/// tensor pointed to by the tensorPtr, or
 /// nullptr if the tensorPtr is null.
-/// @details This overload has to be declared to avoid ambiguity when an implicit conversion to IBuffer is involved.
+/// @details This overload has to be declared to avoid ambiguity when an
+/// implicit conversion to IBuffer is involved.
 /// @tparam T The type of the underlying data.
 /// @param tensorPtr A possibly null shared ptr.
 /// @return A pointer to T const, possibly nullptr.
@@ -456,9 +469,11 @@ T const* bufferCastOrNull(ITensor::SharedConstPtr const& tensorPtr)
     return bufferCastOrNull<T>(static_cast<IBuffer::SharedConstPtr>(tensorPtr));
 }
 
-/// @brief Retrieves a T typed pointer to the underlying data of the buffer pointed to by the tensorPtr, or nullptr if
+/// @brief Retrieves a T typed pointer to the underlying data of the buffer
+/// pointed to by the tensorPtr, or nullptr if
 /// the tensorPtr is null.
-/// @details This overload has to be declared to avoid ambiguity when an implicit conversion to IBuffer is involved.
+/// @details This overload has to be declared to avoid ambiguity when an
+/// implicit conversion to IBuffer is involved.
 /// @tparam T The type of the underlying data.
 /// @param tensorPtr A possibly null shared ptr.
 /// @return A pointer to T, possibly nullptr.
@@ -468,9 +483,12 @@ T* bufferCastOrNull(ITensor::SharedPtr const& tensorPtr)
     return bufferCastOrNull<T>(static_cast<IBuffer::SharedPtr>(tensorPtr));
 }
 
-/// @brief Retrieves a T typed pointer to the underlying data of the tensor pointed to by the tensor pointer
-/// contained in the optionalBufferPtr, or nullptr if the optional doesn't have a value.
-/// @details This overload has to be declared to avoid ambiguity when an implicit conversion to IBuffer is involved.
+/// @brief Retrieves a T typed pointer to the underlying data of the tensor
+/// pointed to by the tensor pointer
+/// contained in the optionalBufferPtr, or nullptr if the optional doesn't
+/// have a value.
+/// @details This overload has to be declared to avoid ambiguity when an
+/// implicit conversion to IBuffer is involved.
 /// @tparam T The type of the underlying data.
 /// @param optionalBufferPtr A possibly empty optional.
 /// @return A pointer to T, possibly nullptr.
@@ -480,9 +498,12 @@ T* bufferCastOrNull(std::optional<ITensor::SharedPtr> const& optionalTensorPtr)
     return bufferCastOrNull<T>(static_cast<std::optional<IBuffer::SharedPtr>>(optionalTensorPtr));
 }
 
-/// @brief Retrieves a T const typed pointer to the underlying data of the tensor pointed to by the tensor pointer
-/// contained in the optionalBufferPtr, or nullptr if the optional doesn't have a value.
-/// @details This overload has to be declared to avoid ambiguity when an implicit conversion to IBuffer is involved.
+/// @brief Retrieves a T const typed pointer to the underlying data of the
+/// tensor pointed to by the tensor pointer
+/// contained in the optionalBufferPtr, or nullptr if the optional doesn't
+/// have a value.
+/// @details This overload has to be declared to avoid ambiguity when an
+/// implicit conversion to IBuffer is involved.
 /// @tparam T The type of the underlying data.
 /// @param optionalBufferPtr A possibly empty optional.
 /// @return A pointer to const T, possibly nullptr.
@@ -492,6 +513,4 @@ T const* bufferCastOrNull(std::optional<ITensor::SharedConstPtr> const& optional
     return bufferCastOrNull<T>(static_cast<std::optional<IBuffer::SharedConstPtr>>(optionalTensorPtr));
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

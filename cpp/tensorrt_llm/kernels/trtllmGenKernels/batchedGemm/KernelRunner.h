@@ -23,24 +23,25 @@
 
 #include "trtllmGen_bmm_export/trtllm/gen/DtypeDecl.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // Keep this in sync with the ActType in
 // cpp/tensorrt_llm/kernels/trtllmGenKernels/batchedGemm/trtllmGen_bmm_export/GemmGatedActOptions.h
 enum class ActType
 {
     // For ActType == SwiGlu, ideally we would like to have something like
-    //    gatedAct = scaleC * (x0 * scaleAb + beta) * ((x1 * scaleGate) * sigmoid(alpha * x1 *
+    //    gatedAct = scaleC * (x0 * scaleAb + beta) * ((x1 * scaleGate) *
+    // sigmoid(alpha * x1 *
     //    scaleGate)).
     // But for now, we use the simplified version
-    //    gatedAct = scaleC' * (x0 + beta') * ((x1 * scaleGate) * sigmoid(alpha * x1 * scaleGate)),
-    // where x0 and x1 are the raw numbers from Gemm, while scaleC and scaleGate are input scales,
+    //    gatedAct = scaleC' * (x0 + beta') * ((x1 * scaleGate) * sigmoid(alpha *
+    // x1 * scaleGate)),
+    // where x0 and x1 are the raw numbers from Gemm, while scaleC and scaleGate
+    // are input scales,
     // beta' = beta / scaleAb, scaleC' = scaleC * scaleAb.
     //
-    // GatedSilu is a special case of SwiGlu where the alpha is 1.0 and the beta is 0.0.
+    // GatedSilu is a special case of SwiGlu where the alpha is 1.0 and the beta
+    // is 0.0.
     SwiGlu
 };
 
@@ -94,7 +95,8 @@ public:
         float const* scaleC, float const* scaleGateC, void* c, void* workspace, CUstream stream, int device,
         int32_t configIndex, int32_t validM = -1, int32_t validN = -1, int32_t validK = -1);
 
-    // Get the list of configs that passed the validation based on the constructor options
+    // Get the list of configs that passed the validation based on the constructor
+    // options
     [[nodiscard]] std::vector<int64_t> getPassingConfigIndices() const
     {
         return mPassingConfigIndices;
@@ -126,6 +128,5 @@ private:
     TrtllmGenBatchedGemmRunnerOptions mOptions;
     std::vector<int64_t> mPassingConfigIndices;
 };
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -39,10 +39,7 @@ constexpr inline T roundUp(T a, T b)
 
 } // namespace
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace
 {
@@ -134,7 +131,8 @@ XqaDispatcher::XqaDispatcher(XqaFixedParams fixedParams)
 {
     if (mUseTllmGen)
     {
-        // The preprocessing kernel will convert Q from inputDataType to fp8 if the kv cache dtype e4m3 or e2m1,
+        // The preprocessing kernel will convert Q from inputDataType to fp8 if the
+        // kv cache dtype e4m3 or e2m1,
         // as both the NVFP4 KV kernels and FP8 KV kernels uses FP8 input for Q.
         mQDataType = (mFixedParams.kvDataType == DATA_TYPE_E4M3 || mFixedParams.kvDataType == DATA_TYPE_E2M1)
             ? DATA_TYPE_E4M3
@@ -175,8 +173,9 @@ size_t XqaDispatcher::getWorkspaceSize(int max_num_tokens)
     // buffer for RoPE / output quantization.
     constexpr size_t kXQA_OUT_ELEM_SIZE = 2; // fp16 or bf16.
     constexpr int kMaxBeamWidth = 4;
-    size_t workspace_size = roundUp<size_t>(
-        kXQA_OUT_ELEM_SIZE * mFixedParams.headSize * mFixedParams.numQHeads * max_num_tokens, 128); // rope
+    size_t workspace_size
+        = roundUp<size_t>(kXQA_OUT_ELEM_SIZE * mFixedParams.headSize * mFixedParams.numQHeads * max_num_tokens,
+            128); // rope
     // output conversion.
     workspace_size = roundUp<size_t>(
         workspace_size + kXQA_OUT_ELEM_SIZE * mFixedParams.headSize * mFixedParams.numQHeads * max_num_tokens, 128);
@@ -216,33 +215,45 @@ bool XqaDispatcher::shouldUse(XQAParams const& params)
         // Fall-back to MMHA for some unsupported cases.
         if (params.beam_width > 1)
         {
-            SHOULD_NOT_USE("Fallback to MMHA as beam searching is not supported by TRTLLM-GEN kernels.")
+            SHOULD_NOT_USE(
+                "Fallback to MMHA as beam searching is not supported by "
+                "TRTLLM-GEN kernels.")
         }
         if (params.position_shift_enabled || params.sink_token_length > 0)
         {
-            SHOULD_NOT_USE("Fallback to MMHA as streamingLLM is not supported by TRTLLM-GEN kernels.")
+            SHOULD_NOT_USE(
+                "Fallback to MMHA as streamingLLM is not supported by "
+                "TRTLLM-GEN kernels.")
         }
         if (params.unidirectional != 1)
         {
-            SHOULD_NOT_USE("Fallback to MMHA as unidirectional is not supported by TRTLLM-GEN kernels.");
+            SHOULD_NOT_USE(
+                "Fallback to MMHA as unidirectional is not supported by "
+                "TRTLLM-GEN kernels.");
         }
         if (params.cross_attention && !params.paged_kv_cache)
         {
             SHOULD_NOT_USE(
-                "Fallback to MMHA as cross attention without paged KV Cache is not supported by TRTLLM-GEN kernels.");
+                "Fallback to MMHA as cross attention without paged KV "
+                "Cache is not supported by TRTLLM-GEN kernels.");
         }
         if (params.paged_kv_cache && params.tokens_per_block < 8)
         {
-            SHOULD_NOT_USE("Fallback to MMHA as tokens_per_block < 8 is not supported by TRTLLM-GEN kernels.");
+            SHOULD_NOT_USE(
+                "Fallback to MMHA as tokens_per_block < 8 is not "
+                "supported by TRTLLM-GEN kernels.");
         }
         if (params.cyclic_attention_window_size != params.max_attention_window_size)
         {
             SHOULD_NOT_USE(
-                "Fallback to MMHA as variable attention_window_size is not supported by TRTLLM-GEN kernels.");
+                "Fallback to MMHA as variable attention_window_size is "
+                "not supported by TRTLLM-GEN kernels.");
         }
         if ((float(params.num_q_heads) / float(params.num_kv_heads)) > 16)
         {
-            SHOULD_NOT_USE("Fallback to MMHA as num_q_heads per kv_head > 16 is not supported by TRTLLM-GEN kernels.");
+            SHOULD_NOT_USE(
+                "Fallback to MMHA as num_q_heads per kv_head > 16 is not "
+                "supported by TRTLLM-GEN kernels.");
         }
 
         return true;
@@ -264,7 +275,9 @@ bool XqaDispatcher::isSupported()
         }
         if (mFixedParams.isSpecDecoding && mFixedParams.isMLA)
         {
-            TLLM_LOG_WARNING("TRTLLM-GEN does not support tree-based speculative decoding with MLA.");
+            TLLM_LOG_WARNING(
+                "TRTLLM-GEN does not support tree-based speculative "
+                "decoding with MLA.");
             return false;
         }
         if (mFixedParams.hasAlibi)
@@ -290,7 +303,8 @@ bool XqaDispatcher::isSupported()
         tllmRunnerParams.mNumHeadsKv = mFixedParams.numKvHeads;
         tllmRunnerParams.mNumHeadsQPerKv = mFixedParams.numQHeads / mFixedParams.numKvHeads;
         tllmRunnerParams.mNumTokensPerPage = mFixedParams.numTokensPerBlock;
-        // Set the chunked attention size and sliding window size to INT_MAX to disable them when checking if
+        // Set the chunked attention size and sliding window size to INT_MAX to
+        // disable them when checking if
         // the kernel is supported.
         tllmRunnerParams.mChunkedAttentionSize = INT_MAX;
         tllmRunnerParams.mAttentionWindowSize = INT_MAX;
@@ -373,7 +387,8 @@ void XqaDispatcher::runImpl(
         decoder_params.rotaryEmbeddingMaxPositions = params.rotary_embedding_max_positions;
 
         // The rotary_embedding_inv_freq_cache for QKVPreprocessing.
-        // Use the params.rotary_embedding_inv_freq_cache input when the buildDecoderInfoKernel is skipped.
+        // Use the params.rotary_embedding_inv_freq_cache input when the
+        // buildDecoderInfoKernel is skipped.
         float const* rotary_inv_freq_buf = params.rotary_embedding_inv_freq_cache;
         // Use the nullptr for cu_seqlens when it is not computed.
         int const* cu_seqlens{nullptr};
@@ -388,7 +403,8 @@ void XqaDispatcher::runImpl(
         }
 
         // IDEA: Store rotary_processed Q buffer to output buffer.
-        // NOTE: MHA kernels should read kv cache that has already been appended with new tokens' kv cache.
+        // NOTE: MHA kernels should read kv cache that has already been appended
+        // with new tokens' kv cache.
         void* xqa_q_input_ptr = inputScratch;
         // The preprocessing kernel that applies RoPE and updates kv cache.
 
@@ -406,7 +422,8 @@ void XqaDispatcher::runImpl(
         // Parameters to select kernels.
         tllmRunnerParams.mKernelType = FmhaKernelType::Generation;
         tllmRunnerParams.mMultiCtasKvMode = params.multi_block_mode;
-        // Note that the tileScheduler and multiCtasKvMode will be automatically tuned when using multi_block mode.
+        // Note that the tileScheduler and multiCtasKvMode will be automatically
+        // tuned when using multi_block mode.
         // Otherwise, always enable the persistent scheduler for better performance.
         tllmRunnerParams.mTileScheduler = params.multi_block_mode ? TileScheduler::Static : TileScheduler::Persistent;
 
@@ -483,10 +500,12 @@ void XqaDispatcher::runImpl(
         // The chunked attention size.
         // The generation-phase chunked attention is disabled for now.
         tllmRunnerParams.mChunkedAttentionSize = params.chunked_attention_size;
-        // Not used in the generation kernels as contiguous_kv or paged_kv layouts are used.
+        // Not used in the generation kernels as contiguous_kv or paged_kv layouts
+        // are used.
         tllmRunnerParams.mSumOfSeqLensKv = int(params.batch_size * beam_width * tllmRunnerParams.mMaxSeqLenKv);
         tllmRunnerParams.mScaleQ = params.q_scaling;
-        // Set it to INT_MAX as the kv cache pageOffsets will ensure that there is no out-of-bounds access.
+        // Set it to INT_MAX as the kv cache pageOffsets will ensure that there is
+        // no out-of-bounds access.
         tllmRunnerParams.mNumPagesInMemPool = INT_MAX;
         tllmRunnerParams.mMultiProcessorCount = mMultiProcessorCount;
         tllmRunnerParams.stream = params.stream;
@@ -540,6 +559,4 @@ void XqaDispatcher::run(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

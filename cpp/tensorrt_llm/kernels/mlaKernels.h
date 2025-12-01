@@ -25,10 +25,7 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 enum class KvCacheDataType;
 
@@ -53,20 +50,26 @@ template <typename T>
 struct MlaParams
 {
     T const* latent_cache; // cKV + k_pe
-    // Tensor Q for both context and generation MLA, contiguous. Pre-process kernel will apply RoPE and modify it
-    // in-place. For context MLA, shape: [total_q_len, h * (d_nope + d_rope)], stride: [h * (d_nope + d_rope), 1]
+    // Tensor Q for both context and generation MLA, contiguous. Pre-process
+    // kernel will apply RoPE and modify it
+    // in-place. For context MLA, shape: [total_q_len, h * (d_nope + d_rope)],
+    // stride: [h * (d_nope + d_rope), 1]
     T* q_buf;
-    // Separate tensor K for context MLA, contiguous. Pre-process kernel will apply RoPE and modify it in-place.
-    // shape: [total_kv_len, h * (d_nope + d_rope)], stride: [h * (d_nope + d_rope), 1]
+    // Separate tensor K for context MLA, contiguous. Pre-process kernel will
+    // apply RoPE and modify it in-place.
+    // shape: [total_kv_len, h * (d_nope + d_rope)], stride: [h * (d_nope +
+    // d_rope), 1]
     T* k_buf = nullptr;
     // Separate tensor V for context MLA, NOT contiguous,
     // shape: [total_kv_len, h * d_v], stride: [h * (d_nope + d_v), 1]
     T const* v_buf = nullptr;
     // Tensor quantized Q for both context and generation MLA.
-    // For context MLA, shape: [total_q_len, h * (d_nope + d_rope)], stride: [h * (d_nope + d_rope), 1]
+    // For context MLA, shape: [total_q_len, h * (d_nope + d_rope)], stride: [h *
+    // (d_nope + d_rope), 1]
     void* quant_q_buf = nullptr;
     // Tensor quantized K for context MLA, contiguous
-    // shape: [total_kv_len, h * (d_nope + d_rope)], stride: [h * (d_nope + d_rope), 1]
+    // shape: [total_kv_len, h * (d_nope + d_rope)], stride: [h * (d_nope +
+    // d_rope), 1]
     void* quant_k_buf = nullptr;
     // Tensor quantized V for context MLA, contiguous
     // shape: [total_kv_len, h * d_v], stride: [h * d_v, 1]
@@ -129,6 +132,5 @@ void invokeMLARopeAppendPagedKVAssignQ(KVBlockArray& kv_cache, T* q_ptr, T* late
     int64_t const* cu_ctx_cached_kv_lens, int64_t const* cu_seq_lens, int const max_input_uncached_seq_len,
     float2 const* cos_sin_cache, size_t head_num, int nope_size, int rope_size, int lora_size,
     float const* kv_scale_orig_quant_ptr, cudaStream_t stream);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

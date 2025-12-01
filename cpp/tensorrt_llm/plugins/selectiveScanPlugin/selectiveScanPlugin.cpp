@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "selectiveScanPlugin.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 
 using namespace nvinfer1;
 using namespace tensorrt_llm::kernels;
@@ -86,7 +86,8 @@ nvinfer1::IPluginV2DynamicExt* SelectiveScanPlugin::clone() const noexcept
 }
 
 // Outputs
-//     output_tensor: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     output_tensor: [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     state: [batch_size, dstate, dim]
 nvinfer1::DimsExprs SelectiveScanPlugin::getOutputDimensions(
     int outputIndex, nvinfer1::DimsExprs const* inputs, int nbInputs, nvinfer1::IExprBuilder& exprBuilder) noexcept
@@ -234,24 +235,32 @@ int SelectiveScanPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc
 {
     // inputs
     //     0.  input_tensor [batch_size, max_seq_len, dim] or [num_tokens, dim]
-    //     1.  state mamba: [batch_size, dstate, dim] or host [1] containing only pointer for paged_state
-    //               mamba2: [batch_size, nheads, dstate, dim] or host [1] containing only pointer for paged_state
-    //     2.  delta, mamba: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-    //                mamba2: [batch_size, seq_len, nheads] or [num_tokens, nheads] for remove_input_padding
+    //     1.  state mamba: [batch_size, dstate, dim] or host [1] containing only
+    // pointer for paged_state
+    //               mamba2: [batch_size, nheads, dstate, dim] or host [1]
+    // containing only pointer for paged_state
+    //     2.  delta, mamba: [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
+    //                mamba2: [batch_size, seq_len, nheads] or [num_tokens,
+    // nheads] for remove_input_padding
     //     3.  delta_bias, [dim] for mamba, [nheads] for mamba2
     //     4.  A, [dstate, dim] for mamba, [nheads] for mamba2
-    //     5.  BC, mamba: [batch_size, seq_len, dstate * 2] or [num_tokens, dstate * 2] for remove_input_padding
-    //             mamba2: [batch_size, seq_len, ngroups * dstate * 2] or [num_tokens, ngroups * dstate * 2] for
+    //     5.  BC, mamba: [batch_size, seq_len, dstate * 2] or [num_tokens, dstate
+    // * 2] for remove_input_padding
+    //             mamba2: [batch_size, seq_len, ngroups * dstate * 2] or
+    // [num_tokens, ngroups * dstate * 2] for
     //             remove_input_padding
     //     6.  D, [dim] for mamba, [nheads] for mamba2
     //     7.  host_request_types [batch_size] int32. 0: context; 1: generation.
     //     8.  last_token_ids [batch_size] int32
-    //     9.  host_context_lengths [batch_size] int32, optional for remove_input_padding
+    //     9.  host_context_lengths [batch_size] int32, optional for
+    // remove_input_padding
     //    10.  state_slot_mapping [batch_size] int32, optional for paged state
     //    11.  z [batch_size, max_seq_len, dim] or [num_tokens, dim]
     // outputs
     //     0. output_tensor [batch_size, max_seq_len, dim] or [num_tokens, dim]
-    //     1. state, [batch_size, dstate, dim] for mamba, [batch_size, nheads, dstate, dim] for mamba2
+    //     1. state, [batch_size, dstate, dim] for mamba, [batch_size, nheads,
+    // dstate, dim] for mamba2
     auto const batch_size = inputDesc[getHostRequestTypesIdx()].dims.d[0];
     int max_seq_len;
     if (mRemovePadding)

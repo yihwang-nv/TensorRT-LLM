@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +32,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common::nvtx
+namespace nvtx
 {
 inline nvtx3::color nextColor()
 {
@@ -49,7 +50,7 @@ inline nvtx3::color nextColor()
 #endif
 }
 
-} // namespace common::nvtx
+} // namespace nvtx
 
 TRTLLM_NAMESPACE_END
 #define NVTX3_SCOPED_RANGE_WITH_NAME(range, name)                                                                      \

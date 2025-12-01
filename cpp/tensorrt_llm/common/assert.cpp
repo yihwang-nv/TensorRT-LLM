@@ -27,7 +27,7 @@ bool initCheckDebug()
 }
 } // namespace
 
-bool tensorrt_llm::DebugConfig::isCheckDebugEnabled()
+bool tensorrt_llm::common::DebugConfig::isCheckDebugEnabled()
 {
     static bool const debugEnabled = initCheckDebug();
     return debugEnabled;

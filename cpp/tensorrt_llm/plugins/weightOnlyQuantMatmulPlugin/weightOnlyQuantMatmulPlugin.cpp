@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "weightOnlyQuantMatmulPlugin.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <numeric>
 
@@ -262,7 +261,8 @@ bool WeightOnlyQuantMatmulPlugin::supportsFormatCombination(
         return inOut[0].type == mType && inOut[0].format == TensorFormat::kLINEAR;
     case 1:
         // weights
-        // Weights are required to be int8, but will be reinterpreted as int4 in enqueue if required
+        // Weights are required to be int8, but will be reinterpreted as int4 in
+        // enqueue if required
         // Weights stored in checkpoint should have int8/int4 type
         return inOut[1].type == nvinfer1::DataType::kINT8 && inOut[1].format == TensorFormat::kLINEAR;
     case 2:
@@ -341,8 +341,10 @@ int WeightOnlyQuantMatmulPlugin::enqueue(nvinfer1::PluginTensorDesc const* input
     bool use_cuda_kernel = false;
     auto const& bestTactic = mPluginProfiler->getBestConfig(m, mGemmId);
     TLLM_CHECK_WITH_INFO(bestTactic,
-        "No valid weight only per-channel GEMM tactic(It is usually caused by the failure to execute all candidate "
-        "configurations of the CUTLASS kernel, please pay attention to the warning information when building the "
+        "No valid weight only per-channel GEMM tactic(It is "
+        "usually caused by the failure to execute all candidate "
+        "configurations of the CUTLASS kernel, please pay "
+        "attention to the warning information when building the "
         "engine.)");
     use_cuda_kernel = bestTactic->enableCudaKernel;
     if (use_cuda_kernel)
@@ -473,9 +475,11 @@ IPluginV2* WeightOnlyQuantMatmulPluginCreator::createPlugin(char const* name, Pl
     }
     try
     {
-        // WeightOnlyGroupwiseQuantMatmulPluginCreator is unique and shared for an engine generation
+        // WeightOnlyGroupwiseQuantMatmulPluginCreator is unique and shared for an
+        // engine generation
         // Create plugin profiler with shared tactics map
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false);
         auto* obj = new WeightOnlyQuantMatmulPlugin(type, weightTypeId, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
@@ -494,7 +498,8 @@ IPluginV2* WeightOnlyQuantMatmulPluginCreator::deserializePlugin(
     // call WeightOnlyQuantMatmulPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
         auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
         auto* obj = new WeightOnlyQuantMatmulPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());

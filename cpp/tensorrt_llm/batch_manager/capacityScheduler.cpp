@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,13 +20,10 @@
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/batch_manager/peftCacheManager.h"
 #include "tensorrt_llm/batch_manager/scheduledBlocksManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 using kv_cache_manager::VecUniqueTokens;
 using kv_cache_manager::BlockKey;
@@ -45,7 +43,8 @@ prefillWithChunkedContextsAlreadyExecuting(RequestList const& activeRequests,
     {
         if (req->isContextInitState() && !req->isFirstContextChunk())
         {
-            // Chunked context request already executing, but haven't completed all chunks yet.
+            // Chunked context request already executing, but haven't completed all
+            // chunks yet.
             // Skipping is not an option, register it's contributed blocks
             if (kvCacheManager.isEnableBlockReuse())
             {
@@ -94,8 +93,10 @@ bool oneManagerBeneficialToSkip(tensorrt_llm::batch_manager::kv_cache_manager::B
     return false;
 }
 
-//! \brief Check if it is beneficial to skip this request rather than schedule it.
-//! \details One condition that makes it beneficial is if this request can reuse kv cache block(s) contributed by
+//! \brief Check if it is beneficial to skip this request rather than schedule
+// it.
+//! \details One condition that makes it beneficial is if this request can
+// reuse kv cache block(s) contributed by
 //! already scheduled context requests.
 bool beneficialToSkip(std::shared_ptr<tensorrt_llm::batch_manager::LlmRequest> const& req,
     kv_cache_manager::BaseKVCacheManager const& kvCacheManager,
@@ -159,7 +160,8 @@ std::tuple<RequestVector, RequestVector> MaxRequestsScheduler::operator()(Reques
     RequestVector scheduledRequests;
     for (auto const& req : activeRequests)
     {
-        // if request cannot be scheduled yet or request should no longer be scheduled, skip
+        // if request cannot be scheduled yet or request should no longer be
+        // scheduled, skip
         if (!req->hasReachedState(getNoScheduleUntilState()) || req->hasReachedState(getNoScheduleAfterState()))
         {
             continue;
@@ -206,7 +208,8 @@ std::tuple<RequestVector, RequestVector> GuaranteedNoEvictScheduler::impl(
     auto const maxPeftCachePages
         = peftCacheManager ? peftCacheManager->getMaxDevicePages() : std::numeric_limits<SizeType32>::max();
 
-    // The optimization of delaying requests won't work for variable window attention
+    // The optimization of delaying requests won't work for variable window
+    // attention
     bool skippingIsRelevant = (!kvCacheManager.getBlockManager().isVariableWindow())
         && (!crossKvCacheManager || !crossKvCacheManager->getBlockManager().isVariableWindow());
 
@@ -224,7 +227,8 @@ std::tuple<RequestVector, RequestVector> GuaranteedNoEvictScheduler::impl(
 
     // If a request is already in progress, include it
     // If it's been allocated, it had resource to run to completion
-    // Also keep track of blocks needed to drive all in-progress requests to completion
+    // Also keep track of blocks needed to drive all in-progress requests to
+    // completion
     auto reservedBlocks = kv_cache_manager::NoEvictScheduledBlocksManager(kvCacheManager);
     auto reservedCrossBlocks = crossKvCacheManager
         ? std::optional(kv_cache_manager::NoEvictScheduledBlocksManager(*crossKvCacheManager))
@@ -237,9 +241,11 @@ std::tuple<RequestVector, RequestVector> GuaranteedNoEvictScheduler::impl(
     pendingDisGenInitRequests.reserve(activeRequests.size());
     for (auto const& req : activeRequests)
     {
-        // if request cannot be scheduled yet or request should no longer be scheduled, skip
+        // if request cannot be scheduled yet or request should no longer be
+        // scheduled, skip
         if (
-            // Allow disagg_generation_init requests to be scheduled, so that we'll allocate their KV cache
+            // Allow disagg_generation_init requests to be scheduled, so that
+            // we'll allocate their KV cache
             !req->isDisaggGenerationInitState()
             && (!req->hasReachedState(getNoScheduleUntilState()) || req->hasReachedState(getNoScheduleAfterState())))
         {
@@ -274,7 +280,8 @@ std::tuple<RequestVector, RequestVector> GuaranteedNoEvictScheduler::impl(
         }
     }
 
-    // If StaticBatchScheduling == true check if we can add pending requests only when no requests are active.
+    // If StaticBatchScheduling == true check if we can add pending requests
+    // only when no requests are active.
     // Otherwise, add just check that we can add pending requests.
     if (!StaticBatchScheduling || scheduledRequests.size() == 0)
     {
@@ -287,7 +294,8 @@ std::tuple<RequestVector, RequestVector> GuaranteedNoEvictScheduler::impl(
         {
             for (auto const& req : requests)
             {
-                // if context request can reuse blocks contributed by another context request, skip
+                // if context request can reuse blocks contributed by another context
+                // request, skip
                 if (!StaticBatchScheduling && skippingIsRelevant && !req->isDisaggGenerationInitState()
                     && beneficialToSkip(req, kvCacheManager, crossKvCacheManager, newlyContributedContextBlocks,
                         newlyContributedCrossContextBlocks))
@@ -332,7 +340,8 @@ std::tuple<RequestVector, RequestVector> GuaranteedNoEvictScheduler::impl(
     return {std::move(scheduledRequests), RequestVector{}};
 }
 
-// TODO(nhaber): remove forward declare and just keep the function here, right before the merge. I put it below just so
+// TODO(nhaber): remove forward declare and just keep the function here, right
+// before the merge. I put it below just so
 // the remote diff is easier to look at/rebase conflicts
 bool trySchedulingRequestMaxUtilization(std::shared_ptr<LlmRequest> const& req, SizeType32 maxNumRequests,
     RequestVector& scheduledRequests, kv_cache_manager::MaxUtilizationScheduledBlocksManager& blocksManager,
@@ -345,10 +354,12 @@ std::tuple<RequestVector, RequestVector> MaxUtilizationScheduler::operator()(
 {
     kvCacheManager.startScheduling();
 
-    // The optimization of delaying requests won't work for variable window attention
+    // The optimization of delaying requests won't work for variable window
+    // attention
     bool skippingIsRelevant = !kvCacheManager.getBlockManager().isVariableWindow();
 
-    // Keep track of number of requests and block needed for the scheduled requests
+    // Keep track of number of requests and block needed for the scheduled
+    // requests
     auto scheduledBlocksManager
         = kv_cache_manager::MaxUtilizationScheduledBlocksManager(kvCacheManager, mTwoStepsLookAhead);
     SizeType32 numScheduledPeftPages{0};
@@ -373,18 +384,24 @@ std::tuple<RequestVector, RequestVector> MaxUtilizationScheduler::operator()(
         auto const& req = *reqIt;
         TLLM_LOG_DEBUG("MaxUtilizationScheduler: scheduling request ID %lu", req->mRequestId);
 
-        // if request cannot be scheduled yet or request should no longer be scheduled, skip
+        // if request cannot be scheduled yet or request should no longer be
+        // scheduled, skip
         if (
-            // Allow disagg_generation_init requests to be scheduled, so that we'll allocate their KV cache
+            // Allow disagg_generation_init requests to be scheduled, so that
+            // we'll allocate their KV cache
             !req->isDisaggGenerationInitState()
             && (!req->hasReachedState(getNoScheduleUntilState()) || req->hasReachedState(getNoScheduleAfterState())))
         {
-            TLLM_LOG_DEBUG("MaxUtilizationScheduler: request ID %lu cannot / should not be scheduled", req->mRequestId);
+            TLLM_LOG_DEBUG(
+                "MaxUtilizationScheduler: request ID %lu cannot / "
+                "should not be scheduled",
+                req->mRequestId);
             reqIt++;
             continue;
         }
 
-        // if context request can reuse blocks contributed by another context request, skip
+        // if context request can reuse blocks contributed by another context
+        // request, skip
         if (skippingIsRelevant
             && beneficialToSkip(
                 req, kvCacheManager, std::nullopt, newlyContributedContextBlocks, newlyContributedCrossContextBlocks))
@@ -407,9 +424,11 @@ std::tuple<RequestVector, RequestVector> MaxUtilizationScheduler::operator()(
             auto const lastStartedReqIt = std::find_if(rbegin, rend, startedReqLambda);
             if (lastStartedReqIt != rend)
             {
-                // If we can't allocate a started request, we need to start freeing started requests
+                // If we can't allocate a started request, we need to start freeing
+                // started requests
                 // from the end of the vector and try again
-                // Here we simulate freeing the kvCache blocks associated with that sequence
+                // Here we simulate freeing the kvCache blocks associated with that
+                // sequence
                 kvCacheManager.schedulingRemoveSequence((*lastStartedReqIt)->mRequestId);
                 pausedRequests.emplace_back(*lastStartedReqIt);
                 TLLM_LOG_DEBUG("MaxUtilizationScheduler: request ID %lu -> pause", (*lastStartedReqIt)->mRequestId);
@@ -517,7 +536,9 @@ std::tuple<RequestVector, RequestVector, RequestVector> CapacityScheduler::opera
             {
                 throw std::runtime_error("Unsupported capacity scheduler policy");
             }
-            TLLM_LOG_DEBUG("[Summary] Capacity scheduler allows %d requests, pauses %d requests",
+            TLLM_LOG_DEBUG(
+                "[Summary] Capacity scheduler allows %d requests, "
+                "pauses %d requests",
                 tmpFittingRequests.size(), pausedRequests.size());
 
             RequestVector fittingRequests;
@@ -539,6 +560,4 @@ std::tuple<RequestVector, RequestVector, RequestVector> CapacityScheduler::opera
         mScheduler);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

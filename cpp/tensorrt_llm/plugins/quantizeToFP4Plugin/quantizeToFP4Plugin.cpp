@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #include "quantizeToFP4Plugin.h"
 #include "pluginUtils.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/quantization.h"
 #include <NvInferRuntimeBase.h>
 
@@ -69,7 +69,8 @@ nvinfer1::DimsExprs QuantizeToFP4Plugin::getOutputDimensions(
         }
         // // Div up by 16 as the storage type has 16 FP4 values per element.
         // ret.d[ret.nbDims - 1]
-        //     = exprBuilder.operation(DimensionOperation::kCEIL_DIV, *ret.d[ret.nbDims - 1],
+        //     = exprBuilder.operation(DimensionOperation::kCEIL_DIV,
+        // *ret.d[ret.nbDims - 1],
         //     *exprBuilder.constant(16));
         return ret;
     }
@@ -88,7 +89,8 @@ nvinfer1::DimsExprs QuantizeToFP4Plugin::getOutputDimensions(
             = exprBuilder.operation(DimensionOperation::kCEIL_DIV, *ret.d[ret.nbDims - 2], *exprBuilder.constant(128));
         ret.d[ret.nbDims - 2] = exprBuilder.operation(DimensionOperation::kPROD, *dimM, *exprBuilder.constant(128));
         // Hidden size dimension.
-        // Div (rounding up) by 16 since 16 elements share one SF and SF padded to k%4==0.
+        // Div (rounding up) by 16 since 16 elements share one SF and SF padded to
+        // k%4==0.
         ret.d[ret.nbDims - 1]
             = exprBuilder.operation(DimensionOperation::kCEIL_DIV, *ret.d[ret.nbDims - 1], *exprBuilder.constant(16));
         return ret;
@@ -135,7 +137,8 @@ int QuantizeToFP4Plugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
     // inputs
     //     input [M(*), N] half data type
     //     SF scale [1] float data type
-    //            used to scale SF from input range to fp8 range (448.f / (MaxVal of input / 6.f))
+    //            used to scale SF from input range to fp8 range (448.f / (MaxVal
+    // of input / 6.f))
     // outputs
     //     output [M(*), N] fp4 storage (E2M1)
     //     SF output [M, N / 16] fp8 storage (UE4M3)

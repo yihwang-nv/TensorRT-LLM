@@ -20,10 +20,7 @@
 #include "tensorrt_llm/kernels/multiHeadAttentionCommon.h"
 #include "tensorrt_llm/kernels/sparseAttentionKernels.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using XQADataType = Data_type;
 
@@ -58,15 +55,20 @@ struct XQAParams
     int32_t const* spec_decoding_packed_mask;
     int const* spec_decoding_position_offsets;         // for position embedding.
     int const* spec_decoding_generation_lengths;       // variable input lengths.
-    bool spec_decoding_is_generation_length_variable;  // whether the generation lengths actually vary
+    bool spec_decoding_is_generation_length_variable;  // whether the generation
+                                                       // lengths actually vary
     int32_t spec_decoding_max_generation_length;       // max possible input length
-    int64_t* spec_decoding_bl_tree_mask_offset;        // for blackwell spec-dec tree mask offset
+    int64_t* spec_decoding_bl_tree_mask_offset;        // for blackwell spec-dec tree
+                                                       // mask offset
     uint32_t* spec_decoding_bl_tree_mask;              // for blackwell spec-dec tree mask
-    int32_t* spec_bl_tree_first_sparse_mask_offset_kv; // for blackwell spec-dec tree first sparse mask offset kv
+    int32_t* spec_bl_tree_first_sparse_mask_offset_kv; // for blackwell spec-dec
+                                                       // tree first sparse mask
+                                                       // offset kv
     int32_t const* mrope_position_deltas = nullptr;
 
     // almost copy from GPTAttentionPluginCommon.
-    // maybe use one struct for parameters in GPTAttentionPluginCommon and share the same here.
+    // maybe use one struct for parameters in GPTAttentionPluginCommon and share
+    // the same here.
     int32_t generation_input_length;
     int32_t num_q_heads = 0;
     int32_t num_kv_heads = 0;
@@ -97,15 +99,19 @@ struct XQAParams
     int max_distance = 0;
     bool multi_block_mode;
     bool multi_query_tokens = false;
-    bool is_spec_dec_tree
-        = true; // by default, XQA spec-dec expect tree-based draft token, only affective when multi_query_tokens = true
+    bool is_spec_dec_tree = true;            // by default, XQA spec-dec expect tree-based
+                                             // draft token, only affective when
+                                             // multi_query_tokens = true
 
     float const* logn_scaling_ptr = nullptr; // for logn scaling in XQA
 
-    int32_t total_num_input_tokens;          // total number of input tokens. may differ from batch_size due to medusa.
+    int32_t total_num_input_tokens;          // total number of input tokens. may differ
+                                             // from batch_size due to medusa.
     bool is_fp8_output;
-    float const* fp8_out_scale = nullptr; // fp8 output scale in case we need post-processing to convert output to fp8.
-                                          // nullptr means no conversion.
+    float const* fp8_out_scale = nullptr;    // fp8 output scale in case we need
+                                             // post-processing to convert output to
+                                             // fp8.
+                                             // nullptr means no conversion.
     float const* fp4_out_sf_scale = nullptr; // SF scale for FP4 output.
     int32_t start_token_idx_sf = 0;          // The start token index in SF tensor.
 
@@ -188,13 +194,13 @@ struct XQAParams
            << "max_distance: " << max_distance << std::endl
            << "multi_block_mode: " << (multi_block_mode ? "true" : "false") << std::endl
            << "multi_query_tokens: " << (multi_query_tokens ? "true" : "false") << std::endl
-           << "logn_scaling_ptr :" << logn_scaling_ptr << std ::endl
-           << "total_num_input_tokens :" << total_num_input_tokens << std ::endl
-           << "is_fp8_output :" << (is_fp8_output ? "true" : "false") << std ::endl
-           << "fp8_out_scale :" << fp8_out_scale << std ::endl
+           << "logn_scaling_ptr :" << logn_scaling_ptr << std::endl
+           << "total_num_input_tokens :" << total_num_input_tokens << std::endl
+           << "is_fp8_output :" << (is_fp8_output ? "true" : "false") << std::endl
+           << "fp8_out_scale :" << fp8_out_scale << std::endl
            << "encoder_input_lengths: " << encoder_input_lengths << std::endl
            << "sparse_params: " << sparse_params.toString() << std::endl
-           << "use_sparse_attention :" << (use_sparse_attention ? "true" : "false") << std ::endl
+           << "use_sparse_attention :" << (use_sparse_attention ? "true" : "false") << std::endl
            << "stream :" << stream;
 
         return ss.str();
@@ -206,6 +212,4 @@ struct XQAParams
     }
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

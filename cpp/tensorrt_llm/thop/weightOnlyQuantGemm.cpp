@@ -23,7 +23,8 @@
 using namespace tensorrt_llm::kernels::cutlass_kernels;
 using namespace tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -89,7 +90,10 @@ WeightOnlyQuantGemmRunner::WeightOnlyQuantGemmRunner(at::ScalarType activation_d
                 })
         })
     mConfigs = mGemmRunner->getConfigs();
-    TORCH_CHECK(!mConfigs.empty(), "Failed to get CUTLASS configs for WeightOnlyQuantGemmRunner with activation type ",
+    TORCH_CHECK(!mConfigs.empty(),
+        "Failed to get CUTLASS configs for "
+        "WeightOnlyQuantGemmRunner with activation "
+        "type ",
         c10::toString(mActivationDtype), ", weight type ", c10::toString(mWeightDtype));
 }
 
@@ -135,7 +139,7 @@ at::Tensor WeightOnlyQuantGemmRunner::runGemm(at::Tensor const& mat_a, at::Tenso
         workspace_ptr = static_cast<char*>(workspace.data_ptr());
     }
 
-    tensorrt_llm::cutlass_extensions::CutlassGemmConfig gemm_config_to_use;
+    tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig gemm_config_to_use;
     if (config_idx >= 0 && config_idx < getNumConfigs())
     {
         gemm_config_to_use = mConfigs.at(config_idx);
@@ -159,7 +163,7 @@ int64_t WeightOnlyQuantGemmRunner::getNumConfigs() const
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

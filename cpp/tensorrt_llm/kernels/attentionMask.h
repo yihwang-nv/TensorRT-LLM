@@ -26,24 +26,23 @@
 
 namespace tc = tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename MaskDataType>
 struct AttentionMaskParams
 {
-    // The attention mask's shape is [batchSize, maxQSeqLen, maxKvSeqLen] when cuQSeqLens is nullptr,
+    // The attention mask's shape is [batchSize, maxQSeqLen, maxKvSeqLen] when
+    // cuQSeqLens is nullptr,
     // otherwise [batchSize, maxQSeqLen] is packed as numTokens.
     MaskDataType* mask = nullptr;
     // The cumulative sequence lengths of Q.
     int* cuQSeqLens = nullptr;
     // The actual q sequence lengths (used to create cuMaskRows).
     int const* actualQSeqLens = nullptr;
-    // The actual kv sequence lengths (used to construct the packed mask when full mask is not given).
+    // The actual kv sequence lengths (used to construct the packed mask when full
+    // mask is not given).
     int const* actualKvSeqLens = nullptr;
     // The attention mask type.
     AttentionMaskType attentionMaskType = AttentionMaskType::PADDING;
@@ -64,6 +63,4 @@ struct AttentionMaskParams
 template <typename MaskDataType>
 void invokeBuildAttentionMask(AttentionMaskParams<MaskDataType> const& params, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

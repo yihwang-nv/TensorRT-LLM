@@ -26,10 +26,7 @@
 #include <cuda_fp4.h>
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 void invokeAddQKVBiasIA3Transpose(T* q_buf, T* k_buf, T* v_buf, T* Q, T const* bias_Q, T* K, T const* bias_K, T* V,
@@ -107,7 +104,8 @@ struct QKVPreprocessingParams
     // source buffer
     // also acts as a dst buffer based on if separate_q_kv_output
     T* qkv_input{nullptr};
-    // The cross attention kv (= qkv_project(encoder_output), and only slice the kv part).
+    // The cross attention kv (= qkv_project(encoder_output), and only slice the
+    // kv part).
     T* cross_kv_input{nullptr};
     // Only used by fp8 quantized output currently.
     void* quantized_qkv_output{nullptr};
@@ -120,7 +118,8 @@ struct QKVPreprocessingParams
     KVCacheBuffer kv_cache_block_scales_buffer{};
     T const* qkv_bias{nullptr};
 
-    // Fuse the computation of FMHA quantization scales into the preprocessing kernels.
+    // Fuse the computation of FMHA quantization scales into the preprocessing
+    // kernels.
     // This can also be done in gptKernels.h if there is no preprocessing kernels.
     // The scale to dequant Q/Kv input.
     float const* qkv_scale_quant_orig{nullptr};
@@ -141,23 +140,28 @@ struct QKVPreprocessingParams
     // list of sequence lengths, of shape {batch_size + 1}
     int const* seq_lens{nullptr};
     // list sequence lengths for the cache, of shape {batch_size + 1}
-    // this is normally used to indicate if chunked context is used (i.e. cache_seqlen > input_seqlen).
+    // this is normally used to indicate if chunked context is used (i.e.
+    // cache_seqlen > input_seqlen).
     int const* cache_seq_lens{nullptr};
     // list sequence lengths for the encoder, of shape {batch_size + 1}
     int const* encoder_seq_lens{nullptr};
     // list of cumulative sequence lengths, of shape {batch_size + 1}
     int const* cu_seq_lens{nullptr};
-    // list of cumulative KV sequence lengths, of shape {batch_size + 1}, used by cross attention only.
+    // list of cumulative KV sequence lengths, of shape {batch_size + 1}, used by
+    // cross attention only.
     int const* cu_kv_seq_lens{nullptr};
     // list of cumulative length of sparse KV indices, of shape {batch_size + 1}
     int const* sparse_kv_offsets{nullptr};
-    // list of sparse KV indices for writing to KV cache, of shape {num_kv_heads, num_sparse_kv_indices}
+    // list of sparse KV indices for writing to KV cache, of shape {num_kv_heads,
+    // num_sparse_kv_indices}
     int const* sparse_kv_indices{nullptr};
     // inverse frequencies (angle raised at various powers) from the RoPE formula
     // shape of {batch_size , rotaryEmbeddingDim / 2}
     float const* rotary_embedding_inv_freq{nullptr};
-    // the pre-computed RoPE factors. computed at model build time, stored in the engine
-    // shape is {rotary_embedding_max_positions, rotary_embedding_dim}. eg (2048, 128)
+    // the pre-computed RoPE factors. computed at model build time, stored in the
+    // engine
+    // shape is {rotary_embedding_max_positions, rotary_embedding_dim}. eg (2048,
+    // 128)
     float2 const* rotary_coef_cache_buffer{nullptr};
     int const* spec_decoding_position_offsets{nullptr};
 
@@ -352,7 +356,8 @@ void invokeTranspose4dBatchMajor(T const* k_src, T const* v_src, KVCacheBuffer& 
 template <typename T, typename T_cache, typename KVCacheBuffer>
 void invokeApplyBiasRopeUpdateKVCacheDispatch(QKVPreprocessingParams<T, KVCacheBuffer> params, cudaStream_t stream);
 
-// NOTE: this kernel is in-place, QKV will be modified, if other kernels need that, may need copy or use before it.
+// NOTE: this kernel is in-place, QKV will be modified, if other kernels need
+// that, may need copy or use before it.
 template <typename T, typename KVCacheBuffer>
 void invokeQKVPreprocessing(QKVPreprocessingParams<T, KVCacheBuffer> params, cudaStream_t stream)
 {
@@ -374,7 +379,8 @@ void invokeQKVPreprocessing(QKVPreprocessingParams<T, KVCacheBuffer> params, cud
             "Cannot append to FP4 KV cache without block scales pool");
         if constexpr (std::is_same_v<T, float>)
         {
-            // TODO: needs special quantization logic. The existing quantization functions
+            // TODO: needs special quantization logic. The existing quantization
+            // functions
             // are specially designed for 16 bit types.
             TLLM_THROW("Cannot use FP4 KV cache with FP32 model.");
         }
@@ -461,6 +467,4 @@ void invokeCpTransposeToSeqMajor2(T* dst, T const* src, int32_t const* q_seq_len
     int32_t const* cu_cp_partial_seqlens, int64_t cpSize, int64_t maxPartalLength, int64_t batchSize,
     int64_t partialHeads, int64_t headSize, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

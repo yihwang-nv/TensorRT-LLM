@@ -24,10 +24,7 @@
 
 using tensorrt_llm::common::op::UniqPtrWNullCopy;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +32,7 @@ class FmhaDispatcher
 {
 public:
     // Constructor.
-    FmhaDispatcher(kernels::MHARunnerFixedParams fixedParams);
+    FmhaDispatcher(MHARunnerFixedParams fixedParams);
 
     // Deconstructor.
     ~FmhaDispatcher() = default;
@@ -46,25 +43,23 @@ public:
     // Does FMHA need a separate Q and Kv input ?
     bool isSeparateQAndKvInput() const
     {
-        return mFixedParams.attentionInputLayout != kernels::AttentionInputLayout::PACKED_QKV;
+        return mFixedParams.attentionInputLayout != AttentionInputLayout::PACKED_QKV;
     }
 
     // Run the fmha kernel.
-    void run(tensorrt_llm::kernels::MHARunnerParams runnerParams);
+    void run(MHARunnerParams runnerParams);
 
 private:
     // The fixed fmha parameters.
-    kernels::MHARunnerFixedParams mFixedParams;
+    MHARunnerFixedParams mFixedParams;
     // Whether to enable trtllm-gen kernels.
     bool mUseTllmGen;
     // Runner for fmha v2 kernels (for SM <= 90)
-    UniqPtrWNullCopy<kernels::FusedMHARunnerV2> mFMHARunner;
+    UniqPtrWNullCopy<FusedMHARunnerV2> mFMHARunner;
     // Runner for trtllm-gen fmha kernels (for SM == 100)
-    UniqPtrWNullCopy<kernels::TllmGenFmhaRunner> mTllmGenFMHARunner;
+    UniqPtrWNullCopy<TllmGenFmhaRunner> mTllmGenFMHARunner;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

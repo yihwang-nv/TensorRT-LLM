@@ -20,7 +20,8 @@
 
 #include <ATen/cuda/EmptyTensor.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -57,8 +58,8 @@ std::tuple<at::Tensor, at::Tensor> fp8_quantize_1x128(at::Tensor const& self, bo
     int64_t elementSize = scaleSizeInBytes / torch::elementSize(FP8_BLOCK_SCALING_SF_DTYPE);
 
     // col major
-    at::Tensor scaleFP8SF = at::detail::empty_cuda(
-        {elementSize}, FP8_BLOCK_SCALING_SF_DTYPE, self.device(), /* stride */ std::nullopt); // 1D tensor
+    at::Tensor scaleFP8SF = at::detail::empty_cuda({elementSize}, FP8_BLOCK_SCALING_SF_DTYPE, self.device(),
+        /* stride */ std::nullopt); // 1D tensor
 
     __nv_fp8_e4m3* act_buffer = reinterpret_cast<__nv_fp8_e4m3*>(valueE4M3.data_ptr());
     float* act_scale_buffer = reinterpret_cast<float*>(scaleFP8SF.data_ptr());
@@ -76,8 +77,10 @@ std::tuple<at::Tensor, at::Tensor> fp8_quantize_1x128(at::Tensor const& self, bo
         TORCH_CHECK(act_scal_elesize <= scaleFP8SF.numel(), "Scale tensor size mismatch. Expected at least ",
             act_scal_elesize, " elements, got ", scaleFP8SF.numel());
 
-        // scaleFP8SF = scaleFP8SF[0:num_n_blocks, 0:m] // no 4-element alignment in blackwell
-        // TODO: This is a hack to use sm90 quantize kernel for sm100; ideally we should have a separate quantize kernel
+        // scaleFP8SF = scaleFP8SF[0:num_n_blocks, 0:m] // no 4-element alignment in
+        // blackwell
+        // TODO: This is a hack to use sm90 quantize kernel for sm100; ideally we
+        // should have a separate quantize kernel
         // for sm100.
         scaleFP8SF
             = scaleFP8SF.slice(0, 0, act_scal_elesize).view({num_n_blocks, m_padded}).slice(1, 0, m).contiguous();
@@ -116,8 +119,8 @@ std::tuple<at::Tensor, at::Tensor> fp8_batched_quantize_1x128_permute102(at::Ten
 
     // input: [b, m, n]
     // apply 102 permute
-    at::Tensor valueE4M3 = at::detail::empty_cuda(
-        {b * m_padded * n}, at::ScalarType::Float8_e4m3fn, self.device(), /* stride */ std::nullopt);
+    at::Tensor valueE4M3 = at::detail::empty_cuda({b * m_padded * n}, at::ScalarType::Float8_e4m3fn, self.device(),
+        /* stride */ std::nullopt);
 
     int64_t scaleSizeInBytes = mGemmRunner.getActScaleSize(m, b * n);
     int64_t elementSize = scaleSizeInBytes / torch::elementSize(FP8_BLOCK_SCALING_SF_DTYPE);
@@ -137,12 +140,16 @@ std::tuple<at::Tensor, at::Tensor> fp8_batched_quantize_1x128_permute102(at::Ten
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("fp8_quantize_1x128(Tensor input, bool use_ue8m0=False) -> (Tensor, Tensor)");
-    m.def("fp8_batched_quantize_1x128_permute102(Tensor input) -> (Tensor, Tensor)");
+    m.def(
+        "fp8_quantize_1x128(Tensor input, bool use_ue8m0=False) -> (Tensor, "
+        "Tensor)");
+    m.def(
+        "fp8_batched_quantize_1x128_permute102(Tensor input) -> (Tensor, "
+        "Tensor)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

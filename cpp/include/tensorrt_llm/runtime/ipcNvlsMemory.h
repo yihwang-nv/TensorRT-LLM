@@ -15,21 +15,18 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <set>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 struct IpcNvlsHandle
 {
     // Begin internal kernel visible fields
-    // Changes to these fields must sync with ipcNvlsMemory.h in internal kernel repo
+    // Changes to these fields must sync with ipcNvlsMemory.h in internal kernel
+    // repo
     size_t size = 0;
     // Device pointers used by kernels
     uintptr_t uc_ptr = 0;
@@ -108,6 +105,4 @@ private:
     size_t _capacity = 0;
     IpcNvlsHandle* _handle;
 };
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

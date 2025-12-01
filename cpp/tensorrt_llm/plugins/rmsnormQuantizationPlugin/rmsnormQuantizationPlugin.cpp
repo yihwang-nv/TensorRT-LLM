@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #include "rmsnormQuantizationPlugin.h"
 #include "pluginUtils.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/rmsnormKernels.h"
 
 using namespace nvinfer1;
@@ -201,9 +201,12 @@ int RmsnormQuantizationPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDe
     //     scale_to_int [1]
     //     clamp_value [2], contains min val, and max val (optional)
     // outputs
-    //     output           [M(*), N]   Normalized activations, potentially with quantization applied.
-    //     dynamic_scaling  [M(*), 1]   (Optional) Per-token scales if quantization is enabled.
-    //     token_sums       [M(*), 1]   (Optional) Per-token sums of all the channels (before quantization).
+    //     output           [M(*), N]   Normalized activations, potentially with
+    // quantization applied.
+    //     dynamic_scaling  [M(*), 1]   (Optional) Per-token scales if
+    // quantization is enabled.
+    //     token_sums       [M(*), 1]   (Optional) Per-token sums of all the
+    // channels (before quantization).
 
     int64_t m64 = 1;
     for (int i = 0; i < inputDesc[0].dims.nbDims - 1; ++i)

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +17,9 @@
  */
 
 #include "inflightBatchingUtils.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/runtimeKernels.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::utils
+namespace tensorrt_llm::batch_manager::utils
 {
 using ITensor = runtime::ITensor;
 
@@ -54,12 +52,14 @@ void sortRequests(RequestVector& contextRequests, RequestVector& generationReque
 
     if (chunksPresent)
     {
-        // Move context requests that reached the last context chunk to the end of the vector.
+        // Move context requests that reached the last context chunk to the end of
+        // the vector.
         // This order is required for moveFinishedContextRequestsToGeneration.
         auto firstFinished = std::partition(contextRequests.begin(), contextRequests.end(),
             [](auto const& llmReq) { return !llmReq->isLastContextChunk(); });
 
-        // Sort context requests by lora task id, but keep finished requests separate.
+        // Sort context requests by lora task id, but keep finished requests
+        // separate.
         sortByLoraId(contextRequests.begin(), firstFinished);
         sortByLoraId(firstFinished, contextRequests.end());
     }
@@ -81,7 +81,8 @@ void moveFinishedContextRequestsToGeneration(ScheduledRequests& scheduledRequest
     auto firstFinished = std::find_if(
         contextRequests.begin(), contextRequests.end(), [](auto const& llmReq) { return llmReq->isContextFinished(); });
     TLLM_LOG_DEBUG(
-        "Found %ld unfinished chunked context requests. Found %ld finished context requests, moving them to "
+        "Found %ld unfinished chunked context requests. Found %ld "
+        "finished context requests, moving them to "
         "generation.",
         std::distance(contextRequests.begin(), firstFinished), std::distance(firstFinished, contextRequests.end()));
     generationRequests.insert(generationRequests.begin(), std::make_move_iterator(firstFinished),
@@ -121,15 +122,18 @@ void copyGenerationLogits(RuntimeBuffers::GenerationLogitsCache& generationLogit
         auto const droppedSize = !numDroppedTokens.empty() ? numDroppedTokens.at(beam) : 0;
         // Ignore logits of dropped tokens
         auto const beamFragmentSize = fragmentSize - droppedSize;
-        // If this function is called before the decoder, the request does not contain the generated token of the
+        // If this function is called before the decoder, the request does not
+        // contain the generated token of the
         // current iteration, so we add 1 to the number of tokens.
         auto const numGenerationToken
             = static_cast<SizeType32>(beforeDecoder) + llmReq.getNumTokens(beam) - llmReq.mPromptLen;
         auto const hostOffset = numGenerationToken - beamFragmentSize;
 
-        // [beamWidth, GENERATION_LOGITS_BUFFER_LENGTH, vocabSizePadded] -> [beamFragmentSize, vocabSizePadded]
+        // [beamWidth, GENERATION_LOGITS_BUFFER_LENGTH, vocabSizePadded] ->
+        // [beamFragmentSize, vocabSizePadded]
         auto beamDeviceTensorPtr = ITensor::slice(transposeBufferPtr, {beam, 0}, beamFragmentSize);
-        // [beamWidth, mMaxNewTokens, vocabSizePadded] -> [beamFragmentSize, vocabSizePadded]
+        // [beamWidth, mMaxNewTokens, vocabSizePadded] -> [beamFragmentSize,
+        // vocabSizePadded]
         auto beamHostTensorPtr = ITensor::slice(llmReq.getGenerationLogitsHost(), {beam, hostOffset}, beamFragmentSize);
         bufferManager.copy(*beamDeviceTensorPtr, *beamHostTensorPtr);
     }
@@ -399,6 +403,4 @@ void CudaGraphExecutorCache::put(BatchState const& state, std::shared_ptr<CudaGr
     }
 }
 
-} // namespace batch_manager::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::utils

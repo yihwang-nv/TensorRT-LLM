@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +18,11 @@
 
 #include "tensorrt_llm/batch_manager/rnnStateManager.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/utils/runtimeUtils.h"
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::rnn_state_manager
+namespace tensorrt_llm::batch_manager::rnn_state_manager
 {
 
 RnnStateManager::RnnStateManager(SizeType32 maxNumSequences, tensorrt_llm::runtime::ModelConfig const& modelConfig,
@@ -36,7 +34,8 @@ RnnStateManager::RnnStateManager(SizeType32 maxNumSequences, tensorrt_llm::runti
     TLLM_CHECK_WITH_INFO(modelConfig.useMambaConv1dPlugin(), "RnnStateManager should be used with MambaConv1dPlugin.");
     TLLM_CHECK_WITH_INFO(mMaxBeamWidth == 1, "Beam search is not supported for Mamba now.");
     mBeamSlotsPerSequence = mMaxBeamWidth == 1 ? mMaxBeamWidth : mMaxBeamWidth + 1;
-    // If we need support beam search, we may need mMaxBeamWidth + 1 slots and use separate input / output states.
+    // If we need support beam search, we may need mMaxBeamWidth + 1 slots and
+    // use separate input / output states.
     auto const& rnnConfig = modelConfig.getRnnConfig();
     TLLM_CHECK_WITH_INFO(rnnConfig.has_value(), "RnnStateManager should be used with rnnConfig");
     auto const convKernel = rnnConfig->convKernel;
@@ -116,6 +115,4 @@ void RnnStateManager::fillSlotMapping(
     }
 }
 
-} // namespace batch_manager::rnn_state_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::rnn_state_manager

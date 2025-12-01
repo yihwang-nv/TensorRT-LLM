@@ -30,10 +30,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T, bool UE8M0_SF = false, typename = void>
 struct FP4Converter;
@@ -53,7 +50,8 @@ struct FP4Converter<TIn, UE8M0_SF, std::enable_if_t<std::is_same_v<TIn, half> ||
     static constexpr int THREADS_PER_WARP = 32;
 
     // The global scaling factor, which will be applied to the SF.
-    // Note SFScale is the same as next GEMM's alpha, which is (448.f / (Alpha_A / 6.f)).
+    // Note SFScale is the same as next GEMM's alpha, which is (448.f / (Alpha_A /
+    // 6.f)).
     float const SFScaleVal;
     int const numCols;
     uint32_t* const SFout;
@@ -127,7 +125,8 @@ struct FP4Converter<TIn, UE8M0_SF, std::enable_if_t<std::is_same_v<TIn, half> ||
             colIdx, std::nullopt /* numRows */, numCols / SF_VEC_SIZE, SFout, QuantizationSFLayout::SWIZZLED);
         *SFOffset = fp8SFVal;
         // Get the output scale.
-        // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal))) * reciprocal(SFScaleVal))
+        // Recipe: final_scale = reciprocal(fp32(fp8(SFValue * SFScaleVal))) *
+        // reciprocal(SFScaleVal))
         float outputScale = reciprocal_approximate_ftz(SFValue * reciprocal_approximate_ftz(SFScaleVal));
 
         // Convert the input to float.
@@ -171,7 +170,8 @@ struct FP4Converter<float, UE8M0_SF>
     static constexpr int THREADS_PER_WARP = 32;
 
     // The global scaling factor, which will be applied to the SF.
-    // Note SFScale is the same as next GEMM's alpha, which is (448.f / (Alpha_A / 6.f)).
+    // Note SFScale is the same as next GEMM's alpha, which is (448.f / (Alpha_A /
+    // 6.f)).
     float const SFScaleVal;
     int const numCols;
     uint32_t* const SFout;
@@ -264,6 +264,4 @@ struct FP4Converter<float, UE8M0_SF>
     }
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -186,16 +186,13 @@ generate_cu_trtllm = os.environ.get('GENERATE_CU_TRTLLM',
 
 ns_open = r"""
 #include "tensorrt_llm/common/config.h"
-TRTLLM_NAMESPACE_BEGIN
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 // clang-format off
 """ if generate_cu_trtllm else ""
 
 ns_close = r"""
 // clang-format on
-} // namespace kernels
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 """ if generate_cu_trtllm else ""
 
 copyright = '''\

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,12 +16,10 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
-#include "tensorrt_llm/kernels/cutlass_kernels/include/fp4_gemm.h"
-
 #include "tensorrt_llm/plugins/common/gemmPluginProfiler.h"
-#if defined(USING_OSS_CUTLASS_FP4_GEMM)
 #include "tensorrt_llm/plugins/common/plugin.h"
+#if defined(USING_OSS_CUTLASS_FP4_GEMM)
+#include "tensorrt_llm/kernels/cutlass_kernels/include/fp4_gemm.h"
 #else
 #include "fp4_gemm.h"
 #endif
@@ -31,9 +30,7 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 #if defined(USING_OSS_CUTLASS_FP4_GEMM)
@@ -43,11 +40,11 @@ using Fp4GemmRunnerPtr
     = std::shared_ptr<tensorrt_llm::kernels::internal_cutlass_kernels::CutlassFp4GemmRunnerInterface>;
 #endif
 
-class Fp4GemmPluginProfiler : public GemmPluginProfiler<tensorrt_llm::cutlass_extensions::CutlassGemmConfig,
+class Fp4GemmPluginProfiler : public GemmPluginProfiler<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig,
                                   Fp4GemmRunnerPtr, GemmIdCore, GemmIdCoreHash>
 {
 public:
-    using Config = tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
+    using Config = tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig;
 
 protected:
     void runTactic(int m, int n, int k, Config const& tactic, char* workspace, cudaStream_t const& stream) override;
@@ -163,6 +160,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

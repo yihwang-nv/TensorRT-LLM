@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "tensorrt_llm/executor/cache_transmission/nixl_utils/transferAgent.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/transferAgent.h"
@@ -35,9 +35,7 @@
 #include <unistd.h>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 class FileLock
@@ -152,7 +150,8 @@ static std::string getAvailableIP()
     if (ifa == nullptr)
     {
         TLLM_LOG_ERROR(mpi::MpiComm::world().getRank(),
-            "UCX   No valid IP address found please set correct NIXL interface with env variable TRTLLM_UCX_INTERFACE");
+            "UCX   No valid IP address found please set correct NIXL "
+            "interface with env variable TRTLLM_UCX_INTERFACE");
     }
 
     freeifaddrs(ifaddr);
@@ -436,7 +435,8 @@ void NixlTransferAgent::invalidateRemoteAgent(std::string const& name)
         mExtraParams.hasNotif = false;
     }
     // Need to do this in a loop with NIXL_ERR_NOT_FOUND
-    // UCX AM with desc list is faster than listener thread can recv/load MD with sockets
+    // UCX AM with desc list is faster than listener thread can recv/load MD
+    // with sockets
     // Will be deprecated with ETCD or callbacks
 
     // do
@@ -447,7 +447,8 @@ void NixlTransferAgent::invalidateRemoteAgent(std::string const& name)
     // } while (status == NIXL_ERR_NOT_FOUND);
 
     TLLM_CHECK_WITH_INFO(status == NIXL_SUCCESS,
-        " rank: %d createXferReq failed with status: %s selfname: %s remoteAgent name: %s",
+        " rank: %d createXferReq failed with status: %s "
+        "selfname: %s remoteAgent name: %s",
         mpi::MpiComm::world().getRank(), nixlEnumStrings::statusStr(status).c_str(), mName.c_str(),
         request.getRemoteName().c_str());
 
@@ -459,7 +460,8 @@ void NixlTransferAgent::notifySyncMessage(std::string const& name, SyncMessage c
 {
     if (name == mName)
     {
-        // FIXME: nixl does not support gen notif to itself ,but support local transfer. we use local transfer to notify
+        // FIXME: nixl does not support gen notif to itself ,but support local
+        // transfer. we use local transfer to notify
         // itself
         MemoryDescs descs{MemoryType::kDRAM, {MemoryDesc{mDRamSrcBuffer}, MemoryDesc{mDRamDstBuffer}}};
         TransferRequest request{TransferOp::kWRITE, descs, descs, name, syncMessage};
@@ -495,8 +497,9 @@ void NixlTransferAgent::loadRemoteAgent(std::string const& name, ConnectionInfoT
     std::string ip = connectionInfo.substr(0, connectionInfo.find(":"));
     std::string port = connectionInfo.substr(connectionInfo.find(":") + 1);
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        "NixlTransferAgent::loadRemoteAgent loadRemoteAgent to %s remoteagent name: %s", connectionInfo.c_str(),
-        name.c_str());
+        "NixlTransferAgent::loadRemoteAgent loadRemoteAgent to %s "
+        "remoteagent name: %s",
+        connectionInfo.c_str(), name.c_str());
     TLLM_CHECK_WITH_INFO(!ip.empty() && !port.empty(), "loadRemoteAgent get empty ip or port, connectionInfo: %s",
         connectionInfo.c_str());
     nixl_opt_args_t md_extra_params;
@@ -507,7 +510,8 @@ void NixlTransferAgent::loadRemoteAgent(std::string const& name, ConnectionInfoT
         status == NIXL_SUCCESS, "fetchRemoteMD failed with status: %s", nixlEnumStrings::statusStr(status).c_str());
     // status = mRawAgent->sendLocalMD(&md_extra_params);
     // TLLM_CHECK_WITH_INFO(
-    //     status == NIXL_SUCCESS, "sendLocalMD failed with status: %s", nixlEnumStrings::statusStr(status).c_str());
+    //     status == NIXL_SUCCESS, "sendLocalMD failed with status: %s",
+    // nixlEnumStrings::statusStr(status).c_str());
 
     status = NIXL_ERR_NOT_FOUND;
     nixl_xfer_dlist_t descs{DRAM_SEG};
@@ -522,7 +526,8 @@ void NixlTransferAgent::loadRemoteAgent(std::string const& name, ConnectionInfoT
         }
     }
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        "NixlTransferAgent::loadRemoteAgent loadRemoteAgent to %s remoteagent name: %s success status: %s",
+        "NixlTransferAgent::loadRemoteAgent loadRemoteAgent to %s "
+        "remoteagent name: %s success status: %s",
         connectionInfo.c_str(), name.c_str(), nixlEnumStrings::statusStr(status).c_str());
 }
 
@@ -692,6 +697,4 @@ extern "C"
 #pragma clang diagnostic pop
 #endif
 
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

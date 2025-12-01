@@ -28,9 +28,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 class CUDADriverWrapper
 {
 public:
@@ -168,8 +165,6 @@ void checkDriverExitSafe(T result, char const* const func, char const* const fil
     }
 }
 
-} // namespace common
-
 TRTLLM_NAMESPACE_END
 /*
  * Macros compliant with TensorRT coding conventions
@@ -181,7 +176,8 @@ TRTLLM_NAMESPACE_END
             (stat), *tensorrt_llm::common::CUDADriverWrapper::getInstance(), #stat, __FILE__, __LINE__);               \
     } while (0)
 
-// Avoid using CUDADriverWrapper when freeing resource, during which the global instance may already be freed.
+// Avoid using CUDADriverWrapper when freeing resource, during which the global
+// instance may already be freed.
 #define TLLM_CU_CHECK_FREE_RESOURCE(stat)                                                                              \
     do                                                                                                                 \
     {                                                                                                                  \

@@ -24,12 +24,10 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 class QuantMode
 {
-    // [WARNING] KEEP BELOW DEFINITION IN SYNC WITH tensorrt_llm/quantization/mode.py
+    // [WARNING] KEEP BELOW DEFINITION IN SYNC WITH
+    // tensorrt_llm/quantization/mode.py
 public:
     using BaseType = std::uint32_t;
 
@@ -480,7 +478,5 @@ public:
     static constexpr int FP8_ALPHA = int(1) << 3;
     static constexpr int INT8_WEIGHT = int(1) << 4;
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

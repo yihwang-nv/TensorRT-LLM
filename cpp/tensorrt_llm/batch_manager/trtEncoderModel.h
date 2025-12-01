@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,25 +18,19 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/rawEngine.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
 #include "trtGptModel.h"
 
 #include <NvInferRuntime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class TllmRuntime;
 class NcclCommunicator;
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class CapacityScheduler;
 class MicroBatchScheduler;
@@ -200,7 +195,8 @@ private:
     std::unique_ptr<tensorrt_llm::batch_manager::MicroBatchScheduler const> mMicroBatchScheduler;
 
     SizeType32 mHiddenSize;  // already divided by Tensor Parallelism
-    SizeType32 mMaxInputLen; // WAR for max_input_len == max_seq_len at all circumstances
+    SizeType32 mMaxInputLen; // WAR for max_input_len == max_seq_len at all
+                             // circumstances
 
     runtime::BufferManager mCopyBufferManager;
 
@@ -208,6 +204,4 @@ private:
     executor::IterationType mIterCounter{0};
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

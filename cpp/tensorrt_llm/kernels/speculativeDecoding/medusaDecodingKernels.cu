@@ -33,9 +33,9 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 namespace
 {
@@ -66,6 +66,6 @@ void scatterMedusaDraftTokens(TokenIdType* treeDraftIds, TokenIdType const* sour
     scatterMedusaDraftTokens<<<batchSize, BLOCK_SIZE, 0, stream>>>(
         treeDraftIds, sourceDraftIds, treeIds, tokensPerStep, batchSlots, maxDecodingTokens);
 }
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

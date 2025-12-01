@@ -33,7 +33,8 @@
 #include <cstdint>
 #include <unordered_set>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -150,9 +151,11 @@ torch::Tensor llama4_moe_tp8ep1_min_latency(torch::Tensor const& input, torch::T
     TORCH_CHECK(fc1_expert_weights.dim() == 3, "fc1_expert_weights must be 3D.");
     TORCH_CHECK(fc2_expert_weights.dim() == 3, "fc2_expert_weights must be 3D.");
     TORCH_CHECK(fc1_expert_weights.sizes()[0] == fc2_expert_weights.sizes()[0],
-        "fc1_expert_weights and fc2_expert_weights must have the same number of experts.");
+        "fc1_expert_weights and fc2_expert_weights must have the same "
+        "number of experts.");
     TORCH_CHECK(fc1_expert_weights.sizes()[1] == fc2_expert_weights.sizes()[2] * 2,
-        "fc1_expert_weights inter size must be 2 times fc2_expert_weights inter size.");
+        "fc1_expert_weights inter size must be 2 times "
+        "fc2_expert_weights inter size.");
     TORCH_CHECK(router_logits.sizes()[0] == input.sizes()[0], "router_logits and input must have the same num tokens.");
     TORCH_CHECK(router_logits.sizes()[1] == 128, "router_logits must have 128 experts.");
     TORCH_CHECK(input.sizes()[1] == 5120, "input must have 5120 hidden size.");
@@ -203,7 +206,9 @@ TORCH_LIBRARY_FRAGMENT(trtllm, m)
     m.def(
         "llama4_fp8_bf16_gemm(Tensor inputA, Tensor inputB, "
         "Tensor scaling_factor, Tensor? position_ids=None) -> Tensor");
-    m.def("llama4_fp8_fp8_gemm_swiglu(Tensor inputA, Tensor inputB, Tensor in_scale, Tensor out_scale_inv) -> Tensor");
+    m.def(
+        "llama4_fp8_fp8_gemm_swiglu(Tensor inputA, Tensor inputB, Tensor "
+        "in_scale, Tensor out_scale_inv) -> Tensor");
     m.def(
         "llama4_moe_tp8ep1_min_latency(Tensor input, Tensor router_logits, "
         "Tensor fc1_expert_weights, Tensor fc2_expert_weights, "
@@ -220,4 +225,4 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

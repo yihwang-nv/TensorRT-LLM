@@ -22,10 +22,7 @@
 #include <cstdint>
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 class FinishedState
 {
@@ -196,7 +193,8 @@ struct ScatterDecodingParamEntry
 //! \brief Initialize batchSize curand states with given seed.
 //!
 //! \param state output buffer [maxBatchSize]. Curand states to be initialized
-//! \param batchSlots input buffer[batchSize], optional. Indices of rows of data in memory pool
+//! \param batchSlots input buffer[batchSize], optional. Indices of rows of data
+// in memory pool
 //! \param batchSize number of states to initialize
 //! \param randomSeed seed to initialize states
 //! \param stream stream
@@ -206,7 +204,8 @@ void invokeCurandInitialize(
 //! \brief Initialize batchSize curand states with given seed per request.
 //!
 //! \param state output buffer [maxBatchSize] of curand states to be initialized
-//! \param batchSlots input buffer[batchSize], optional. Indices of rows of data in memory pool
+//! \param batchSlots input buffer[batchSize], optional. Indices of rows of data
+// in memory pool
 //! \param batchSize number of states to initialize
 //! \param randomSeeds input buffer [maxBatchSize] with seeds
 //! \param stream stream
@@ -216,7 +215,8 @@ void invokeCurandBatchInitialize(curandState_t* states, int const* batchSlots, s
 template <typename T>
 struct BiasSoftmaxParams
 {
-    //! input/output buffer [maxBatchSize, vocabSize]. Logits to be modified by mask and bias.
+    //! input/output buffer [maxBatchSize, vocabSize]. Logits to be modified by
+    // mask and bias.
     //! If nullptr, logitsPtrs has to be provided.
     T* logits{nullptr};
     //! input/output buffer [maxBatchSize][maxBeamWidth, vocabSize] or
@@ -224,22 +224,27 @@ struct BiasSoftmaxParams
     //! Vector of pointers to the logits.
     //! If nullptr, logits has to be provided.
     T** logitsPtrs{nullptr};
-    //! output buffer [maxBatchSize, vocabSize]. Probabilities of logits compute by softmax.
+    //! output buffer [maxBatchSize, vocabSize]. Probabilities of logits compute
+    // by softmax.
     //! Can be the same pointer as logits
     T* probs{nullptr};
-    //! output buffer [maxBatchSize], optional. Entropy of the computed probs distribution.
+    //! output buffer [maxBatchSize], optional. Entropy of the computed probs
+    // distribution.
     //! When specified, skipSoftMax must be false and probs must be specified.
     float* outputEntropy{nullptr};
-    //! input buffer [vocabSize], optional. Bias to logit per token. Ignored if nullptr.
+    //! input buffer [vocabSize], optional. Bias to logit per token. Ignored if
+    // nullptr.
     T const* bias{nullptr};
-    //! input buffer [batchSize], optional. Temperature per logit. Ignored if nullptr.
+    //! input buffer [batchSize], optional. Temperature per logit. Ignored if
+    // nullptr.
     float const* temperatures{nullptr};
     //! input buffer [maxBatchSize], optional. EOS token ids per request
     int32_t const* endIds{nullptr};
     //! input buffer [maxBatchSize], optional.
     //! Flag is set to true if request has finished the generation
     FinishedState const* finished{nullptr};
-    //! input buffer [maxBatchSize], optional. Actual width of the beam per request.
+    //! input buffer [maxBatchSize], optional. Actual width of the beam per
+    // request.
     int32_t const* beamWidths{nullptr};
     //! input buffer[batchSize], optional. Indices of rows of data in memory pool
     int32_t const* batchSlots{nullptr};
@@ -290,27 +295,30 @@ struct BiasSoftmaxParams
     }
 };
 
-//! \brief Applies mask, applies temperature, adds bias to logits and computes softmax values.
-//! Sets -MAX_FLT value for tokens in range [vocabSize; vocabSizePadded) to prevent them from being chosen.
-//! If request finished the generation, sets MAX_FLT to endId token and -MAX_FLT to all other tokens forcing to choose
+//! \brief Applies mask, applies temperature, adds bias to logits and computes
+// softmax values.
+//! Sets -MAX_FLT value for tokens in range [vocabSize; vocabSizePadded) to
+// prevent them from being chosen.
+//! If request finished the generation, sets MAX_FLT to endId token and -MAX_FLT
+// to all other tokens forcing to choose
 //! endId token. Otherwise, adds bias per token if bias pointer is not nullptr.
 //! Computes entropy if outputEntropy is not nullptr.
 //! \param stream stream
 template <typename T>
 void invokeAddBiasSoftMax(BiasSoftmaxParams<T> const params, cudaStream_t stream);
 
-//! \brief Distributes values located in src to dst according to the indieces from batchSlots
+//! \brief Distributes values located in src to dst according to the indieces
+// from batchSlots
 //!
 //! \param src input buffer [batchSize], optional.
 //! \param scalar value used if src is nullptr.
 //! \param dst output buffer [maxBatchSize].
-//! \param batchSlots input buffer [batchSize]. Indices of rows of data in memory pool
+//! \param batchSlots input buffer [batchSize]. Indices of rows of data in
+// memory pool
 //! \param batchSize batch size
 //! \param stream stream
 template <typename T>
 void invokeScatterDecodingParams(
     T const* src, T scalar, T* dst, int const* batchSlots, int batchSize, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

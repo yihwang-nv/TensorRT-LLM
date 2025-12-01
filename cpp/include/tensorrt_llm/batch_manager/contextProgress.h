@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 // Use to track progress of context phase in dist-serving
@@ -55,6 +52,4 @@ private:
     std::vector<runtime::CudaEvent> mCudaEvents;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/tensor.h"
@@ -25,9 +24,7 @@
 #include <istream>
 #include <ostream>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 namespace kv_cache
@@ -367,6 +364,4 @@ public:
     static ModelType deserializeModelType(std::istream& is);
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

@@ -18,12 +18,11 @@
 #include "tensorrt_llm/common/cudaBf16Wrapper.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-// TODO(oargov): literally zero performance optimization work was put into these kernels and their launch parameters,
+// TODO(oargov): literally zero performance optimization work was put into these
+// kernels and their launch parameters,
 // since they should hopefully be fused to some gemm eventually.
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <typename T>
 __global__ void tokenPerChannelScaleKernel(size_t const numModules, size_t const numTokens,
     int64_t const* __restrict__ cumModuleSizes, T const* __restrict__ a, T const* const* __restrict__ scales,
@@ -32,11 +31,14 @@ __global__ void tokenPerChannelScaleKernel(size_t const numModules, size_t const
     /*
      * This kernel applies DoRA scaling to LoRA output.
      * Like LoRA, each token in the batch may target a different adapter.
-     * Each adapter may also have multiple modules, for example: QKV projection will have a different scale for Q, K and
+     * Each adapter may also have multiple modules, for example: QKV projection
+     * will have a different scale for Q, K and
      * V, but they will be concatenated into a single input vector.
-     * `scales` is a vector of pointers to DoRA magnitude vectors. Each token will have `numModules` pointers, and
+     * `scales` is a vector of pointers to DoRA magnitude vectors. Each token will
+     * have `numModules` pointers, and
      * pointers for the same module are next to each other. For example:
-     * scales = [token0_module0_ptr, token1_module0_ptr, ..., token0_module1_ptr, token1_module1_ptr, ...]
+     * scales = [token0_module0_ptr, token1_module0_ptr, ..., token0_module1_ptr,
+     * token1_module1_ptr, ...]
      */
     auto const threadId = blockIdx.x * blockDim.x + threadIdx.x;
     // number of columns in the input
@@ -45,12 +47,14 @@ __global__ void tokenPerChannelScaleKernel(size_t const numModules, size_t const
     auto const channelId = threadId % numChannels;
     // current thread's token
     auto const tokenId = threadId / numChannels;
-    // offset the input column to fit in the scaling vector's column in case of multiple modules
+    // offset the input column to fit in the scaling vector's column in case of
+    // multiple modules
     int64_t scaleChannelOffset = 0;
 
     T const* scale = nullptr;
 
-    // this loop searches for the module the current column is a part of, in case of multiple modules
+    // this loop searches for the module the current column is a part of, in case
+    // of multiple modules
     for (auto moduleId = 0; moduleId < numModules; moduleId++)
     {
         if (channelId < cumModuleSizes[moduleId])
@@ -65,7 +69,8 @@ __global__ void tokenPerChannelScaleKernel(size_t const numModules, size_t const
 
     if (threadId < numChannels * numTokens)
     {
-        // apply scaling if scale is not null (it is null in case of a non-DoRA adapter)
+        // apply scaling if scale is not null (it is null in case of a non-DoRA
+        // adapter)
         result[threadId] = scale == nullptr ? a[threadId] : a[threadId] * scale[channelId - scaleChannelOffset];
     }
 }
@@ -92,6 +97,4 @@ template void tokenPerChannelScale<nv_bfloat16>(int64_t const numel, size_t cons
     nv_bfloat16 const* const* __restrict__ scale_ptrs, nv_bfloat16* __restrict__ result, cudaStream_t stream);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

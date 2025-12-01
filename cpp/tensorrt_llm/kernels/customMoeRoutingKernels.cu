@@ -30,10 +30,7 @@
 namespace cg = cooperative_groups;
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 static constexpr int BLOCK_SIZE = 1024;
 static constexpr int WARP_SIZE = 32;
@@ -77,7 +74,7 @@ __device__ void calcSoftmax(cg::thread_block_tile<WARP_SIZE> const& warp, DataTy
     // Compute in float to support half/bfloat16 inputs safely.
     float maxScore = -INFINITY;
     float sumScore = 0.f;
-    // Get the max score for each token
+// Get the max score for each token
 #pragma unroll
     for (int i = 0; i < VecSize; ++i)
     {
@@ -86,7 +83,7 @@ __device__ void calcSoftmax(cg::thread_block_tile<WARP_SIZE> const& warp, DataTy
     }
     maxScore = cg::reduce(warp, maxScore, cg::greater<float>());
 
-    // Get the summation of scores for each token
+// Get the summation of scores for each token
 #pragma unroll
     for (int i = 0; i < VecSize; ++i)
     {
@@ -97,7 +94,7 @@ __device__ void calcSoftmax(cg::thread_block_tile<WARP_SIZE> const& warp, DataTy
     }
     sumScore = cg::reduce(warp, sumScore, cg::plus<float>());
 
-    // Normalize the scores
+// Normalize the scores
 #pragma unroll
     for (int i = 0; i < VecSize; ++i)
     {
@@ -278,6 +275,4 @@ INSTANTIATE_RENORM_MOE_ROUTING(half, __nv_bfloat16, int32_t, true);
 INSTANTIATE_RENORM_MOE_ROUTING(__nv_bfloat16, __nv_bfloat16, int32_t, true);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

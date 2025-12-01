@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +16,6 @@
  * limitations under the License.
  */
 #include "tensorrt_llm/plugins/mixtureOfExperts/mixtureOfExpertsPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaBf16Wrapper.h"
 #include "tensorrt_llm/common/dataType.h"
 #include "tensorrt_llm/common/envUtils.h"
@@ -229,7 +229,7 @@ std::unique_ptr<kernels::CutlassMoeFCRunnerInterface> switch_output_type(nvinfer
     case nvinfer1::DataType::kFP8:
         // TODO We need an atomic FP8 reduction for the finalize fusions
         TLLM_THROW("Outputting %d directly is not currently supported", static_cast<int>(output_type));
-        // return std::make_unique<kernels::CutlassMoeFCRunner<Type, Type>>();
+    // return std::make_unique<kernels::CutlassMoeFCRunner<Type, Type>>();
     case nvinfer1::DataType::kHALF:
         if constexpr (NeedQuant)
         {
@@ -330,7 +330,8 @@ void MixtureOfExpertsPlugin::init()
     if (!mMOERunner)
     {
         TLLM_THROW(
-            "Could not construct the mixture of experts plugin with the requested input combination Activation: %d "
+            "Could not construct the mixture of experts plugin with the "
+            "requested input combination Activation: %d "
             "Weight: %d Output: %d",
             static_cast<int>(mType), static_cast<int>(mWeightType), static_cast<int>(mOutputType));
     }
@@ -528,8 +529,9 @@ void MixtureOfExpertsPlugin::configurePlugin(nvinfer1::DynamicPluginTensorDesc c
     TLLM_CHECK_WITH_INFO(minN == maxN, "Variable out channels is not allowed");
     TLLM_CHECK_WITH_INFO(minK == maxK, "Variable in channels is not allowed");
     TLLM_CHECK_WITH_INFO(maxK == mExpertHiddenSize && maxN == mExpertInterSize,
-        "Configured tensor sizes %dx%d does not match constructor param size %ldx%ld", maxK, maxN, mExpertHiddenSize,
-        mExpertInterSize);
+        "Configured tensor sizes %dx%d does not match "
+        "constructor param size %ldx%ld",
+        maxK, maxN, mExpertHiddenSize, mExpertInterSize);
 
     if (!mDims.isInitialized())
     {
@@ -551,10 +553,10 @@ void MixtureOfExpertsPlugin::configurePlugin(nvinfer1::DynamicPluginTensorDesc c
 
 auto MixtureOfExpertsPlugin::setupWorkspace(void* base_ptr, int64_t num_tokens, int num_reqs) const -> WorkspaceInfo
 {
-    size_t moe_workspace_size
-        = mMOERunner->getWorkspaceSize(num_tokens, mExpertHiddenSize, mExpertInterSize, mNumExperts, mExpertsPerToken,
-            mActivationType, mParallelismConfig, hasLora(), /*use_deepseek_fp8_block_scale=*/false,
-            /*min_latency_mode=*/false, hasExpertPrequantScales());
+    size_t moe_workspace_size = mMOERunner->getWorkspaceSize(num_tokens, mExpertHiddenSize, mExpertInterSize,
+        mNumExperts, mExpertsPerToken, mActivationType, mParallelismConfig, hasLora(),
+        /*use_deepseek_fp8_block_scale=*/false,
+        /*min_latency_mode=*/false, hasExpertPrequantScales());
 
     // Permutation map
     size_t src_to_dest_map_size = mExpertsPerToken * num_tokens * sizeof(int);
@@ -590,8 +592,10 @@ auto MixtureOfExpertsPlugin::setupWorkspace(void* base_ptr, int64_t num_tokens, 
 int64_t MixtureOfExpertsPlugin::getNumTokens(nvinfer1::PluginTensorDesc const* input_tensors) const
 {
     int ndim = input_tensors[getInputTensorIndex()].dims.nbDims;
-    TLLM_CHECK_WITH_INFO(
-        3 == ndim || 2 == ndim, "hidden_state dimension should be either 2 [b*s, hidden], or 3 [b, s, hidden]");
+    TLLM_CHECK_WITH_INFO(3 == ndim || 2 == ndim,
+        "hidden_state dimension should "
+        "be either 2 [b*s, hidden], or "
+        "3 [b, s, hidden]");
     int64_t num_tokens = input_tensors[getInputTensorIndex()].dims.d[0];
     if (ndim == 3)
     {
@@ -773,8 +777,10 @@ LoraParams MixtureOfExpertsPlugin::getLoraParams(
         RequestType const reqType = static_cast<RequestType const>(req_types[req_id]);
         if (reqType == RequestType::kGENERATION)
         {
-            // lora_weight_ptrs has 3 pointers for each module: A,B, and an optional DoRA magnitude
-            // the current LoRA implementation does not apply DoRA scaling, so the magnitude is ignored
+            // lora_weight_ptrs has 3 pointers for each module: A,B, and an optional
+            // DoRA magnitude
+            // the current LoRA implementation does not apply DoRA scaling, so the
+            // magnitude is ignored
             mLoraExpandFC1WeightPtrs.push_back(fc1_lora_weight_ptrs[req_id * 3]);
             mLoraExpandFC1WeightPtrs.push_back(fc1_lora_weight_ptrs[req_id * 3 + 1]);
             mLoraExpandFC1Ranks.push_back(fc1_lora_ranks[req_id]);
@@ -846,12 +852,15 @@ int MixtureOfExpertsPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
             mSideStreamPtr = reinterpret_cast<nvinfer1::pluginInternal::SideStream*>(
                 getPluginRegistry()->acquirePluginResource(resource_name.c_str(), &side_stream));
         }
-        // Debug the code with the main stream stalled (only executed when the environment variable
+        // Debug the code with the main stream stalled (only executed when the
+        // environment variable
         // TLLM_DEBUG_MOE_STALL_MAIN is set and has a positive value)
         mSideStreamPtr->stallMainStream("TLLM_DEBUG_MOE_STALL_MAIN", stream, mDebugStallMain);
-        // The side stream waits for the inputs managed by the main stream to be ready
+        // The side stream waits for the inputs managed by the main stream to be
+        // ready
         mSideStreamPtr->waitMainStreamOnSideStream(stream);
-        // Provide data dependency for the shared experts running after this plugin by copying inputs on the main stream
+        // Provide data dependency for the shared experts running after this plugin
+        // by copying inputs on the main stream
         size_t count = 1;
         for (int i = 0; i < inputDesc[getInputDummyTensorIndex()].dims.nbDims; ++i)
         {
@@ -862,7 +871,8 @@ int MixtureOfExpertsPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
             cudaMemcpyDeviceToDevice, stream));
         // Switch from the main stream to the side stream
         stream = mSideStreamPtr->getStream();
-        // The workspace is managed by the side stream (otherwise, the lifetime of workspace may be incorrect)
+        // The workspace is managed by the side stream (otherwise, the lifetime of
+        // workspace may be incorrect)
         auto const workspace_size = setupWorkspace(nullptr, num_tokens, num_reqs).size;
         workspace_ptr = mSideStreamPtr->getWorkspacePtr(workspace_size);
     }
@@ -944,8 +954,8 @@ int MixtureOfExpertsPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
         mLoraImpl2->setBestTactic(lora_gemm2);
     }
 
-    std::optional<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> gemm1;
-    std::optional<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> gemm2;
+    std::optional<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> gemm1;
+    std::optional<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> gemm2;
     if (common::getEnvForceDeterministicMOE())
     {
         gemm1 = mMOERunner->getTactics(MoeGemmId::GEMM_1)[0];
@@ -970,7 +980,8 @@ int MixtureOfExpertsPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
         mExpertInterSize, mNumExperts, mExpertsPerToken, static_cast<char*>(workspace.workspace),
         // Outputs
         outputs[getOutputTensorIndex()], static_cast<int*>(workspace.src_to_dest_map), mParallelismConfig,
-        /*enable_alltoall=*/false, hasLora(), lora_params, /*use_deepseek_fp8_block_scale=*/false,
+        /*enable_alltoall=*/false, hasLora(), lora_params,
+        /*use_deepseek_fp8_block_scale=*/false,
         /*min_latency_mode=*/false, min_latency_params, stream);
 #else
     mMOERunner->runMoe(inputs[getInputTensorIndex()], nullptr, true,
@@ -988,7 +999,8 @@ int MixtureOfExpertsPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
 
     if (useSideStream())
     {
-        // Debug the code with the side stream stalled (only executed when the environment variable
+        // Debug the code with the side stream stalled (only executed when the
+        // environment variable
         // TLLM_DEBUG_MOE_STALL_SIDE is set and has a positive value)
         mSideStreamPtr->stallSideStream("TLLM_DEBUG_MOE_STALL_SIDE", mDebugStallSide);
     }
@@ -1206,13 +1218,15 @@ IPluginV2* MixtureOfExpertsPluginCreator::createPlugin(
     if (mUseLora)
     {
         TLLM_CHECK_WITH_INFO(mLoraType != INT_MAX && mMaxLowRank != 0,
-            "MoE fuse lora, lora_type_id and max_low_rank are required but not set");
+            "MoE fuse lora, lora_type_id and max_low_rank are "
+            "required but not set");
     }
 
     try
     {
         auto gemmProfiler = moePluginProfiler.createGemmPluginProfiler(/* inference */ false);
-        auto loraProfiler = loraPluginProfileManager.createGemmPluginProfiler(/* inference */ false, /* skip */ true);
+        auto loraProfiler = loraPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false, /* skip */ true);
         auto* obj = new MixtureOfExpertsPlugin(
             // Constructor parameters
             mRemoveInputPadding, mNumExperts, mExpertsPerToken, mExpertHiddenSize, mExpertInterSize,
@@ -1239,7 +1253,8 @@ IPluginV2* MixtureOfExpertsPluginCreator::deserializePlugin(
     try
     {
         auto gemmProfiler = moePluginProfiler.createGemmPluginProfiler(/* inference */ true);
-        auto loraProfiler = loraPluginProfileManager.createGemmPluginProfiler(/* inference */ false, /* skip */ true);
+        auto loraProfiler = loraPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false, /* skip */ true);
 
         auto* obj = new MixtureOfExpertsPlugin(
             // Constructor parameters
@@ -1305,11 +1320,13 @@ void MixtureOfExpertsGemmProfiler::checkInit()
         plugin.mNumExperts, plugin.mExpertsPerToken, plugin.mExpertHiddenSize,
         plugin.mExpertHiddenSize /*TRT backend does not support unpadded hidden size*/, plugin.mExpertInterSize,
         plugin.mGroupSize, plugin.mActivationType, plugin.hasBias(), plugin.hasLora(), /*min_latency_mode=*/false,
-        /*need_weights=*/true, plugin.getParallelismConfig(), /*enable_alltoall=*/false);
+        /*need_weights=*/true, plugin.getParallelismConfig(),
+        /*enable_alltoall=*/false);
 #else
     backend.init(*plugin.mMOERunner, backend.mGemmToProfile, plugin.mType, plugin.mWeightType, plugin.mOutputType,
         plugin.mNumExperts, plugin.mExpertsPerToken, plugin.mExpertHiddenSize, plugin.mExpertInterSize,
-        plugin.mGroupSize, plugin.mActivationType, plugin.hasBias(), plugin.hasLora(), /*min_latency_mode=*/false,
+        plugin.mGroupSize, plugin.mActivationType, plugin.hasBias(), plugin.hasLora(),
+        /*min_latency_mode=*/false,
         /*need_weights=*/true, plugin.getParallelismConfig());
 #endif
 }

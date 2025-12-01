@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 
 #include <cstdio>
@@ -25,9 +25,7 @@
 #include <optional>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::disagg_executor
+namespace tensorrt_llm::executor::disagg_executor
 {
 
 namespace texec = tensorrt_llm::executor;
@@ -91,11 +89,15 @@ public:
     ///
     /// @param ctxEnginePaths A vector of file paths to context engine files.
     /// @param genEnginePaths A vector of file paths to generation engine files.
-    /// @param ctxExecutorConfigs A vector of ExecutorConfig  for context executors.
-    /// @param genExecutorConfigs A vector of ExecutorConfig  for generation executors.
-    /// @param hasContextAwaitThreads Whether or not there are threads that receive response for each generation
+    /// @param ctxExecutorConfigs A vector of ExecutorConfig  for context
+    /// executors.
+    /// @param genExecutorConfigs A vector of ExecutorConfig  for generation
+    /// executors.
+    /// @param hasContextAwaitThreads Whether or not there are threads that
+    /// receive response for each generation
     /// executor.
-    /// @param hasGenAwaitThreads Whether or not there are threads that receive response for each generation executor.
+    /// @param hasGenAwaitThreads Whether or not there are threads that receive
+    /// response for each generation executor.
 
     DisaggExecutorOrchestrator(std::vector<std::filesystem::path> const& ctxEnginePaths,
         std::vector<std::filesystem::path> const& genEnginePaths,
@@ -105,22 +107,28 @@ public:
 
     /// @brief Enqueue context-only requests to context executors.
     /// @param requests A vector of context-only requests.
-    /// @param selectContextId The index of the context executor to use. If `std::nullopt`, the executor that has the
+    /// @param selectContextId The index of the context executor to use. If
+    /// `std::nullopt`, the executor that has the
     /// smallest number of inflight requests will be used.
-    /// @param batch If true,enqueue requests in same context executor.If false, will try to use a different executor
+    /// @param batch If true,enqueue requests in same context executor.If false,
+    /// will try to use a different executor
     /// for each request.
-    /// @return A vector of global request ids, corresponding to the order of the requests in `requests`, the id
+    /// @return A vector of global request ids, corresponding to the order of
+    /// the requests in `requests`, the id
     /// returned may be different from the request id in each executor.
     [[nodiscard]] std::vector<IdType> enqueueContext(std::vector<texec::Request> const& requests,
         std::optional<int> selectContextId = std::nullopt, bool batch = false);
 
     /// @brief Enqueue generation-only requests to generation executors.
     /// @param requests A vector of generation-only requests.
-    /// @param globalRequestIds A vector of global request ids, corresponding to the order of the requests,and must be
+    /// @param globalRequestIds A vector of global request ids, corresponding to
+    /// the order of the requests,and must be
     /// the ids returned by the enqueueContext function.
-    /// @param selectGenIdx The index of the generation executor to use. If `std::nullopt`, the executor that has the
+    /// @param selectGenIdx The index of the generation executor to use. If
+    /// `std::nullopt`, the executor that has the
     /// smallest number of inflight requests will be used.
-    /// @param batch If true,enqueue requests in same generation executor.If false, will try to use a different executor
+    /// @param batch If true,enqueue requests in same generation executor.If
+    /// false, will try to use a different executor
     /// for each request.
 
     void enqueueGeneration(std::vector<texec::Request> const& requests, std::vector<IdType> const& globalRequestIds,
@@ -128,8 +136,10 @@ public:
 
     /// @brief Await for context responses
     /// @param timeout The maximum time to wait for new responses
-    /// @param contextIdx The index of the context executor to use. If `std::nullopt`, return ready responses in all
-    /// context executors,if `hasContextAwaitThreads` is true, then this parameter must be std::nullopt.
+    /// @param contextIdx The index of the context executor to use. If
+    /// `std::nullopt`, return ready responses in all
+    /// context executors,if `hasContextAwaitThreads` is true, then this
+    /// parameter must be std::nullopt.
     /// @return A vector of responses with corresponding global request ids
 
     [[nodiscard]] std::vector<ResponseWithId> awaitContextResponses(
@@ -137,8 +147,10 @@ public:
 
     /// @brief Await for generation responses
     /// @param timeout The maximum time to wait for new responses.
-    /// @param genIdx The index of the generation executor to use. If `std::nullopt`, return ready responses in all
-    /// generation executors,if `hasGenAwaitThreads` is true, then this parameter must be std::nullopt.
+    /// @param genIdx The index of the generation executor to use. If
+    /// `std::nullopt`, return ready responses in all
+    /// generation executors,if `hasGenAwaitThreads` is true, then this
+    /// parameter must be std::nullopt.
     /// @return A vector of responses with corresponding global request ids.
     [[nodiscard]] std::vector<ResponseWithId> awaitGenerationResponses(
         std::optional<std::chrono::milliseconds> const& timeout, std::optional<int> genIdx = std::nullopt);
@@ -158,6 +170,4 @@ private:
     class Impl;
     std::unique_ptr<Impl> mImpl;
 };
-} // namespace executor::disagg_executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::disagg_executor

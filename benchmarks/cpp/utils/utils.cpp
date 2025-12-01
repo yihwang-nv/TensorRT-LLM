@@ -25,7 +25,8 @@
 #include <filesystem>
 #include <fstream>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace benchmark
 {
@@ -167,4 +168,4 @@ std::ostream& operator<<(std::ostream& os, RecordBwMetric const& metric)
 
 } // namespace benchmark
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

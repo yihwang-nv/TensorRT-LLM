@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
+#include "tensorrt_llm/runtime/eagleBuffers.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/eagleDecodingKernels.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/explicitDraftTokensKernels.h"
 #include "tensorrt_llm/runtime/common.h"
-#include "tensorrt_llm/runtime/eagleBuffers.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 #include "tensorrt_llm/runtime/runtimeKernels.h"
 
 namespace tksd = tensorrt_llm::kernels::speculative_decoding;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 void EagleBuffers::Inputs::create(SizeType32 maxNumSequences, BufferManager const& manager,
@@ -214,14 +211,17 @@ EagleBuffers::EagleBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth, run
     {
         TLLM_LOG_WARNING("EAGLE-2 is still under the experimental stage.");
         TLLM_CHECK_WITH_INFO(dynamicTreeMaxTopK > 0,
-            "When using Eagle-2, dynamicTreeMaxTopK should greater than 0. Now dynamicTreeMaxTopK is %d",
+            "When using Eagle-2, dynamicTreeMaxTopK should "
+            "greater than 0. Now dynamicTreeMaxTopK is %d",
             dynamicTreeMaxTopK);
         TLLM_CHECK_WITH_INFO(maxNonLeafNodesPerLayer >= dynamicTreeMaxTopK,
-            "When using Eagle-2, maxNonLeafNodesPerLayer should be greater or equal to dynamicTreeMaxTopK. Now "
+            "When using Eagle-2, maxNonLeafNodesPerLayer should be greater or "
+            "equal to dynamicTreeMaxTopK. Now "
             "maxNonLeafNodesPerLayer is %d, and dynamicTreeMaxTopK is %d",
             maxNonLeafNodesPerLayer, dynamicTreeMaxTopK);
         TLLM_CHECK_WITH_INFO(maxDecodingDraftTokens >= dynamicTreeMaxTopK,
-            "When using Eagle-2, maxDecodingDraftTokens should be greater or equal to dynamicTreeMaxTopK. Now "
+            "When using Eagle-2, maxDecodingDraftTokens should be greater or "
+            "equal to dynamicTreeMaxTopK. Now "
             "maxDecodingDraftTokens is %d, and dynamicTreeMaxTopK is %d",
             maxDecodingDraftTokens, dynamicTreeMaxTopK);
     }
@@ -437,7 +437,8 @@ void EagleBuffers::setFromInputs(RequestVector const& contextRequests, RequestVe
             auto const beginCompute = llmReq->getContextCurrentPosition();
             auto const endCompute = beginCompute + contextChunkSize;
 
-            // Fill values for requests with chunked context as their decoder setup step is skipped.
+            // Fill values for requests with chunked context as their decoder setup
+            // step is skipped.
             bufferCast<SizeType32>(*engineInputs.eagleNetCtxRequestTypesHost)[batchIdx] = 0;
             bufferCast<SizeType32>(*engineInputs.eagleNetCtxContextLengthsHost)[batchIdx] = contextChunkSize;
             bufferCast<SizeType32>(*engineInputs.eagleNetCtxPastKeyValueLengthsHost)[batchIdx]
@@ -595,6 +596,4 @@ void EagleBuffers::insertInputTensors(
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

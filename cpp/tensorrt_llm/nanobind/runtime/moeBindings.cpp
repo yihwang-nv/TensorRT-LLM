@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "moeBindings.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/nanobind/common/customCasters.h"
 #include "tensorrt_llm/runtime/moeLoadBalancer/hostAccessibleDeviceAllocator.h"
 #include "tensorrt_llm/runtime/moeLoadBalancer/moeLoadBalancer.h"
@@ -28,9 +28,7 @@ namespace nb = nanobind;
 namespace tr = tensorrt_llm::runtime;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::runtime
+namespace tensorrt_llm::nanobind::runtime
 {
 
 void pyDoReplication(tk::MoeLoadBalanceMetaInfo const& metaInfo, std::vector<float>& expertLoadFactor,
@@ -101,7 +99,8 @@ void initMoeBindings(nb::module_& m)
     // Bind MoeLoadBalancer class
     nb::class_<tr::MoeLoadBalancer>(m, "MoeLoadBalancer")
         .def(nb::init<int, int, int>(), nb::arg("ep_rank"), nb::arg("ep_size"), nb::arg("layer_updates_per_iter"),
-            "Initialize the MoeLoadBalancer with the specified expert parallel rank, size, and update frequency",
+            "Initialize the MoeLoadBalancer with the specified expert "
+            "parallel rank, size, and update frequency",
             nb::call_guard<nb::gil_scoped_release>())
         .def("set_use_gpu_memcpy", &tr::MoeLoadBalancer::setUseGpuMemcpy, nb::arg("use_gpu_memcpy"),
             "Set whether to use GPU memcpy for weight updates", nb::call_guard<nb::gil_scoped_release>())
@@ -109,7 +108,8 @@ void initMoeBindings(nb::module_& m)
             nb::arg("slot_count_per_rank"), "Add a new MOE layer to the load balancer",
             nb::call_guard<nb::gil_scoped_release>())
         .def("finalize_model", &tr::MoeLoadBalancer::finalizeModel,
-            "Finalize the model structure, must be called after all layers are added",
+            "Finalize the model structure, must be called after all layers "
+            "are added",
             nb::call_guard<nb::gil_scoped_release>())
         .def("set_warm_up_iter_count", &tr::MoeLoadBalancer::setWarmUpIterCount, nb::arg("iter_count"),
             "Set the number of warm-up iterations", nb::call_guard<nb::gil_scoped_release>())
@@ -133,6 +133,4 @@ void initMoeBindings(nb::module_& m)
         "Do placement");
 }
 
-} // namespace nanobind::runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::runtime

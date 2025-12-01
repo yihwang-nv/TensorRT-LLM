@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/kvCacheType.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
@@ -30,9 +30,7 @@
 
 #include <NvInferRuntime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class TllmRuntime;
 class GptDecoderBatched;
@@ -51,19 +49,19 @@ class Input;
 class Output;
 } // namespace decoder_batch
 
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace mpi
+namespace tensorrt_llm::mpi
 {
 class MpiWaitThread;
-} // namespace mpi
+} // namespace tensorrt_llm::mpi
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class BaseCacheTransceiver;
 }
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 namespace kv_cache_manager
@@ -158,11 +156,13 @@ public:
     /// @brief Calculate the cache size per token for the disaggregated serving.
     /// @param modelConfig Model configuration.
     /// @param worldConfig World configuration.
-    /// @param maxAttentionWindowVec Maximum attention window vector. (may have fewer elements than numLayers, in which
+    /// @param maxAttentionWindowVec Maximum attention window vector. (may have
+    /// fewer elements than numLayers, in which
     /// case it cycles)
     /// @param isCrossAttention Whether the attention is cross attention.
     /// @param kvFactor KV factor.
-    /// @return Cache size per token for the disaggregated layers. Note that window size is not included in the result
+    /// @return Cache size per token for the disaggregated layers. Note that
+    /// window size is not included in the result
     /// here.
     [[nodiscard]] static std::map<SizeType32, SizeType32> calculateCacheSizePerTokenForDisagg(
         runtime::ModelConfig const& modelConfig, runtime::WorldConfig const& worldConfig,
@@ -170,22 +170,30 @@ public:
 
     void terminateRequest(LlmRequestPtr const& llmRequest, bool pause = false) override;
 
-    /// @brief Terminate request in the next forwardSync call that includes the request.
-    /// @details This function does not terminate requests immediately. It will add the requests to the
-    ///          mReqIdsToTerminate set. The requests will be terminated in the next forwardSync call that
+    /// @brief Terminate request in the next forwardSync call that includes the
+    /// request.
+    /// @details This function does not terminate requests immediately. It will
+    /// add the requests to the
+    ///          mReqIdsToTerminate set. The requests will be terminated in the
+    /// next forwardSync call that
     ///          includes the request in the batch.
     void terminateRequestSync(LlmRequestPtr const& llmRequest, executor::FinishReason finishReason) override;
 
     /// @brief Function that waits for the decoding of requests in flight.
-    ///        When the requests have finished or using speculative decoding, the state of requests
-    ///        will become LlmRequestState::kGENERATION_COMPLETE. Else, it will be set to
+    ///        When the requests have finished or using speculative decoding,
+    /// the state of requests
+    ///        will become LlmRequestState::kGENERATION_COMPLETE. Else, it will
+    /// be set to
     ///        LlmRequestState::kGENERATION_IN_PROGRESS.
     void forwardSync() override;
 
     /// @brief Function that tries to advance the active requests.
-    ///        Depending on resources available, it's possible that not all requests will get advanced.
-    ///        Requests that may be in state LlmRequestState::kCONTEXT_INIT become
-    ///        LlmRequestState::kGENERATION_IN_PROGRESS or LlmRequestState::kGENERATION_TO_COMPLETE.
+    ///        Depending on resources available, it's possible that not all
+    /// requests will get advanced.
+    ///        Requests that may be in state LlmRequestState::kCONTEXT_INIT
+    /// become
+    ///        LlmRequestState::kGENERATION_IN_PROGRESS or
+    /// LlmRequestState::kGENERATION_TO_COMPLETE.
     /// @param activeRequests The list of request to try to advance.
     void forwardAsync(RequestList const& activeRequests) override;
 
@@ -284,7 +292,8 @@ private:
     //! @brief Capture graph of current batch state during engine execution.
     //! This is based on the assumptions that
     //! a) We can hide CPU graph capture behind the GPU engine execution.
-    //! b) Batch size in the next iterations won't change and we can reuse the graph multiple times.
+    //! b) Batch size in the next iterations won't change and we can reuse the
+    // graph multiple times.
     void prepareGraph(SizeType32 bufferId, SizeType32 optProfileId);
 
     void executeContext(SizeType32 runtimeContextId, SizeType32 bufferId);
@@ -307,12 +316,14 @@ private:
     void createRuntimePerfKnobsTensor(executor::ExtendedRuntimePerfKnobConfig const& extendedRuntimePerfKnobConfig);
 
     /// @brief Verify draft token length and beam width of all active requests.
-    ///        May change operating beam width if all requests agree on same beam width.
+    ///        May change operating beam width if all requests agree on same
+    /// beam width.
     void verifyRequests(RequestList const& activeRequests);
 
     /// @brief Change the operating beam width.
     ///        Only possible if no requests are currently in-flight.
-    /// @param beamWidth New operating beam width. Must be smaller than initial maxBeamWidth.
+    /// @param beamWidth New operating beam width. Must be smaller than initial
+    /// maxBeamWidth.
     void changeBeamWidth(SizeType32 beamWidth);
 
     SizeType32 getOperatingBeamWidth() const override
@@ -320,14 +331,18 @@ private:
         return mOperatingBeamWidth;
     }
 
-    /// @details Should be called after setting up the current batch in executeBatch to get the correct number of
+    /// @details Should be called after setting up the current batch in
+    /// executeBatch to get the correct number of
     /// context tokens.
     IterationStatsIFB fillIterationStats(
         ScheduledRequests const& scheduledRequests, RequestVector const& requestsToPause);
 
-    /// @brief Function that sets up the TensorRT execution context that is going to be used for execution. If multiple
-    /// TensorRT optimization profiles are built in the engine, it selects the corresponding context that is going to be
-    /// used, and prepares the input and output tensors so that both buffers and the context is ready for the execution.
+    /// @brief Function that sets up the TensorRT execution context that is
+    /// going to be used for execution. If multiple
+    /// TensorRT optimization profiles are built in the engine, it selects the
+    /// corresponding context that is going to be
+    /// used, and prepares the input and output tensors so that both buffers and
+    /// the context is ready for the execution.
     /// @return The TensorRT execution context index that has been setup.
     void setupContext(
         RequestVector const& contextRequests, RequestVector const& generationRequests, SizeType32 bufferId);
@@ -341,19 +356,25 @@ private:
     std::vector<std::unique_ptr<DecoderStepAsyncSend>> communicateDecoderBuffers(bool returnLogProbs);
     void updateRequests(ScheduledRequests const& scheduledRequests);
 
-    /// @brief It gathers the logits if they need to be returned, calls getDecoderSlotHostOutputs,
+    /// @brief It gathers the logits if they need to be returned, calls
+    /// getDecoderSlotHostOutputs,
     /// and overwrites the llmRequest tokens buffer.
-    /// Called either on request finishing, or at every step when doing beam search and streaming.
+    /// Called either on request finishing, or at every step when doing beam
+    /// search and streaming.
     void postProcessRequest(LlmRequest& llmReq, std::vector<SizeType32> const& numDroppedTokens);
-    /// @brief Calls gatherTree (via finalize) and transmits the received data across ranks if PP>1
+    /// @brief Calls gatherTree (via finalize) and transmits the received data
+    /// across ranks if PP>1
     void getDecoderSlotHostOutputs(
         SizeType32 seqSlot, bool returnLogProbs, runtime::SamplingConfig const& samplingConfig, bool streaming);
     void rewindKVCacheBlocks(SizeType32 numSequences);
     void setupSpeculativeDecodingModule(executor::DecodingConfig const& decodingConfig);
 
-    /// @brief Copies the content of the cache indirection outputs to the cache indirection inputs.
-    /// @param[in] scheduledRequests The requests to copy the cache indirections for.
-    /// @param[in] genBufferId The id of the generation buffers for those requests.
+    /// @brief Copies the content of the cache indirection outputs to the cache
+    /// indirection inputs.
+    /// @param[in] scheduledRequests The requests to copy the cache indirections
+    /// for.
+    /// @param[in] genBufferId The id of the generation buffers for those
+    /// requests.
     void copyCacheIndirectionFromOutputsToInputs(ScheduledRequests const& scheduledRequests, SizeType32 genBufferId);
 
     [[nodiscard]] bool getGatherGenerationLogits() const override
@@ -395,11 +416,13 @@ private:
     }
 
     using BlocksPerWindow = std::map<SizeType32, std::tuple<SizeType32, SizeType32>>;
-    /// @brief Based on the KV-cache manager's capacity and configuration, we adjust the maximum supported attention
+    /// @brief Based on the KV-cache manager's capacity and configuration, we
+    /// adjust the maximum supported attention
     /// window.
     ///
     /// @param blocksPerWindow map of window size to number of blocks.
-    /// @param failFastOnAttentionWindowTooLarge if true, the function will report a runtime error if the attention
+    /// @param failFastOnAttentionWindowTooLarge if true, the function will
+    /// report a runtime error if the attention
     /// window is too large to fit even a single sequence in the KV cache.
     /// @return pair of new blocks per window and new maxAttentionWindowVec
     [[nodiscard]] std::pair<BlocksPerWindow, std::vector<SizeType32>> clampWindowSizesToFitAtLeastOneSequence(
@@ -536,32 +559,38 @@ private:
     bool mCtxGenFusion;
     // ID of current micro batch, changes after each iteration
     SizeType32 mMicroBatchId{0};
-    // Number of micro batches. Multiple batches are used for overlapping setup and execution,
+    // Number of micro batches. Multiple batches are used for overlapping setup
+    // and execution,
     // and in pipeline parallelism.
     SizeType32 mNumMicroBatches;
     // Number of buffers to be added to mBuffers.
     SizeType32 mNumBuffers;
-    // Current operating beam width. Can be changed with changeBeamWidth function.
+    // Current operating beam width. Can be changed with changeBeamWidth
+    // function.
     SizeType32 mOperatingBeamWidth;
     // Runtime batch size optimized during execution for microBatchScheduler:
     /// The max batch size recommended by the dynamic tuner
     SizeType32 mMaxBatchSizeTunerRecommended;
     /// The min of mMaxBatchSize and mMaxBatchSizeTunerRecommended
     SizeType32 mMaxBatchSizeRuntime;
-    // Runtime max num tokens optimized during execution for microBatchScheduler:
+    // Runtime max num tokens optimized during execution for
+    // microBatchScheduler:
     /// Build time max num tokens
     std::optional<SizeType32> mMaxNumTokensStatic;
     /// The max num tokens recommended by the dynamic tuner
     SizeType32 mMaxNumTokensTunerRecommended;
     /// The min of mMaxNumTokens and mMaxNumTokensTunerRecommended
     std::optional<SizeType32> mMaxNumTokensRuntime;
-    // Controls if generation logits should be gathered, so that returnGenerationLogits can be requested.
+    // Controls if generation logits should be gathered, so that
+    // returnGenerationLogits can be requested.
     bool mGatherGenerationLogits{false};
-    // offloading and prefetching the prompt tuning table (only effective in chunked prefill mode)
+    // offloading and prefetching the prompt tuning table (only effective in
+    // chunked prefill mode)
     bool mPromptTableOffloading;
 
     /******************** Buffers ********************/
-    // Buffers for each micro batch. Unfused path (mCtxGenFusion==false) uses two times the buffers.
+    // Buffers for each micro batch. Unfused path (mCtxGenFusion==false) uses
+    // two times the buffers.
     std::vector<std::unique_ptr<RuntimeBuffers>> mBuffers;
     // Decoder input buffers for each micro batch.
     std::vector<DecoderInputBuffers> mDecoderInputBuffers;
@@ -598,7 +627,8 @@ private:
     bool mSpeculativeDecodingFastLogits;
     std::atomic<bool> mDraftModelThreadShouldExit{false};
     bool mIsLeaderInOrchMode{false};
-    // List of completed draft requests which logits will need to be sent to the target model.
+    // List of completed draft requests which logits will need to be sent to the
+    // target model.
     RequestVector mDraftRequestsWaitingToSendLogits;
     SizeType32 mSeamlessLADMaxDraftLen{0};
     bool mUseSeamlessLookahead{false};
@@ -606,7 +636,8 @@ private:
 
     /******************** Algorithms ********************/
     // Algorithms are reentrant, they are assigned a state at
-    // construction time and it is not modified through execution, hence they are const.
+    // construction time and it is not modified through execution, hence they
+    // are const.
     // Schedulers that select which requests to run in each iteration
     std::unique_ptr<tensorrt_llm::batch_manager::CapacityScheduler const> mCapacityScheduler;
     std::unique_ptr<tensorrt_llm::batch_manager::MicroBatchScheduler const> mMicroBatchScheduler;
@@ -621,6 +652,4 @@ private:
     std::unique_ptr<tensorrt_llm::batch_manager::UpdateDecoderBuffers const> mUpdateDecoderBuffers;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

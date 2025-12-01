@@ -20,11 +20,12 @@
 
 #include "cutlass/epilogue/thread/activation.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels
+namespace cutlass_kernels
 {
-// ============================== Activation Adaptors =================================
+// ============================== Activation Adaptors
+// =================================
 
 template <template <class> class ActFn>
 struct IdentityAdaptor
@@ -75,6 +76,6 @@ struct SwigluBiasAdaptor
     }
 };
 
-} // namespace kernels::cutlass_kernels
+} // namespace cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

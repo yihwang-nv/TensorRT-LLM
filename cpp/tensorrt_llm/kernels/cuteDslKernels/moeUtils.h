@@ -20,9 +20,9 @@
 #include <cstdint>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cute_dsl
+namespace cute_dsl
 {
 template <typename InputType, typename SFType>
 void moePermute(InputType const* input, InputType* permuted_output, SFType const* input_sf, SFType* permuted_sf,
@@ -41,6 +41,6 @@ void moeActivation(InputType const* input, OutputType* output, float const* glob
     cutlass_kernels::ActivationParams activation_params, int32_t const max_num_permuted_tokens,
     int32_t const interm_size, int32_t const tile_size, cudaStream_t stream);
 
-} // namespace kernels::cute_dsl
+} // namespace cute_dsl
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

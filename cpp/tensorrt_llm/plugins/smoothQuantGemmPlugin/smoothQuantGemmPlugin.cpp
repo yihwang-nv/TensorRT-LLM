@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #include "smoothQuantGemmPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/weightOnlyBatchedGemv/int8SQ.h"
 #include <numeric>
 
@@ -176,7 +175,7 @@ bool SmoothQuantGemmPlugin::supportsFormatCombination(
         // Weights stored in checkpoint must have int8 type
         return inOut[pos].type == nvinfer1::DataType::kINT8 && inOut[pos].format == TensorFormat::kLINEAR;
     case 2:
-        // scales channels
+    // scales channels
     case 3:
         // scales tokens
         return inOut[pos].type == nvinfer1::DataType::kFLOAT && inOut[pos].format == TensorFormat::kLINEAR;
@@ -395,9 +394,11 @@ IPluginV2* SmoothQuantGemmPluginCreator::createPlugin(char const* name, PluginFi
     }
     try
     {
-        // SmoothQuantGemmPluginCreator is unique and shared for an engine generation
+        // SmoothQuantGemmPluginCreator is unique and shared for an engine
+        // generation
         // Create plugin profiler with shared tactics map
-        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false);
         QuantMode quantMode = QuantMode::fromDescription(true, true, perTokenScaling, perChannelScaling, false, false,
             false, false, false, false, false, false, false, false, false, false);
         auto* obj = new SmoothQuantGemmPlugin(quantMode, type, pluginProfiler);
@@ -418,7 +419,8 @@ IPluginV2* SmoothQuantGemmPluginCreator::deserializePlugin(
     // call SmoothQuantGemmPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
         auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
         auto* obj = new SmoothQuantGemmPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());

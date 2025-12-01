@@ -22,10 +22,7 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace
 {
@@ -61,7 +58,8 @@ __global__ void stopWordsCriterion(TokenIdType const** outputIds, SizeType32 con
 
     for (; step < newTokens; ++step)
     {
-        // Need to minus newTokens because the sequenceLengths is already updated in this point
+        // Need to minus newTokens because the sequenceLengths is already updated in
+        // this point
         auto const currentStep = sequenceLengths[batchBeamIdx] - newTokens + step;
         // Is sequence larger than stop word to look for a match?
         if (currentStep + 1 >= itemSize)
@@ -99,7 +97,8 @@ __global__ void stopWordsCriterion(TokenIdType const** outputIds, SizeType32 con
         if (shouldStop)
         {
             finished[batchSlot * beamWidth + beamIdx].setFinishedStopWords();
-            // When more than 1 token is predicted per step, find the first match with the stop word
+            // When more than 1 token is predicted per step, find the first match with
+            // the stop word
             if (newTokens > 1)
             {
                 // Update num of new tokens up to stopped word (including).
@@ -118,7 +117,8 @@ void invokeStopWordsCriterion(TokenIdType const** outputIds, SizeType32 const** 
     SizeType32 const* batchSlots, SizeType32 const* stopWordsLen, SizeType32* numNewTokens, SizeType32 maxStopWordsLen,
     SizeType32 batchSize, SizeType32 beamWidth, SizeType32 maxSeqLen, cudaStream_t stream)
 {
-    // Check if we have sampled a word from the stopWords list. If so, stop the sequence.
+    // Check if we have sampled a word from the stopWords list. If so, stop the
+    // sequence.
     dim3 block, grid;
     constexpr SizeType32 maxBlockSize{256};
 
@@ -249,6 +249,4 @@ void invokeExplicitEOSCriterion(TokenIdType const** outputIds, TokenIdType const
     sync_check_cuda_error(stream);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

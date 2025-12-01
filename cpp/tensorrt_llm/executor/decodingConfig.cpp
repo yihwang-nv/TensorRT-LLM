@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +16,6 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/types.h"
 
@@ -23,9 +23,7 @@
 #include <optional>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 // Constructor for ExternalDraftTokensConfig
@@ -165,7 +163,8 @@ EagleConfig::EagleConfig(std::optional<EagleChoices> eagleChoices, bool greedySa
     if (useDynamicTree)
     {
         TLLM_CHECK_WITH_INFO(eagleChoices.has_value() == false,
-            "When dynamic tree is enabled (for Eagle-2), eagle choices should not be set.");
+            "When dynamic tree is enabled (for Eagle-2), eagle "
+            "choices should not be set.");
     }
 }
 
@@ -222,7 +221,8 @@ DecodingConfig::DecodingConfig(std::optional<DecodingMode> decodingMode,
     {
         TLLM_CHECK_WITH_INFO(mDecodingMode, "LookaheadDecodingConfig is set, but DecodingMode is not set");
         TLLM_CHECK_WITH_INFO(mDecodingMode.value().isLookahead(),
-            "LookaheadDecodingConfig is set, but DecodingMode is not set to Lookahead");
+            "LookaheadDecodingConfig is set, but DecodingMode "
+            "is not set to Lookahead");
     }
     if (mMedusaChoices)
     {
@@ -254,8 +254,10 @@ void DecodingConfig::setDecodingMode(DecodingMode const& decodingMode)
     if (decodingMode.isMedusa() || decodingMode.isLookahead() || decodingMode.isExplicitDraftTokens())
     {
         TLLM_THROW(
-            "Decoding mode must not be set with `setDecodingMode` for Medusa, Lookahead or explicit draft tokens. "
-            "Please, use setters for the respective configs or set decoding mode at the DecodingConfig constructor");
+            "Decoding mode must not be set with `setDecodingMode` for "
+            "Medusa, Lookahead or explicit draft tokens. "
+            "Please, use setters for the respective configs or set "
+            "decoding mode at the DecodingConfig constructor");
     }
     mDecodingMode = decodingMode;
 }
@@ -307,6 +309,4 @@ void DecodingConfig::setEagleConfig(EagleConfig const& eagleConfig)
     mDecodingMode = DecodingMode::Eagle();
 }
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

@@ -23,10 +23,7 @@
 #include <iomanip>
 #include <sstream>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Template Implementations
@@ -70,8 +67,10 @@ void TFusedMultiHeadAttentionXMMAKernel<TKernelMeta, TKernelParam>::loadXMMAKern
         if (kernelMeta.mSM == mSM && kernelMeta.mDataTypeOut == mOutputDataType
             && kernelMeta.mDataTypeIn == mInputDataType)
         {
-            // printf("Loading kernel for inputType=%d, outputType=%d, sm=%d, cubin=%s, funcName=%s\n",
-            // kernelMeta.mDataTypeIn, kernelMeta.mDataTypeOut, kernelMeta.mSM, kernelMeta.mCubin,
+            // printf("Loading kernel for inputType=%d, outputType=%d, sm=%d,
+            // cubin=%s, funcName=%s\n",
+            // kernelMeta.mDataTypeIn, kernelMeta.mDataTypeOut, kernelMeta.mSM,
+            // kernelMeta.mCubin,
             // kernelMeta.mFuncName);
             CUmodule hmod{0};
             auto findModuleIter = mModules.find(kernelMeta.mCubin);
@@ -141,7 +140,8 @@ TFusedMHAKernelList const* TFusedMHAKernelFactory<TFusedMHAKernelList>::getXMMAK
     if (findIter == mKernels.end())
     {
         TFusedMHAKernelList* newKernel = new TFusedMHAKernelList{pKernelList, nbKernels, inputType, outputType, sm};
-        // printf("Loading kernels for inputType=%d, outputType=%d, sm=%d\n", inputType, outputType, sm);
+        // printf("Loading kernels for inputType=%d, outputType=%d, sm=%d\n",
+        // inputType, outputType, sm);
         newKernel->loadXMMAKernels();
         mKernels.insert(std::make_pair(id, std::unique_ptr<TFusedMHAKernelList>(newKernel)));
         return newKernel;
@@ -305,8 +305,10 @@ void FusedMultiHeadAttentionXMMAKernelV2::run(
             // Get the max total M steps
             size_t m_steps = size_t((params.s + kernelMeta.mUnrollStep - 1) / kernelMeta.mUnrollStep);
             // Note: Dirty WAR for Hopper Warp specialized MLA kernel.
-            // Hopper Warp specialized MLA kernel uses two warpgroups to compute the two halves of the dv=512, rather
-            // than put them on the sequence dimension of Q. Therefore, we do not further divide m_steps into
+            // Hopper Warp specialized MLA kernel uses two warpgroups to compute the
+            // two halves of the dv=512, rather
+            // than put them on the sequence dimension of Q. Therefore, we do not
+            // further divide m_steps into
             // NUM_COMPUTE_GROUPS.
             if (!(params.d == 576 && params.dv == 512))
             {
@@ -317,7 +319,8 @@ void FusedMultiHeadAttentionXMMAKernelV2::run(
             params.num_tiles = static_cast<uint32_t>(m_steps * params.b * params.h);
 
             block_size.y = std::min(static_cast<int>(params.num_tiles), launch_params.multi_processor_count);
-            // 2 * bytes_per_elt stands for kv cache and bytes_per_elt bytes per element.
+            // 2 * bytes_per_elt stands for kv cache and bytes_per_elt bytes per
+            // element.
             auto const size_in_bytes = 2 * static_cast<int64_t>(get_size_in_bytes(mInputDataType)) * params.b * params.h
                 * params.s * params.d;
             params.use_balanced_scheduling = launch_params.attention_mask_type == ContextAttentionMaskType::CAUSAL
@@ -333,7 +336,8 @@ void FusedMultiHeadAttentionXMMAKernelV2::run(
             block_size.y = std::min(params.b * params.h, launch_params.multi_processor_count);
 
             // distribute m steps to multiple blocks (fully utilize SMs)
-            // block.x = blocks that handle single head, block.y = blocks that handle different heads
+            // block.x = blocks that handle single head, block.y = blocks that handle
+            // different heads
             size_t sms_per_head = (launch_params.multi_processor_count) / block_size.y;
             size_t m_steps = size_t((params.s + kernelMeta.mUnrollStep * NUM_COMPUTE_GROUPS - 1)
                 / kernelMeta.mUnrollStep * NUM_COMPUTE_GROUPS);
@@ -348,7 +352,8 @@ void FusedMultiHeadAttentionXMMAKernelV2::run(
             }
             else
             {
-                // strategy 2: fully unroll the q loops (contiguous blocks handle all q loops)
+                // strategy 2: fully unroll the q loops (contiguous blocks handle all q
+                // loops)
                 block_size.x = m_steps / NUM_COMPUTE_GROUPS;
             }
         }
@@ -377,7 +382,8 @@ void FusedMultiHeadAttentionXMMAKernelV2::run(
             if (kernelMeta.mTiled)
             {
                 // A single CTA can handle a maximum of 256 dimensions of V.
-                // For cases exceeding 256 dimensions, the number of CTAs needs to be multiplied.
+                // For cases exceeding 256 dimensions, the number of CTAs needs to be
+                // multiplied.
                 unroll *= (params.dv + 256 - 1) / 256;
             }
             TLLM_CU_CHECK(mDriver->cuLaunchKernel(func, unroll, params.h, params.b, kernelMeta.mThreadsPerCTA, 1, 1,
@@ -563,6 +569,5 @@ FusedMultiHeadAttentionXMMAKernelV2 const* getXMMAKernelsV2(Data_type inputType,
     return FusedMHAKernelFactoryV2::Get().getXMMAKernels(sMhaKernelMetaInfosV2,
         sizeof(sMhaKernelMetaInfosV2) / sizeof(sMhaKernelMetaInfosV2[0]), inputType, outputType, sm);
 }
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

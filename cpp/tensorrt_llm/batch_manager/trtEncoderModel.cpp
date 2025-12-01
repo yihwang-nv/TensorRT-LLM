@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +21,6 @@
 #include "tensorrt_llm/batch_manager/capacityScheduler.h"
 #include "tensorrt_llm/batch_manager/microBatchScheduler.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/executor/executor.h"
@@ -36,9 +36,7 @@
 using namespace tensorrt_llm::runtime;
 using namespace tensorrt_llm::mpi;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 TrtEncoderModel::TrtEncoderModel(runtime::ModelConfig const& modelConfig, WorldConfig const& worldConfig,
@@ -74,8 +72,10 @@ TrtEncoderModel::TrtEncoderModel(runtime::ModelConfig const& modelConfig, WorldC
     mMicroBatchScheduledRequests.resize(mNumMicroBatches);
     // mEncoderWaitEvents.resize(mNumMicroBatches);
 
-    // set noScheduleUntilState to LlmRequestState::kENCODER_INIT for encoder model
-    // when null kv cache manager is given, request scheduler will use MaxRequests as capacity scheduler, i.e. no
+    // set noScheduleUntilState to LlmRequestState::kENCODER_INIT for encoder
+    // model
+    // when null kv cache manager is given, request scheduler will use
+    // MaxRequests as capacity scheduler, i.e. no
     // handling of maximizing utilization or pause/evict
     // TODO: finer control on encoder requests scheduling
     mCapacityScheduler = std::make_unique<tensorrt_llm::batch_manager::CapacityScheduler>(
@@ -190,7 +190,8 @@ void TrtEncoderModel::executeBatch(ScheduledRequests const& scheduledRequests)
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
     NVTX3_SCOPED_RANGE(executeBatch);
 
-    // encoder model only have one optimization profile for now, so no optimization profile switch
+    // encoder model only have one optimization profile for now, so no
+    // optimization profile switch
     SizeType32 optProfileIndex = 0;
     auto const bufferId = getBufferId();
     if (!scheduledRequests.contextRequests.empty())
@@ -237,8 +238,10 @@ void TrtEncoderModel::forwardSync()
     {
         if (!mWorldConfig.isPipelineParallel() || !mWorldConfig.isLastPipelineParallelRank())
         {
-            // TLLM_CHECK_WITH_INFO(mEncStepAsyncSndHdl.get() == nullptr, "encoderSync handle must be nullptr.");
-            // // Wait for encoding for requests in flight for the current micro batch
+            // TLLM_CHECK_WITH_INFO(mEncStepAsyncSndHdl.get() == nullptr,
+            // "encoderSync handle must be nullptr.");
+            // // Wait for encoding for requests in flight for the current micro
+            // batch
             // mEncStepAsyncSndHdl = encoderSync(currRequests, encoderWaitEvent);
         }
         else
@@ -254,7 +257,8 @@ void TrtEncoderModel::forwardSync()
                 mInflightReqIds.erase(reqId);
                 TLLM_LOG_DEBUG("request ID %u removed from ENCODER inflight set", reqId);
 
-                // If a request in encoder phase had been flagged to be paused, pause it right away
+                // If a request in encoder phase had been flagged to be paused, pause
+                // it right away
                 if (mReqIdsToPause.find(reqId) != mReqIdsToPause.end())
                 {
                     terminateRequest(llmReq, true);
@@ -280,7 +284,8 @@ void TrtEncoderModel::forwardAsync(RequestList const& activeRequests)
         // auto& encoderWaitEvent = mEncoderWaitEvents.at(mMicroBatchId);
 
         // Get a new set of requests for encoder
-        // The scheduler will not include any requests that are already in flight for encoder models
+        // The scheduler will not include any requests that are already in flight
+        // for encoder models
         // TODO: add pause handling logic
         TLLM_LOG_DEBUG("Running ENCODER request scheduler");
 
@@ -294,7 +299,8 @@ void TrtEncoderModel::forwardAsync(RequestList const& activeRequests)
 
         {
             NVTX3_SCOPED_RANGE(pauseRequestsFlaggedByScheduler);
-            // Loop over requests flagged to be paused, and if not in flight pause it right away
+            // Loop over requests flagged to be paused, and if not in flight pause
+            // it right away
             for (auto const& llmReq : requestsToPause)
             {
                 auto const reqId = llmReq->mRequestId;
@@ -357,8 +363,10 @@ void TrtEncoderModel::forwardAsync(RequestList const& activeRequests)
         {
             if (mWorldConfig.isPipelineParallel() && mWorldConfig.isLastPipelineParallelRank())
             {
-                // TLLM_CHECK_WITH_INFO(mEncStepAsyncSndHdl.get() == nullptr, "decoderSync handle must be nullptr.");
-                // Wait for encoding for requests in flight for the current micro batch
+                // TLLM_CHECK_WITH_INFO(mEncStepAsyncSndHdl.get() == nullptr,
+                // "decoderSync handle must be nullptr.");
+                // Wait for encoding for requests in flight for the current micro
+                // batch
                 // mEncStepAsyncSndHdl = encoderSync(currRequests, encoderWaitEvent);
             }
         }
@@ -366,7 +374,8 @@ void TrtEncoderModel::forwardAsync(RequestList const& activeRequests)
         // Update the micro batch ID
         mMicroBatchId = (mMicroBatchId + 1) % mNumMicroBatches;
     }
-    // In case of error, we need to free the batch slot associated with those requests
+    // In case of error, we need to free the batch slot associated with those
+    // requests
     catch (std::exception const& e)
     {
         for (auto const& llmReq : activeRequests)
@@ -382,7 +391,8 @@ void TrtEncoderModel::forwardAsync(RequestList const& activeRequests)
 
 void TrtEncoderModel::terminateRequest(std::shared_ptr<LlmRequest> const& llmReq, bool pause)
 {
-    // For encoder-only models, just change req state here. might need to do more when using an asynced forward
+    // For encoder-only models, just change req state here. might need to do
+    // more when using an asynced forward
     // For enc-dec models, only remove cross kv cache after decoder
     // genenration has finished
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
@@ -415,8 +425,9 @@ void TrtEncoderModel::fillEncoderOutputSync(RequestVector const& requestList, Te
         totalTokensNb * mHiddenSize * bytesPerValue * mWorldConfig.getTensorParallelism());
     TLLM_CHECK_WITH_INFO(encoderOutputHost.size() > 0, "Encoder output size is 0!");
     getBufferManager().copy(*(outputTensors["encoder_output"]), reinterpret_cast<void*>(encoderOutputHost.data()));
-    getBufferManager().getStream().synchronize(); // TODO: change engine call to async to improve perf. Also
-                                                  // need to store output buffers, cuda events, etc.
+    getBufferManager().getStream().synchronize(); // TODO: change engine call to
+                                                  // async to improve perf. Also
+    // need to store output buffers, cuda events, etc.
 
     auto encoderOutputHostPtr = encoderOutputHost.data();
     for (auto const& llmReq : requestList)
@@ -497,7 +508,8 @@ void TrtEncoderModel::executeBatch(RequestVector const& requestList)
 
     if (mModelConfig.getModelName() == "EncoderModel")
     {
-        // use shape of maxInputLength to indicates max length, content is not important
+        // use shape of maxInputLength to indicates max length, content is not
+        // important
         TensorPtr maxInputLength
             = getBufferManager().gpu(ITensor::makeShape({maxInputLengthHost}), nvinfer1::DataType::kINT32);
         inputTensors.emplace("max_input_length", maxInputLength);
@@ -547,7 +559,8 @@ void TrtEncoderModel::executeBatch(RequestVector const& requestList)
     auto const outputName = mWorldConfig.isLastPipelineParallelRank() ? "encoder_output" : "hidden_states_output";
     outputTensors.emplace(outputName, rankOutput);
 
-    // Set input / output tensors to context, encoder model only have one context
+    // Set input / output tensors to context, encoder model only have one
+    // context
     mRuntime->setInputTensors(0, inputTensors);
     mRuntime->setOutputTensors(0, outputTensors);
 
@@ -615,6 +628,4 @@ bool TrtEncoderModel::getReplicateLogitsPostProcessor() const
 
 TrtEncoderModel::~TrtEncoderModel() = default;
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} //  namespace tensorrt_llm::batch_manager

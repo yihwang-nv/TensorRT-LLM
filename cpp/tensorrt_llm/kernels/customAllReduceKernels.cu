@@ -27,10 +27,7 @@
 #include <tuple>
 #include <type_traits>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using tensorrt_llm::common::divUp;
 using tensorrt_llm::common::roundUp;
@@ -137,9 +134,11 @@ __inline__ __device__ void multi_gpu_barrier(uint32_t** signals, uint32_t const 
     if (tidx < world_size)
     {
         // we can think of signals having the shape [world_size, world_size]
-        // Dimension 0 is the "listening" dimension, dimension 1 is "emitting" dimension
+        // Dimension 0 is the "listening" dimension, dimension 1 is "emitting"
+        // dimension
 
-        // Block 0 broadcasts its flag (local_rank on emitting dimension) to all receivers
+        // Block 0 broadcasts its flag (local_rank on emitting dimension) to all
+        // receivers
         size_t offset = (flag % 2) ? world_size : 0;
 
         if (bidx == 0)
@@ -147,7 +146,8 @@ __inline__ __device__ void multi_gpu_barrier(uint32_t** signals, uint32_t const 
             st_flag_release(flag, signals[tidx] + offset + local_rank);
         }
 
-        // All blocks check that corresponding block 0 on other GPUs have set the flag
+        // All blocks check that corresponding block 0 on other GPUs have set the
+        // flag
         // No deadlock because block #0 is always the first block started
         uint32_t* peer_barrier_d = signals[local_rank] + offset + tidx;
         while (ld_flag_acquire(peer_barrier_d) != flag)
@@ -161,14 +161,18 @@ __inline__ __device__ void multi_gpu_barrier(uint32_t** signals, uint32_t const 
 __inline__ __device__ void block_barrier(uint32_t** signals, uint32_t const flag, size_t const local_rank,
     size_t const world_size, int const tidx, int const bidx)
 {
-    // After this function, the block of id == bidx of each GPU has reached the barrier
+    // After this function, the block of id == bidx of each GPU has reached the
+    // barrier
     if (tidx < world_size)
     {
-        // we can think of signals having the shape [world_size, 2, num_blocks, world_size]
+        // we can think of signals having the shape [world_size, 2, num_blocks,
+        // world_size]
         // (+ an offset on dim 2 to account for flags used in multi_gpu_barrier)
-        // Dimension 0 is the "listening" dimension, dimension 3 is "emitting" dimension
+        // Dimension 0 is the "listening" dimension, dimension 3 is "emitting"
+        // dimension
 
-        // Block broadcast its flag (local_rank on emitting dimension) to all receivers
+        // Block broadcast its flag (local_rank on emitting dimension) to all
+        // receivers
         uint32_t flag_block_offset = (bidx + 1) * world_size;
 
         if (flag % 2 == 1)
@@ -178,7 +182,8 @@ __inline__ __device__ void block_barrier(uint32_t** signals, uint32_t const flag
 
         st_flag_release(flag, signals[tidx] + flag_block_offset + local_rank);
 
-        // Blocks check that corresponding blocks on other GPUs have also set the flag
+        // Blocks check that corresponding blocks on other GPUs have also set the
+        // flag
         uint32_t* peer_barrier_d = signals[local_rank] + flag_block_offset + tidx;
 
         while (ld_flag_acquire(peer_barrier_d) != flag)
@@ -346,8 +351,13 @@ __global__ void rms_norm_kernel(AllReduceParams params)
 #endif
 }
 
-template <typename T, bool Bias = false, bool Residual = false, bool Affine = false>
-__global__ void rms_pre_post_norm_kernel(AllReduceParams params) // for gemma2 pre residual + post residual norm
+template <typename T, bool Bias = false, bool Residual = false,
+    bool Affine = false>
+__global__ void rms_pre_post_norm_kernel(AllReduceParams params) // for gemma2
+                                                                 // pre residual
+                                                                 // + post
+                                                                 // residual
+                                                                 // norm
 {
     static constexpr int kPackedSize = details::kBytesPerAccess / sizeof(T);
     using PackedStruct = typename PackedOn16Bytes<T>::Type;
@@ -1346,7 +1356,8 @@ void lamport_initialize_kernel_launcher(void* buffer, size_t size, cudaStream_t 
 template <typename T, int RANKS_PER_NODE, bool PUSH_MODE = false>
 static __global__ void oneShotAllReduceKernel(AllReduceParams params)
 {
-    // Suppose that two GPUs participate in the AR exchange, and we start four blocks.
+    // Suppose that two GPUs participate in the AR exchange, and we start four
+    // blocks.
     // The message is partitioned into chunks as detailed below:
     //               message
     //       |-------------------|
@@ -1354,22 +1365,26 @@ static __global__ void oneShotAllReduceKernel(AllReduceParams params)
     // GPU 1 | B0 | B1 | B2 | B3 |
     //
     // Here the step-by-step behavior of one block:
-    // 1. B0 copies the chunk it  is responsible for, from local_input to shareable buffer
+    // 1. B0 copies the chunk it  is responsible for, from local_input to
+    // shareable buffer
     // 2. B0 on GPU 0 and B0 on GPU 1 wait for each other (block_barrier)
-    // 3. B0 on GPU 0 pull and sum the chunk from GPU 1, writes the result to local_output
+    // 3. B0 on GPU 0 pull and sum the chunk from GPU 1, writes the result to
+    // local_output
     //
     // With PUSH_MODE, we consider that the shared buffer is of size:
     // params.peer_comm_buffer_ptrs: [world_size * 2, world_size, message_size]
     // Even plugins use ping buffers, odd plugins use pong.
     // That way, we don't need to wait for other GPUs to be done
     // before copying input tensor to workspace.
-    // For each plugin, the buffer is of size: [world_size, world_size, message_size]
+    // For each plugin, the buffer is of size: [world_size, world_size,
+    // message_size]
     //
     // Here the step-by-step behavior of one block:
     // 1. B0 push the chunk is it responsible for into all other GPUs:
     //    peer_comm_buffer_ptrs[:, local_gpu, B0 slice]
     // 2. block sync so the block is shared by other GPUs
-    // 3. Reduce along second dimension peer_comm_buffer_ptrs[local_gpu, :, B0 slice]
+    // 3. Reduce along second dimension peer_comm_buffer_ptrs[local_gpu, :, B0
+    // slice]
 
     int const bidx = blockIdx.x;
     int const tidx = threadIdx.x;
@@ -1420,7 +1435,8 @@ static __global__ void oneShotAllReduceKernel(AllReduceParams params)
         }
     }
 
-    // wait for equivalent blocks of other GPUs to have copied data to their shareable buffer
+    // wait for equivalent blocks of other GPUs to have copied data to their
+    // shareable buffer
     block_barrier(params.peer_barrier_ptrs_in, barrier_flag, params.local_rank, RANKS_PER_NODE, tidx, bidx);
 
     // Each block accumulates the values from the different GPUs on the same node.
@@ -1465,7 +1481,8 @@ static __global__ void oneShotAllReduceKernel(AllReduceParams params)
 template <typename T, int RANKS_PER_NODE, bool PUSH_MODE = false, bool Bias = false, bool Residual = false>
 static __global__ void __launch_bounds__(512, 1) twoShotAllReduceKernel(AllReduceParams params)
 {
-    // Suppose that two GPUs participate in the AR exchange, and we start two blocks.
+    // Suppose that two GPUs participate in the AR exchange, and we start two
+    // blocks.
     // The message is partitioned into chunks as detailed below:
     //               message
     //       |-------------------|
@@ -1474,33 +1491,42 @@ static __global__ void __launch_bounds__(512, 1) twoShotAllReduceKernel(AllReduc
     // GPU 1 | B0 | B1 | B0 | B1 |
     //
     // Here the step-by-step behavior of one block:
-    // 1. B0 copies all chunks is it responsible for, from local_input to shareable buffer
+    // 1. B0 copies all chunks is it responsible for, from local_input to
+    // shareable buffer
     // 2. B0 on GPU 0 and B0 on GPU 1 wait for each other (block_barrier #0)
-    // 3. B0 on GPU 0 gather and sum the B0 chunks from GPU 1, that are in the GPU 0 responsibility
+    // 3. B0 on GPU 0 gather and sum the B0 chunks from GPU 1, that are in the GPU
+    // 0 responsibility
     //    part (the first half of the message, see GPU responsibility row above)
     // 3bis. Likewise, B0 on GPU 1 copies and sum the chunks for GPU 0,
     //       where GPU 1 is responsible: the second half of the message.
     // 4. B0 on GPU 0 and B0 on GPU 1 wait for each other (block_barrier #1)
-    // 5. B0 writes result to local_output. It gathers each chunk from its responsible GPU.
-    //    For example, here it reads the first chunk from GPU 0 and second chunk from GPU 1.
+    // 5. B0 writes result to local_output. It gathers each chunk from its
+    // responsible GPU.
+    //    For example, here it reads the first chunk from GPU 0 and second chunk
+    // from GPU 1.
     //
-    // Note that compared to one-shot, one block (CTA) writes multiple input chunks and write multiple output chunks.
+    // Note that compared to one-shot, one block (CTA) writes multiple input
+    // chunks and write multiple output chunks.
     // However, it's only responsible for the summation of a single chunk.
     //
     // With PUSH_MODE, we consider that the shared buffer is of size:
-    // params.peer_comm_buffer_ptrs: [world_size, world_size, message_size / world_size]
+    // params.peer_comm_buffer_ptrs: [world_size, world_size, message_size /
+    // world_size]
     // Even plugins use ping buffers, odd plugins use pong.
     // That way, we don't need to wait for other GPUs to be done
     // before copying input tensor to workspace.
-    // For each plugin, the buffer is of size: [world_size, world_size, message_size / world_size]
+    // For each plugin, the buffer is of size: [world_size, world_size,
+    // message_size / world_size]
     //
     // Here the step-by-step behavior of one block:
     // 1. B0 push the chunks is it responsible for into the corresponding GPUs:
     //    peer_comm_buffer_ptrs[target_gpu, local_gpu, current B0 slice]
     // 2. block sync so the blocks have been shared by other GPUs
-    // 3. Reduce along second dimension peer_comm_buffer_ptrs[local_gpu, :, B0 slice]
+    // 3. Reduce along second dimension peer_comm_buffer_ptrs[local_gpu, :, B0
+    // slice]
     // 4. block barrier (corresponding blocks have finished reduction)
-    // 5. pull and write on local buffer, by reading peer_comm_buffer_ptrs[:, 0, B0 slice] (reduction result is
+    // 5. pull and write on local buffer, by reading peer_comm_buffer_ptrs[:, 0,
+    // B0 slice] (reduction result is
     //    written at index 0 of 2nd dim)
 
     int const bidx = blockIdx.x;
@@ -1688,7 +1714,8 @@ std::tuple<int, int> kernelLaunchConfig(AllReduceStrategyType algo, AllReducePar
 
         /*
         threads_per_block = std::min(DEFAULT_BLOCK_SIZE, total_threads);
-        blocks_per_grid = std::min(static_cast<size_t>(MAX_ALL_REDUCE_BLOCKS), divUp(total_threads, threads_per_block));
+        blocks_per_grid = std::min(static_cast<size_t>(MAX_ALL_REDUCE_BLOCKS),
+        divUp(total_threads, threads_per_block));
         */
         while (total_threads % blocks_per_grid != 0 || total_threads / blocks_per_grid > DEFAULT_BLOCK_SIZE)
         {
@@ -1864,7 +1891,8 @@ void AllReduceDispatchPushMode(AllReduceStrategyType algo, AllReduceStrategyConf
     }
 }
 
-template <typename T, int RANKS_PER_NODE> //, bool USE_MEMCPY = false, bool PUSH_MODE = false>
+template <typename T, int RANKS_PER_NODE> //, bool USE_MEMCPY = false, bool
+// PUSH_MODE = false>
 void AllReduceDispatchRanksPerNode(AllReduceStrategyType algo, AllReduceStrategyConfig config,
     AllReduceFusionOp fusionOp, AllReduceParams& params, cudaStream_t stream)
 {
@@ -1909,7 +1937,7 @@ AllReduceParams AllReduceParams::deserialize(int64_t* buffer, size_t tpSize, siz
         flag_offset = 1;
     }
     auto const flag_ptr
-        = buffer[tensorrt_llm::utils::customAllReduceUtils::NUM_POINTERS_PER_RANK * tpSize + flag_offset];
+        = buffer[tensorrt_llm::common::utils::customAllReduceUtils::NUM_POINTERS_PER_RANK * tpSize + flag_offset];
     AllReduceParams params;
 
     for (int i = 0; i < tpSize * 2; ++i)
@@ -1926,7 +1954,7 @@ AllReduceParams AllReduceParams::deserialize(int64_t* buffer, size_t tpSize, siz
     }
     params.barrier_flag_ptr = reinterpret_cast<uint32_t*>(flag_ptr);
     params.barrier_flag_counter_ptr = reinterpret_cast<uint32_t*>(
-        buffer[tensorrt_llm::utils::customAllReduceUtils::NUM_POINTERS_PER_RANK * tpSize + 2]);
+        buffer[tensorrt_llm::common::utils::customAllReduceUtils::NUM_POINTERS_PER_RANK * tpSize + 2]);
     params.ranks_per_node = tpSize;
     params.local_rank = tpRank;
 
@@ -2017,6 +2045,4 @@ void lamportInitialize(void* buffer, size_t size, nvinfer1::DataType dataType, c
     sync_check_cuda_error(stream);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

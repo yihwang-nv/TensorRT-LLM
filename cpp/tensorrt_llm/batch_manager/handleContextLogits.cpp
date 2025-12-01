@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +17,11 @@
  */
 
 #include "tensorrt_llm/batch_manager/handleContextLogits.h"
-#include "tensorrt_llm/batch_manager/decoderBuffers.h"
 
+#include "tensorrt_llm/batch_manager/decoderBuffers.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/batch_manager/medusaBuffers.h"
 #include "tensorrt_llm/batch_manager/runtimeBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/runtimeKernels.h"
@@ -30,9 +30,7 @@
 namespace tr = tensorrt_llm::runtime;
 namespace tru = tensorrt_llm::runtime::utils;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using BufferManager = tensorrt_llm::runtime::BufferManager;
@@ -44,14 +42,16 @@ namespace
 {
 
 //! @brief Copy logits from context phase to beginning of generation logits.
-//! @details Usually, this concerns logits of 1 token. In speculative decoding this concerns draftLen + 1 tokens.
+//! @details Usually, this concerns logits of 1 token. In speculative decoding
+// this concerns draftLen + 1 tokens.
 void copyLastContextLogits(TensorPtr const& contextLogits, LlmRequest& llmReq, BufferManager const& bufferManager)
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
     auto const numLogits = contextLogits->getShape().d[0];
     for (int beam = 0; beam < llmReq.getBeamWidthByIter(); beam++)
     {
-        // [beamWidth, mMaxNewTokens, vocabSizePadded] -> [numLogits, vocabSizePadded]
+        // [beamWidth, mMaxNewTokens, vocabSizePadded] -> [numLogits,
+        // vocabSizePadded]
         auto beamHostTensorPtr = ITensor::slice(llmReq.getGenerationLogitsHost(), {beam, 0}, numLogits);
         bufferManager.copy(*contextLogits, *beamHostTensorPtr);
     }
@@ -100,17 +100,20 @@ SizeType32 HandleContextLogits::operator()(DecoderInputBuffers& inputBuffers, Re
 
         if (modelConfig.computeContextLogits())
         {
-            // Since the computational graph has been modified, only the last token is needed.
+            // Since the computational graph has been modified, only the last token
+            // is needed.
             TLLM_CHECK_WITH_INFO(!modelConfig.getSpeculativeDecodingMode().isMedusa()
                     && !modelConfig.getSpeculativeDecodingMode().isLookaheadDecoding(),
-                "Return context logits is not supported with Medusa and Lookahead decoding");
+                "Return context logits is not supported with Medusa and Lookahead "
+                "decoding");
 
             if (llmReq->getReturnContextLogits())
             {
                 if (llmReq->getPrepopulatedPromptLen() > 0)
                 {
                     TLLM_LOG_WARNING(
-                        "Because of KV cache reuse, not all context logits could be produced for request %lu.",
+                        "Because of KV cache reuse, not all context "
+                        "logits could be produced for request %lu.",
                         llmReq->mRequestId);
                 }
                 TensorPtr contextLogitsDeviceView = ITensor::slice(logits, logitsIndex, numContextLogits);
@@ -176,6 +179,4 @@ SizeType32 HandleContextLogits::operator()(DecoderInputBuffers& inputBuffers, Re
     return logitsIndex;
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

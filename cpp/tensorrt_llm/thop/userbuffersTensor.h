@@ -19,7 +19,8 @@
 #include "tensorrt_llm/kernels/userbuffers/userbuffersManager.h"
 #include <torch/extension.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -29,4 +30,4 @@ std::pair<torch::Tensor, tensorrt_llm::runtime::ub::UBBuffer> create_userbuffers
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

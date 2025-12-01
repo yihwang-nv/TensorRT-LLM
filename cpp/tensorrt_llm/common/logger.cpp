@@ -23,9 +23,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 Logger::Logger()
 {
     char* isFirstRankOnlyChar = std::getenv("TLLM_LOG_FIRST_RANK_ONLY");
@@ -73,6 +70,5 @@ Logger* Logger::getLogger()
     thread_local Logger instance;
     return &instance;
 }
-} // namespace common
 
 TRTLLM_NAMESPACE_END

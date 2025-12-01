@@ -23,17 +23,16 @@
 #ifdef __linux__
 #include <numa.h> // For libnuma
 #endif
-#include "tensorrt_llm/common/config.h"
 
-// Forward declaration for struct bitmask to avoid including numaif.h if numa.h already covers it,
-// or if only numa.h is intended to be the public include for this header's users.
+// Forward declaration for struct bitmask to avoid including numaif.h if numa.h
+// already covers it,
+// or if only numa.h is intended to be the public include for this header's
+// users.
 #ifdef __linux__
 struct bitmask;
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class TopologyDetector
@@ -47,11 +46,14 @@ public:
 
     ~TopologyDetector();
 
-    // Binds the current thread to the CPU cores of the NUMA node associated with the current GPU.
+    // Binds the current thread to the CPU cores of the NUMA node associated
+    // with the current GPU.
     void bindThreadByCurrentGpu();
 
-    // Returns the number of CPU cores on the NUMA node associated with the current GPU.
-    // Returns total hardware concurrency as a fallback if specific count cannot be determined.
+    // Returns the number of CPU cores on the NUMA node associated with the
+    // current GPU.
+    // Returns total hardware concurrency as a fallback if specific count cannot
+    // be determined.
     int getCurrentGpuNumaCpuCount();
 
     // Returns the ID of the NUMA node associated with the current GPU.
@@ -59,14 +61,16 @@ public:
     int getCurrentGpuNumaId();
 
     // Returns the ID of the NUMA node that current GPU's memory is assigned.
-    // GPUs using C2C link with CPU may have assigned NUMA ID for its memory, like GB200.
+    // GPUs using C2C link with CPU may have assigned NUMA ID for its memory,
+    // like GB200.
     // Returns -1 if it doesn't have NUMA ID.
     int getCurrentGpuMemoryNumaId();
 
     // Returns the number of GPUs associated with the given NUMA node ID.
     int getGpuCountUnderNuma(int numaId);
 
-    // Returns the number of GPUs which have same NUMA node ID with the current GPU.
+    // Returns the number of GPUs which have same NUMA node ID with the current
+    // GPU.
     int getGpuCountUnderSameNuma()
     {
         return getGpuCountUnderNuma(getCurrentGpuNumaId());
@@ -88,7 +92,8 @@ public:
 
 private:
     TopologyDetector();
-    void detectCpuTopology();          // Detects CPU NUMA topology and CPU counts per node.
+    void detectCpuTopology();          // Detects CPU NUMA topology and CPU counts per
+                                       // node.
     void detectGpuTopology();          // Detects GPU to NUMA node mapping.
 #ifdef __linux__
     void precomputeCpuAffinityMasks(); // Precomputes CPU masks for each GPU
@@ -97,7 +102,8 @@ private:
     // Member variables
     std::map<int, int> mGpuToNumaMap;              // GPU ID -> NUMA Node ID
     std::map<int, int> mGpuMemoryToNumaMap;        // GPU ID -> Memory NUMA Node ID
-    std::map<int, std::vector<int>> mNumaToGpuMap; // NUMA Node ID -> List of GPU IDs
+    std::map<int, std::vector<int>> mNumaToGpuMap; // NUMA Node ID -> List of
+                                                   // GPU IDs
     std::map<int, int> mNumaToCpuCountMap;         // NUMA Node ID -> CPU Core Count
     std::string mCpuArchitecture;
     bool mTopologyDetected = false;
@@ -105,10 +111,9 @@ private:
 
 #ifdef __linux__
     // Precomputed CPU affinity masks
-    std::map<int, struct bitmask*> mGpuStrictCpuMasks; // GPU ID -> Strict CPU mask
+    std::map<int, struct bitmask*> mGpuStrictCpuMasks; // GPU ID -> Strict CPU
+                                                       // mask
 #endif
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

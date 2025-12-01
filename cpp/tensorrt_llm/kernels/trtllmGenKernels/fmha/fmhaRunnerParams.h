@@ -21,10 +21,7 @@
 #include <cstdint>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -65,13 +62,16 @@ enum class FmhaKernelType
     // The context-phase kernels.
     Context = 0,
     // Choose the best generation kernel based on the heuristic:
-    // use SwapsMmaAbForGeneration kernels when numHeadsQPerKv <= 16, otherwise KeepsMmaAbForGeneration.
+    // use SwapsMmaAbForGeneration kernels when numHeadsQPerKv <= 16, otherwise
+    // KeepsMmaAbForGeneration.
     Generation,
-    // Swap tensor A and tensor B of Mma, which only supports numHeadsQPerKv <= 16.
+    // Swap tensor A and tensor B of Mma, which only supports numHeadsQPerKv <=
+    // 16.
     SwapsMmaAbForGeneration,
     // Keep tensor A and tensor B of Mma.
     KeepsMmaAbForGeneration,
-    // Speculative decoding (Medusa and Eagle) generation-phase attention kernels, where seqLenQ > 1.
+    // Speculative decoding (Medusa and Eagle) generation-phase attention kernels,
+    // where seqLenQ > 1.
     SpecDecodingGeneration
 };
 
@@ -95,7 +95,8 @@ FMHA_KERNEL_TYPE_FUNCTION(SpecDecodingGeneration)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Note that (batchSize, seqLen) dimensions will be packed as sumOfSeqLens without paddings for
+// Note that (batchSize, seqLen) dimensions will be packed as sumOfSeqLens
+// without paddings for
 // variable sequence lengths.
 enum class QkvLayout
 {
@@ -105,15 +106,18 @@ enum class QkvLayout
     // PackedQkv: single buffer for Q, K and V.
     // Shape: [batchSize, seqLen, numHeadsQ + 2*numHeadsKv, headDim].
     PackedQkv,
-    // Paged buffer for K and V. Its shape is [batchSize, 2, maxNumPagesPerSeq]. The 2 corresponds to
+    // Paged buffer for K and V. Its shape is [batchSize, 2, maxNumPagesPerSeq].
+    // The 2 corresponds to
     // K
-    // and V. That buffer stores the logical page index of the paged-KV memory pool. Each "page" of
+    // and V. That buffer stores the logical page index of the paged-KV memory
+    // pool. Each "page" of
     // that
     // pool is a contiguous buffer of shape [numHeadsKv, pageSize, headDim].
     PagedKv,
     // ContiguousKv:
     // Contiguous buffer for Q with shape [batchSize, seqLen, numHeads, headDim].
-    // Contiguous buffer for Kv with shape [batchSize, seqLen, 2 * numHeads, headDim].
+    // Contiguous buffer for Kv with shape [batchSize, seqLen, 2 * numHeads,
+    // headDim].
     ContiguousKv,
 };
 
@@ -151,7 +155,8 @@ enum class MultiCtasKvMode
     // Do the reduction through the global memory and atomic counters.
     GmemReduction,
     // Same as GmemReduction, but use a separate kernel for the reduction.
-    // It is only supported/needed for 2-CTA or 1-CTA keepsMmaAbForGeneration MLA kernels with large
+    // It is only supported/needed for 2-CTA or 1-CTA keepsMmaAbForGeneration MLA
+    // kernels with large
     // reduction tiles.
     GmemReductionWithSeparateKernel,
     // Do the reduction through the CGA remote shared memory.
@@ -206,9 +211,11 @@ struct TllmGenFmhaRunnerParams
     void const* kvSfPtr;
     // Packed QKV buffer
     void const* qkvPtr;
-    // The attention sinks pointer (additional value per head in the denominator of the softmax).
+    // The attention sinks pointer (additional value per head in the denominator
+    // of the softmax).
     float const* attentionSinksPtr;
-    // The general packed custom mask ptr which does not meet specific format for trtllm gen kernels.
+    // The general packed custom mask ptr which does not meet specific format for
+    // trtllm gen kernels.
     int32_t const* generalPackedCustoMaskPtr;
     // The custom mask ptr.
     uint32_t* customMaskPtr;
@@ -227,7 +234,8 @@ struct TllmGenFmhaRunnerParams
     int const* kvPageIdxPtr;
     // The device output scale for FP8 quantization.
     float const* outputScalePtr;
-    // The device scaling factor for softmax (multiplied by log2 to use faster exp2)
+    // The device scaling factor for softmax (multiplied by log2 to use faster
+    // exp2)
     float const* scaleSoftmaxLog2Ptr;
     // The device scale for KV scaling factor.
     float const* kvSfScalePtr;
@@ -237,7 +245,8 @@ struct TllmGenFmhaRunnerParams
     // PartialO, partialMax and partialSum will be stored to the scratch space.
     void* multiCtasKvScratchPtr;
     // The softmax stats buffer.
-    // The softmax max/sum values will be stored to the buffer if it is not nullptr.
+    // The softmax max/sum values will be stored to the buffer if it is not
+    // nullptr.
     float2* softmaxStatsPtr;
     // The output buffer.
     void* oPtr;
@@ -262,12 +271,15 @@ struct TllmGenFmhaRunnerParams
     int mMaxSeqLenQ;
     // The max kv sequence length.
     int mMaxSeqLenKv;
-    // The attention window size for sliding window attention (sliding-window-attention is enabled when seqLenKv >
+    // The attention window size for sliding window attention
+    // (sliding-window-attention is enabled when seqLenKv >
     // mAttentionWindowSize).
     int mAttentionWindowSize;
-    // The chunked attention size (chunked-context is enabled when seqLenKv > mChunkedAttentionSize).
+    // The chunked attention size (chunked-context is enabled when seqLenKv >
+    // mChunkedAttentionSize).
     int mChunkedAttentionSize;
-    // The sum of sequence lengths for Q and K/V. (Only used when mSupportsVarSeqLens = true)
+    // The sum of sequence lengths for Q and K/V. (Only used when
+    // mSupportsVarSeqLens = true)
     int mSumOfSeqLensQ;
     int mSumOfSeqLensKv;
     // The maximum number of pages per sequence in the paged-kv buffer.
@@ -280,7 +292,8 @@ struct TllmGenFmhaRunnerParams
     int mMultiProcessorCount;
     // Scaling factor for Q.
     float mScaleQ;
-    // The start token index in SF tensor. Used for FP4 SF offset calculation in generation phase kernel when inflight
+    // The start token index in SF tensor. Used for FP4 SF offset calculation in
+    // generation phase kernel when inflight
     // batching is enabled.
     int mSfStartTokenIdx;
     // Whether to use sparse MLA.
@@ -314,7 +327,9 @@ struct TllmGenFmhaRunnerParams
             mMaskType = TrtllmGenAttentionMaskType::Custom;
             break;
         default:
-            TLLM_THROW("ContextAttentionMaskType %d cannot be mapped to TrtllmGenAttentionMaskType",
+            TLLM_THROW(
+                "ContextAttentionMaskType %d cannot be mapped to "
+                "TrtllmGenAttentionMaskType",
                 static_cast<int>(maskType));
         }
         return *this;
@@ -328,7 +343,8 @@ struct TllmGenSelectKernelParams
 {
     // The FMHA kernel type.
     FmhaKernelType mKernelType;
-    // The headDimV per CTA, which is only used by MLA generation kernels currently.
+    // The headDimV per CTA, which is only used by MLA generation kernels
+    // currently.
     int mHeadDimPerCtaV;
     // The multiCtasKvMode.
     MultiCtasKvMode mMultiCtasKvMode;
@@ -362,6 +378,4 @@ struct TllmGenSelectKernelParams
         , mUses2CtaMma(false){};
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -35,7 +35,8 @@ namespace tr = tensorrt_llm::runtime;
 namespace tk = tensorrt_llm::kernels;
 namespace tksd = tensorrt_llm::kernels::speculative_decoding;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -79,12 +80,14 @@ void initializeDeviceCurandStates(
 
 void prepareRandomTensors(th::Tensor& curandState, // [maxBatchSize, 48], uint8_t
     th::Tensor& randDataSample,                    // [maxBatchSize], dtype (float or half)
-    th::Tensor& randDataValidation,       // [maxBatchSize, maxNumPaths, maxPathDraftLength], dtype (float or half)
-    th::optional<th::Tensor> randomSeeds, // [1] or [maxBatchSize], uint64_t
-    int64_t const batchSize,              //
-    int64_t const numPaths,               //
-    int64_t const draftLength,            //
-    bool const initialize                 //
+    th::Tensor& randDataValidation,                // [maxBatchSize, maxNumPaths,
+                                                   // maxPathDraftLength], dtype (float or
+                                                   // half)
+    th::optional<th::Tensor> randomSeeds,          // [1] or [maxBatchSize], uint64_t
+    int64_t const batchSize,                       //
+    int64_t const numPaths,                        //
+    int64_t const draftLength,                     //
+    bool const initialize                          //
 )
 {
     auto stream = at::cuda::getCurrentCUDAStream().stream();
@@ -165,7 +168,7 @@ void prepareRandomTensors(th::Tensor& curandState, // [maxBatchSize, 48], uint8_
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto redrafter_prepare_random_tensors = torch::RegisterOperators(
     "tensorrt_llm::redrafter_prepare_random_tensors", &tensorrt_llm::torch_ext::prepareRandomTensors);

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,10 +25,7 @@
 #include <cassert>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using CublasGemmWrapper = tensorrt_llm::common::CublasMMWrapper;
 using CublasGemmWrapperPtr = std::shared_ptr<CublasGemmWrapper>;
@@ -58,7 +56,8 @@ private:
     int mNumLoraModules;
 
     // @fixme: seems this is shared across multiple clones.
-    // If we deep copy the wrapper inside clone(), then we may avoid the mutex inside the wrapper?
+    // If we deep copy the wrapper inside clone(), then we may avoid the mutex
+    // inside the wrapper?
     CublasGemmWrapperPtr mCublasWrapper;
 
     int mInHiddenSize;
@@ -69,10 +68,9 @@ private:
     std::optional<Config> mBestConfig;
 };
 
-// Change to following declarations must sync with moe_kernels.h in internal kernel repo
+// Change to following declarations must sync with moe_kernels.h in internal
+// kernel repo
 int Lora_run(LoraImpl* impl, int64_t numTokens, int64_t numReqs, void const* input, int32_t const* loraRanks,
     void const* const* loraWeightsPtr, int weightIndex, void* const* outputs, void* workspace, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

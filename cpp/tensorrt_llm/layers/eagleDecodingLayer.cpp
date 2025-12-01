@@ -15,7 +15,6 @@
  */
 
 #include "eagleDecodingLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/common/workspace.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/common.h"
@@ -30,9 +29,7 @@ using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::kernels::speculative_decoding;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -91,7 +88,8 @@ void EagleDecodingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Te
     auto constexpr fltMax = std::numeric_limits<float>::max();
     auto constexpr fltEpsilon = std::numeric_limits<float>::epsilon();
 
-    // Allow temp = 0 as it will be overwritten in Eagle's typical acceptance codes.
+    // Allow temp = 0 as it will be overwritten in Eagle's typical acceptance
+    // codes.
     fillBuffers(setupParams->temperature, DefaultDecodingParams::getTemperature(), mTemperature, mTemperatureDevice,
         batchSlots, std::make_pair(-fltEpsilon, fltMax), "temperature penalty");
 
@@ -133,7 +131,8 @@ void EagleDecodingLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> co
     auto inputs = std::dynamic_pointer_cast<EagleInputs>(baseInputs);
     auto outputs = std::dynamic_pointer_cast<EagleOutputs>(baseOutputs);
 
-    // Convert batch slots and seq slots to have -1 for the ctx requests not in the last chunk.
+    // Convert batch slots and seq slots to have -1 for the ctx requests not in
+    // the last chunk.
     augmentBatchSlots(*outputs, *inputs, workspace);
 
     // Slice output ids, pos ids, next draft tokens.
@@ -204,7 +203,8 @@ void EagleDecodingLayer<T>::unpackData(EagleOutputs const& outputs, EagleInputs 
     params.outputNumNewTokens = bufferCast<SizeType32>(*outputs.numNewTokens.value());
     params.outputSequenceLengths = bufferCast<SizeType32>(*outputs.sequenceLength.value());
     // FIXME outputUnpackedNextDraftTokens is the same as outputNextDraftTokens.
-    // outputUnpackedNextDraftTokens is used in eagleBuffers and outputNextDraftTokens is used in the runtime
+    // outputUnpackedNextDraftTokens is used in eagleBuffers and
+    // outputNextDraftTokens is used in the runtime
     params.outputUnpackedNextDraftTokens = bufferCast<TokenIdType>(*outputs.unpackedNextDraftTokens);
     params.outputNextDraftTokens = bufferCast<TokenIdType>(*outputs.nextDraftTokens);
     params.outputNextDraftLengths = bufferCast<SizeType32>(*outputs.nextDraftLengths);
@@ -313,6 +313,4 @@ size_t EagleDecodingLayer<T>::getWorkspaceSize() const noexcept
 template class EagleDecodingLayer<float>;
 template class EagleDecodingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

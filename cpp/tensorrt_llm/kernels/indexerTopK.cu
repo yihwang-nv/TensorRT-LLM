@@ -26,10 +26,8 @@
 namespace cg = cooperative_groups;
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace
 {
 template <int step>
@@ -159,7 +157,7 @@ __device__ bool processHistogramStep(int const* indices, float const* logits, in
     int& thresholdBinIdx, SmemOutputType& smemOutput, int* smemThresholdBinIdx, int* smemFinalDstIdx,
     int* smemFinalBinSize, int* smemFoundTopKValues, SmemFinalType& smemFinal, int stride1, int rowStart, int topK)
 {
-    // Clear the histogram.
+// Clear the histogram.
 #pragma unroll
     for (int idx = threadIdx.x; idx < kNumBins; idx += kNumThreadsPerBlock)
     {
@@ -497,7 +495,7 @@ static __device__ void topKPerRowJob(int const* indices, float const* logits, in
                 finalLogits[ii] = -FLT_MAX;
             }
 
-            // Read the elements from SMEM.
+// Read the elements from SMEM.
 #pragma unroll
             for (int ii = 0; ii < kNumFinalItemsPerThread; ++ii)
             {
@@ -575,7 +573,8 @@ static __device__ void topKPerRowJob(int const* indices, float const* logits, in
         {
             if (stride1 == 1)
             {
-                // stride1 == 1 will use vectorized_process, which indexes already skip the rowStart.
+                // stride1 == 1 will use vectorized_process, which indexes already skip
+                // the rowStart.
                 outIndices[i] = smemOutput[i];
             }
             else
@@ -712,6 +711,4 @@ void invokeIndexerTopKPrefill(float const* logits, int const* rowStarts, int con
     sync_check_cuda_error(stream);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

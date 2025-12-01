@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "tensorrt_llm/executor/serialization.h"
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/requestImpl.h"
@@ -32,9 +32,7 @@
 
 namespace su = tensorrt_llm::executor::serialize_utils;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 // TimePoint
@@ -50,7 +48,8 @@ void Serialization::serialize(RequestPerfMetrics::TimePoint const& tp, std::ostr
     su::serialize(std::chrono::duration_cast<std::chrono::microseconds>(tp.time_since_epoch()).count(), os);
 }
 
-size_t Serialization::serializedSize(RequestPerfMetrics::TimePoint const& /*unused*/)
+size_t Serialization::serializedSize(RequestPerfMetrics::TimePoint const&
+    /*unused*/)
 {
     return sizeof(RequestPerfMetrics::TimePoint);
 }
@@ -694,8 +693,10 @@ size_t Serialization::serializedSize(ContextPhaseParams const& contextPhaseParam
 // Request
 Request Serialization::deserializeRequest(std::istream& is)
 {
-    // Serialization of Request with logitsPostProcessor is currently not supported.
-    // Dynamic logitsPostProcessor only supported with replicate=false or no tensor parallelism.
+    // Serialization of Request with logitsPostProcessor is currently not
+    // supported.
+    // Dynamic logitsPostProcessor only supported with replicate=false or no
+    // tensor parallelism.
     auto inputTokenIds = su::deserialize<VecTokens>(is);
     auto maxNewTokens = su::deserialize<SizeType32>(is);
     auto streaming = su::deserialize<bool>(is);
@@ -805,7 +806,8 @@ Tensor Serialization::deserializeTensor(std::istream& is)
     }
     case MemoryType::kGPU:
     {
-        // TODO: Eventually we might want to support serialization/deserialization in GPU memory
+        // TODO: Eventually we might want to support serialization/deserialization
+        // in GPU memory
         //       Until then created Pinned tensor and move to GPU
         auto pinnedTensor = Tensor::pinned(dataType, shape);
         is.read(reinterpret_cast<char*>(pinnedTensor.getData()), static_cast<std::streamsize>(sizeInBytes));
@@ -1107,7 +1109,8 @@ ExecutorConfig Serialization::deserializeExecutorConfig(std::istream& is)
 size_t Serialization::serializedSize(ExecutorConfig const& executorConfig)
 {
     TLLM_CHECK_WITH_INFO(!executorConfig.getLogitsPostProcessorConfig().has_value(),
-        "Serialization of executorConfig with logitsPostProcessor is currently not supported.");
+        "Serialization of executorConfig with logitsPostProcessor is currently "
+        "not supported.");
 
     // Compute the size of serialized buffer
     size_t totalSize = 0;
@@ -1145,7 +1148,8 @@ size_t Serialization::serializedSize(ExecutorConfig const& executorConfig)
 void Serialization::serialize(ExecutorConfig const& executorConfig, std::ostream& os)
 {
     TLLM_CHECK_WITH_INFO(!executorConfig.getLogitsPostProcessorConfig().has_value(),
-        "Serialization of executorConfig with logitsPostProcessor is currently not supported.");
+        "Serialization of executorConfig with logitsPostProcessor is currently "
+        "not supported.");
 
     su::serialize(executorConfig.getMaxBeamWidth(), os);
     su::serialize(executorConfig.getMaxBatchSize(), os);
@@ -2476,7 +2480,8 @@ size_t Serialization::serializedSize(tensorrt_llm::batch_manager::kv_cache_manag
     totalSize += su::serializedSize(key.usesExtraIds);
     totalSize += su::serializedSize(key.loraTaskId);
     totalSize += su::serializedSize(key.uniqueTokens);
-    // std::vector<MmKey> where MmKey is pair<std::array<uint8_t,32>, SizeType32>
+    // std::vector<MmKey> where MmKey is pair<std::array<uint8_t,32>,
+    // SizeType32>
     totalSize += su::serializedSize(key.extraKeys);
     return totalSize;
 }
@@ -2503,6 +2508,4 @@ tensorrt_llm::batch_manager::kv_cache_manager::BlockKey Serialization::deseriali
     return key;
 }
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

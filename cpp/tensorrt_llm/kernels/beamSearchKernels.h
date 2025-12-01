@@ -23,10 +23,8 @@
 
 #define BEAM_SEARCH_DEBUG 0
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 static size_t constexpr kMaxBeamWidth = 1024;           // Max beam width supported in TRT-LLM now
 static size_t constexpr kMaxBeamWidthForV1 = 8;         // Max beam width for V1 workflow (V2 for larger)
 static size_t constexpr kMaxBeamWidthArrayLength = 8;   // Max length of beam width array of a request
@@ -36,68 +34,96 @@ static size_t constexpr kMaxVPartStage1 = 128;          // Max vocab part count 
 struct BeamHypotheses
 {
     // clang-format off
-    // MBS: max_batch_size, BS: batch_size, BM: beam_width, MSL: max_seq_length
-    // %%: parameter name in file generation.py (python workflow)
-    // Candidate beams: a beam which generates end_id or its sequence length reaches MSL
-    // Candidate-Beam-Array (CBA): The arrays to place the candidate beams and related information
-    // Variable-Beam-Width-Search (VBWS): A search mode that allows using different beam width for each step
+  // MBS: max_batch_size, BS: batch_size, BM: beam_width, MSL: max_seq_length
+  // %%: parameter name in file generation.py (python workflow)
+  // Candidate beams: a beam which generates end_id or its sequence length
+  // reaches MSL
+  // Candidate-Beam-Array (CBA): The arrays to place the candidate beams and
+  // related information
+  // Variable-Beam-Width-Search (VBWS): A search mode that allows using
+  // different beam width for each step
 
-    // Scalar values
-    bool bReturnNormedScore{false};         // Return `normedScore` or `cumLogProbs`, always be `false` now
-    bool bVBWS{false};                      // whether to use VBWS for Beam-Search
-    size_t nMaxBatchSize{0};                // Buildtime max batch size
-    size_t nBatchSize{0};                   // Runtime batch size
-    size_t nBeamWidth{0};                   // Runtime beam width
-    size_t nBeamWidthIn{0};                 // Scalar value of current input beam width, for VBWS
-    size_t nBeamWidthOut{0};                // Scalar value of current output beam width, for VBWS
-    size_t nMaxSeqLen{0};                   //
-    size_t nVocabSize{0};                   // Vocab Size Padded
-    size_t nVPart{0};                       // Count of vocab_size_padded divided
-    size_t nByteMaxSharedMemoryPerBlock{0}; // Device information
-    size_t nByteSharedMemoryStage1{0};      // Dynamic shared memory size of stage 1
-    size_t nByteSharedMemoryStage3{0};      // Static shared memory size of stage 3
+  // Scalar values
+  bool bReturnNormedScore{ false }; // Return `normedScore` or `cumLogProbs`,
+                                    // always be `false` now
+  bool bVBWS{ false };              // whether to use VBWS for Beam-Search
+  size_t nMaxBatchSize{ 0 };        // Buildtime max batch size
+  size_t nBatchSize{ 0 };           // Runtime batch size
+  size_t nBeamWidth{ 0 };           // Runtime beam width
+  size_t nBeamWidthIn{ 0 };  // Scalar value of current input beam width, for
+                             // VBWS
+  size_t nBeamWidthOut{ 0 }; // Scalar value of current output beam width, for
+                             // VBWS
+  size_t nMaxSeqLen{ 0 };    //
+  size_t nVocabSize{ 0 };    // Vocab Size Padded
+  size_t nVPart{ 0 };        // Count of vocab_size_padded divided
+  size_t nByteMaxSharedMemoryPerBlock{ 0 }; // Device information
+  size_t nByteSharedMemoryStage1{ 0 }; // Dynamic shared memory size of stage 1
+  size_t nByteSharedMemoryStage3{ 0 }; // Static shared memory size of stage 3
 
-    // Pointers from SamplingConfig
-    float const* diversityRates{nullptr};           // [BS]
-    float const* lengthPenalties{nullptr};          // [BS]
-    int const* earlyStoppings{nullptr};             // [BS]
-    int const* beamWidthArraysHost{nullptr};        // [BS, kMaxBeamWidthArrayLength]                           for VBWS
-    int* nBeamWidthInHost{nullptr};                 // [BS], cpu                                                for VBWS, beam width of last forward computation
-    int* nBeamWidthOutHost{nullptr};                // [BS], cpu                                                for VBWS, beam width of next forward computation
+  // Pointers from SamplingConfig
+  float const *diversityRates{ nullptr };    // [BS]
+  float const *lengthPenalties{ nullptr };   // [BS]
+  int const *earlyStoppings{ nullptr };      // [BS]
+  int const *beamWidthArraysHost{ nullptr }; // [BS, kMaxBeamWidthArrayLength]
+                                             // for VBWS
+  int *nBeamWidthInHost{ nullptr };          // [BS], cpu
+  // for VBWS, beam width of last forward
+  // computation
+  int *nBeamWidthOutHost{ nullptr }; // [BS], cpu
+                                     // for VBWS, beam width of next forward
+                                     // computation
 
-    // Pointers from input
-    int const* inputLengths{nullptr};               // [BS, BM]         %% context_length
-    int const* endIds{nullptr};                     // [BS, BM]         %% self.end_ids
-    runtime::SizeType32 const* batchSlots{nullptr}; // [BS]
+  // Pointers from input
+  int const *inputLengths{ nullptr }; // [BS, BM]         %% context_length
+  int const *endIds{ nullptr };       // [BS, BM]         %% self.end_ids
+  runtime::SizeType32 const *batchSlots{ nullptr }; // [BS]
 
-    // Pointers for output
-    int* outputIds{nullptr};                        // [BS, BM, MSL]    %% self.output_ids                      only used in gather_tree
-    float* logProbs{nullptr};                       // [BS, BM, MSL]    %% self.log_probs                       only used in gather_tree
-    float* logProbsTiled{nullptr};                  // [MSL, MBS, BM]   %% self.log_probs_tiled
-    int* sequenceLengths{nullptr};                  // [BS, BM]         %% self.sequence_length_buffer
-    float* cumLogProbs{nullptr};                    // [BS, BM]         %% self.cum_log_probs
+  // Pointers for output
+  int *outputIds{ nullptr };       // [BS, BM, MSL]    %% self.output_ids
+                                   // only used in gather_tree
+  float *logProbs{ nullptr };      // [BS, BM, MSL]    %% self.log_probs
+                                   // only used in gather_tree
+  float *logProbsTiled{ nullptr }; // [MSL, MBS, BM]   %% self.log_probs_tiled
+  int *sequenceLengths{ nullptr }; // [BS, BM]         %%
+                                   // self.sequence_length_buffer
+  float *cumLogProbs{ nullptr };   // [BS, BM]         %% self.cum_log_probs
 
-    // Pointers of CBA
-    int* outputIdsCBA{nullptr};                     // [BS, BM*2, MSL]  %% self.beam_hyps_output_ids_cba
-    float* logProbsCBA{nullptr};                    // [BS, BM*2, MSL]  %% self.beam_hyps_log_probs_cba
-    int* sequenceLengthsCBA{nullptr};               // [BS, BM*2]       %% self.beam_hyps_seq_len_cba
-    float* cumLogProbsCBA{nullptr};                 // [BS, BM*2]       %% self.beam_hyps_cum_log_probs_cba
-    float* normedScoresCBA{nullptr};                // [BS, BM*2]       %% self.beam_hyps_normed_scores_cba
-    int* numBeamsCBA{nullptr};                      // [BS]             %% self.beam_hyps_num_beams             number of beams in CBA
-    float* minNormedScoresCBA{nullptr};             // [BS]             %% self.beam_hyps_min_normed_scores     worst score in CBA
+  // Pointers of CBA
+  int *outputIdsCBA{ nullptr };       // [BS, BM*2, MSL]  %%
+                                      // self.beam_hyps_output_ids_cba
+  float *logProbsCBA{ nullptr };      // [BS, BM*2, MSL]  %%
+                                      // self.beam_hyps_log_probs_cba
+  int *sequenceLengthsCBA{ nullptr }; // [BS, BM*2]       %%
+                                      // self.beam_hyps_seq_len_cba
+  float *cumLogProbsCBA{ nullptr };   // [BS, BM*2]       %%
+                                      // self.beam_hyps_cum_log_probs_cba
+  float *normedScoresCBA{ nullptr };  // [BS, BM*2]       %%
+                                      // self.beam_hyps_normed_scores_cba
+  int *numBeamsCBA{ nullptr }; // [BS]             %% self.beam_hyps_num_beams
+                               // number of beams in CBA
+  float *minNormedScoresCBA{ nullptr }; // [BS]             %%
+                                        // self.beam_hyps_min_normed_scores
+                                        // worst score in CBA
 
-    // Pointers related to beam search process, they are initialized in those two functions:
-    // [gptDecoder.cpp] GptDecoder<T>::forward or [dynamicDecodeOp.cpp] FtDynamicDecode<T>::forward
-    bool* batchDones{nullptr};                      // [BS]             %% self.beam_hyps_is_done               whether a whole batch is finished
-    FinishedState* finished{nullptr};               // [BS*BM], uint8   %% self.finished                        whether and how a beam is finished
+  // Pointers related to beam search process, they are initialized in those two
+  // functions:
+  // [gptDecoder.cpp] GptDecoder<T>::forward or [dynamicDecodeOp.cpp]
+  // FtDynamicDecode<T>::forward
+  bool *batchDones{ nullptr }; // [BS]             %% self.beam_hyps_is_done
+                               // whether a whole batch is finished
+  FinishedState *finished{ nullptr }; // [BS*BM], uint8   %% self.finished
+                                      // whether and how a beam is finished
 
-    // Pointers for backtrack of the beams, they are relocated in [dynamicDecodeLayer.cpp] DynamicDecodeLayer<T>::prepareIdsPtrs
-    int** outputIdsPtr{nullptr};                    // [BS][BM, MSL]    %% self.output_ids
-    int** parentIdsPtr{nullptr};                    // [BS][BM, MSL]    %% self.parent_ids
+  // Pointers for backtrack of the beams, they are relocated in
+  // [dynamicDecodeLayer.cpp] DynamicDecodeLayer<T>::prepareIdsPtrs
+  int **outputIdsPtr{ nullptr }; // [BS][BM, MSL]    %% self.output_ids
+  int **parentIdsPtr{ nullptr }; // [BS][BM, MSL]    %% self.parent_ids
 
-    // Pointers for gather_tree(), read the unfinished beams from them and write to CBA for the final selection
-    int const* outputIdsUnfinish{nullptr};          // [BS, BM, MSL]   %% self.output_ids
-    int const* parentIdsUnfinish{nullptr};          // [BS, BM, MSL]   %% self.parent_ids
+  // Pointers for gather_tree(), read the unfinished beams from them and write
+  // to CBA for the final selection
+  int const *outputIdsUnfinish{ nullptr }; // [BS, BM, MSL]   %% self.output_ids
+  int const *parentIdsUnfinish{ nullptr }; // [BS, BM, MSL]   %% self.parent_ids
 
     // clang-format on
 
@@ -219,6 +245,4 @@ void printLogProbs(float const* x, int const nBS, int const nBMIn, int const nBM
 #define WITH(x, y, z)
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

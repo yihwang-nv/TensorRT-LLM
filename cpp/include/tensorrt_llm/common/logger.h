@@ -27,9 +27,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 class Logger
 {
 
@@ -174,7 +171,6 @@ void Logger::log(Logger::Level const level, int const rank, char const* format, 
         out << std::endl;
     }
 }
-} // namespace common
 
 TRTLLM_NAMESPACE_END
 

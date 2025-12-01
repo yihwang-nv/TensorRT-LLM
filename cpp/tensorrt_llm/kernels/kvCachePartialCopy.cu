@@ -19,10 +19,8 @@
 #include <cstdint>
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace
 {
 template <typename T>
@@ -133,6 +131,4 @@ void kvCacheBlockPartialCopy(IBuffer& dst, IBuffer const& src, unsigned int numL
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

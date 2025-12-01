@@ -20,7 +20,6 @@
 #include "cudaStream.h"
 #include "iBuffer.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/memoryUtils.h"
@@ -33,9 +32,7 @@
 #include <tuple>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 LoraExpectedException::LoraExpectedException(std::string const& msg)
@@ -776,7 +773,8 @@ void LoraCache::copyTask(TaskIdType taskId, LoraCache& deviceCache, bool markDon
 
     TLLM_CHECK_WITH_INFO(deviceCache.mPageManagerConfig.getMemoryType() == runtime::MemoryType::kGPU
             && !deviceCache.mDeviceBufferManagers.empty(),
-        "The deviceCache must hold GPU memory and have at least one bufferManager / copy stream");
+        "The deviceCache must hold GPU memory and have at "
+        "least one bufferManager / copy stream");
 
     // First get the taskValue from this cache
     // TaskValue& taskValue = copyTaskGetThisTaskValue(taskId);
@@ -793,7 +791,8 @@ void LoraCache::copyTask(TaskIdType taskId, LoraCache& deviceCache, bool markDon
             throw std::runtime_error("can't move a missing task" + std::to_string(taskId));
         }
         auto taskValue = mCacheMap.at(taskId);
-        // mark task unloaded so we can evict the task while the copy in in progress
+        // mark task unloaded so we can evict the task while the copy in in
+        // progress
         taskValue->loaded = false;
         bumpTaskInProgress(taskId);
         return taskValue;
@@ -803,7 +802,8 @@ void LoraCache::copyTask(TaskIdType taskId, LoraCache& deviceCache, bool markDon
     auto neededPages = pageIds.size();
 
     // Now create put the task in the target cache
-    // TaskValue* otherTaskValuePtr = copyTaskGetOtherTaskValue(taskId, taskValue, deviceCache, markDone);
+    // TaskValue* otherTaskValuePtr = copyTaskGetOtherTaskValue(taskId,
+    // taskValue, deviceCache, markDone);
     std::optional<TaskValuePtr> optOtherTaskValuePtr = [&]() -> std::optional<TaskValuePtr>
     {
         std::lock_guard<std::mutex> deviceCacheLock(deviceCache.mCacheMutex);
@@ -956,6 +956,4 @@ bool LoraCache::isDone(TaskIdType taskId) const
     }
     return false;
 }
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

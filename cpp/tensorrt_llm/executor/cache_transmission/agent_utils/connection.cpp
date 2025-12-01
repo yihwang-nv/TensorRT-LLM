@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,13 @@
  */
 
 #include "connection.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/executor/cache_transmission/cacheSplitConcat.h"
 #include <string>
 #include <unistd.h>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 std::string genUniqueAgentName()
@@ -40,11 +38,14 @@ std::string genUniqueAgentName()
 }
 
 // NIXL connection is specific, and different from the UCX and mpi connection,
-// since NIXL only support one-sided communication. gen send buffer metaData to
+// since NIXL only support one-sided communication. gen send buffer metaData
+// to
 // context when it sending requestInfo, but don't send buffer offset, since
-// unformmatter has not called yet, it didn't know the cacheSize and offset. We
+// unformmatter has not called yet, it didn't know the cacheSize and offset.
+// We
 // assume the recv_size is the same as the send_size. and compute the buffer
-// offset according to  the layer num of the selfPPrank ,and previous PP rank's
+// offset according to  the layer num of the selfPPrank ,and previous PP
+// rank's
 // layer num, since the buffer size is ratio is equal to the layer num ratio
 // except the VSWA case.
 
@@ -145,7 +146,8 @@ void AgentConnection::send(DataContext const& ctx, void const* data, size_t size
     std::stringstream ss;
     NotificationInfo::serialize(notificationInfo, ss);
     status->wait();
-    // TODO: there is a bug in request_with_notify https://github.com/ai-dynamo/nixl/pull/252
+    // TODO: there is a bug in request_with_notify
+    // https://github.com/ai-dynamo/nixl/pull/252
     mAgentConnectionManager->getAgent()->notifySyncMessage(mRemoteAgentName, ss.str());
 }
 
@@ -315,7 +317,9 @@ AgentConnectionManager::AgentConnectionManager(
     }
     mCommState = CommState(agentStates, mpi::MpiComm::session().getRank());
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        " ***** AgentConnectionManager::AgentConnectionManager    mCommState: %s", mCommState.toString().c_str());
+        " ***** AgentConnectionManager::AgentConnectionManager    "
+        "mCommState: %s",
+        mCommState.toString().c_str());
 }
 
 AgentConnection const* AgentConnectionManager::recvConnectionAndRequestInfo(batch_manager::RequestInfo& requestInfo)
@@ -592,6 +596,4 @@ AgentConnectionManager::~AgentConnectionManager()
 {
     m_Agent->deregisterMemory(mRegMemDescs);
 }
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

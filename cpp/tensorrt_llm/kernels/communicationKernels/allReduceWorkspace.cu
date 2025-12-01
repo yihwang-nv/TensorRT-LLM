@@ -16,9 +16,9 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/communicationKernels/allReduceWorkspace.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ar_fusion
+namespace ar_fusion
 {
 
 __global__ void lamport_initialize_kernel(float* ptr, int size)
@@ -97,6 +97,6 @@ void** Workspace::get_workspace()
 {
     return reinterpret_cast<void**>(m_workspace);
 }
-}; // namespace kernels::ar_fusion
+}; // namespace ar_fusion
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

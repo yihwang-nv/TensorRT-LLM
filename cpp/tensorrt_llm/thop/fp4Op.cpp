@@ -27,7 +27,8 @@
 
 namespace th = torch;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -124,7 +125,8 @@ torch::autograd::variable_list FloatToE2M1AndUFP8SFScale(
     int packedFp4HiddenDim = hiddenDim / 2;
     int groupsPerHiddenDim = hiddenDim / sfVecSize;
 
-    // Note: if isSfSwizzledLayout is provided, use its value; otherwise default to true.
+    // Note: if isSfSwizzledLayout is provided, use its value; otherwise default
+    // to true.
     tensorrt_llm::QuantizationSFLayout layout = isSfSwizzledLayout.value_or(true)
         ? tensorrt_llm::QuantizationSFLayout::SWIZZLED
         : tensorrt_llm::QuantizationSFLayout::LINEAR;
@@ -165,9 +167,11 @@ torch::autograd::variable_list FloatToE2M1AndUFP8SFScale(
             }
             float scaleFloat = makeExpFloat(scaleExp);
             float invScaleFloat = 1.0 / scaleFloat;
-            // printf("vIdx=%ld, group=%d, maxAbsValue=%f, scaleExp=%d, e8M0Scale=%d, scaleFloat=%f,
+            // printf("vIdx=%ld, group=%d, maxAbsValue=%f, scaleExp=%d, e8M0Scale=%d,
+            // scaleFloat=%f,
             // invScaleFloat=%f\n",
-            //        vIdx, group, maxAbsValue, scaleExp, e8M0Scale, scaleFloat, invScaleFloat);
+            //        vIdx, group, maxAbsValue, scaleExp, e8M0Scale, scaleFloat,
+            // invScaleFloat);
             for (int i = 0; i < sfVecSize; ++i)
             {
                 float value = inputPtr[i];
@@ -188,8 +192,10 @@ torch::autograd::variable_list FloatToE2M1AndUFP8SFScale(
                     packedValue |= (fp4Value << 4);
                 }
                 packedFp4Ptr[i / 2] = packedValue;
-                // printf("  i=%d, value=%f, scaledValue=%f, fp4Value=%x, e2M1FloatValue=%f, repResult=%f\n",
-                //        i, value, scaledValue, (int)fp4Value, e2M1FloatValue, repResult);
+                // printf("  i=%d, value=%f, scaledValue=%f, fp4Value=%x,
+                // e2M1FloatValue=%f, repResult=%f\n",
+                //        i, value, scaledValue, (int)fp4Value, e2M1FloatValue,
+                // repResult);
             }
         }
     }
@@ -300,7 +306,8 @@ th::Tensor BlockScaleInterleave(th::Tensor const& blockScale)
 
 // Reverse interleave the weights block scaling factor.
 // blockScale: [num_experts, rows, cols] or [rows, cols]
-// Note: rows and cols are the dimensions of the original unswizzled SFMatrix, so reshape input before passing into
+// Note: rows and cols are the dimensions of the original unswizzled SFMatrix,
+// so reshape input before passing into
 // this function! Return: The same shape as blockScale
 th::Tensor BlockScaleInterleaveReverse(th::Tensor const& blockScale)
 {
@@ -333,7 +340,8 @@ th::Tensor BlockScaleInterleaveReverse(th::Tensor const& blockScale)
     }
     else
     {
-        // index in the swizzled SFMatrix -> (eIdx, rIdx, cIdx) in the unswizzled SFMatrix
+        // index in the swizzled SFMatrix -> (eIdx, rIdx, cIdx) in the unswizzled
+        // SFMatrix
         std::map<int, std::array<int, 3>> identity;
         for (int eIdx = 0; eIdx < num_experts; eIdx++)
         {
@@ -478,7 +486,7 @@ th::Tensor E2M1AndUFP8SFScaleToFloatV2(th::Tensor valueE2M1, th::Tensor scaleFP8
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto float_to_e2m1_and_ufp8sf_scale = torch::RegisterOperators(
     "tensorrt_llm::float_to_e2m1_and_ufp8sf_scale", &tensorrt_llm::torch_ext::FloatToE2M1AndUFP8SFScale);

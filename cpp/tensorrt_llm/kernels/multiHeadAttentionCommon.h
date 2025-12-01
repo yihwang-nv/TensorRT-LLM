@@ -21,10 +21,7 @@
 #include <limits.h>
 #include <stdint.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // Change to this enum must sync with nvrtcWrapper.cpp in internal kernel repo
 enum Data_type
@@ -122,6 +119,4 @@ constexpr int32_t kSM_121 = 121;
 static constexpr int kIdxScaleSoftmaxPtr = 0;
 static constexpr int kIdxScaleSoftmaxLog2Ptr = 1;
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

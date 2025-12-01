@@ -16,7 +16,6 @@
 #include "bufferManager.h"
 #include "cudaMemPool.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/memoryUtils.h"
 #include "tllmBuffers.h"
@@ -27,9 +26,7 @@
 
 namespace tc = tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 BufferManager::BufferManager(CudaStreamPtr stream, bool trimPool)
@@ -50,7 +47,8 @@ BufferManager::IBufferPtr BufferManager::gpu(std::size_t size, nvinfer1::DataTyp
     {
         return std::make_unique<DeviceBuffer>(size, type, CudaAllocatorAsync{mStream, mPool});
     }
-    // When memory pools are not supported, fallback to synchronous memory allocations.
+    // When memory pools are not supported, fallback to synchronous memory
+    // allocations.
     return gpuSync(size, type);
 }
 
@@ -64,7 +62,8 @@ BufferManager::ITensorPtr BufferManager::gpu(nvinfer1::Dims dims, nvinfer1::Data
     {
         return std::make_unique<DeviceTensor>(dims, type, CudaAllocatorAsync{mStream, mPool});
     }
-    // When memory pools are not supported, fallback to synchronous memory allocations.
+    // When memory pools are not supported, fallback to synchronous memory
+    // allocations.
     return gpuSync(dims, type);
 }
 
@@ -243,7 +242,9 @@ std::size_t BufferManager::memoryPoolReserved() const
     if (!static_cast<bool>(mPool))
     {
         TLLM_LOG_TRACE(
-            "Operation '%s' trivially returns zero on systems without memory pool support.", __PRETTY_FUNCTION__);
+            "Operation '%s' trivially returns zero on systems without "
+            "memory pool support.",
+            __PRETTY_FUNCTION__);
         return 0;
     }
     mStream->synchronize();
@@ -255,7 +256,9 @@ std::size_t BufferManager::memoryPoolUsed() const
     if (!static_cast<bool>(mPool))
     {
         TLLM_LOG_TRACE(
-            "Operation '%s' trivially returns zero on systems without memory pool support.", __PRETTY_FUNCTION__);
+            "Operation '%s' trivially returns zero on systems without "
+            "memory pool support.",
+            __PRETTY_FUNCTION__);
         return 0;
     }
     mStream->synchronize();
@@ -267,7 +270,9 @@ std::size_t BufferManager::memoryPoolFree() const
     if (!static_cast<bool>(mPool))
     {
         TLLM_LOG_TRACE(
-            "Operation '%s' trivially returns zero on systems without memory pool support.", __PRETTY_FUNCTION__);
+            "Operation '%s' trivially returns zero on systems without "
+            "memory pool support.",
+            __PRETTY_FUNCTION__);
         return 0;
     }
     mStream->synchronize();
@@ -278,12 +283,12 @@ void BufferManager::memoryPoolTrimTo(std::size_t size)
 {
     if (!static_cast<bool>(mPool))
     {
-        TLLM_LOG_TRACE("Operation '%s' does not do anything on this system as it does not support memory pools.",
+        TLLM_LOG_TRACE(
+            "Operation '%s' does not do anything on this system as it "
+            "does not support memory pools.",
             __PRETTY_FUNCTION__);
         return;
     }
     mPool->memoryPoolTrimTo(size);
 }
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

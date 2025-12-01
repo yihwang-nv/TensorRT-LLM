@@ -28,10 +28,7 @@
 #include "CudaType.h"
 #include "Poly.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 typedef void (*ChunkStateKernelFunc)(int B_, int L_, int H_, int P_, int G_, int N_,
     //  const void *g_mxY_,  // Tp_   B*L*H*P
@@ -40,13 +37,13 @@ typedef void (*ChunkStateKernelFunc)(int B_, int L_, int H_, int P_, int G_, int
     void* g_mxSt_,       // float B*C*H*N*P
     void const* g_mxdc_, // float B*C*H*Q
     void const* g_mxdA_, // float B*C*H*Q
-                         //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
-                         //  const void *g_mxdb_, // Wt_       H
-                         //  const void *g_mxA_,  // Wt_       H
-                         //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
-                         //  const void *g_mxD_,  // Wt_       H
-    void const* g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
-                         //  const void *g_mxZ_,  // g_mxdt_ or nullptr
+    //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
+    //  const void *g_mxdb_, // Wt_       H
+    //  const void *g_mxA_,  // Wt_       H
+    //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
+    //  const void *g_mxD_,  // Wt_       H
+    void const* g_mxX_, // Tp_   B*L*(H*P+2*G*N)
+                        //  const void *g_mxZ_,  // g_mxdt_ or nullptr
     bool removePadding_, int const* lastTokenIdsPtr_);
 
 template <int Q_, int tileM_, int tileN_, int tileK_, // smem size, per sm
@@ -60,13 +57,14 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
     void* g_mxSt_,       // float B*C*H*N*P
     void const* g_mxdc_, // float B*C*H*Q
     void const* g_mxdA_, // float B*C*H*Q
-                         //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
-                         //  const void *g_mxdb_, // Wt_       H
-                         //  const void *g_mxA_,  // Wt_       H
-                         //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
-                         //  const void *g_mxD_,  // Wt_       H
-    void const* g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
-                         //  const void *g_mxZ_,  // g_mxdt_ or nullptr
+                         //  const void *g_mxdt_, // Tp_
+    // B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
+    //  const void *g_mxdb_, // Wt_       H
+    //  const void *g_mxA_,  // Wt_       H
+    //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
+    //  const void *g_mxD_,  // Wt_       H
+    void const* g_mxX_, // Tp_   B*L*(H*P+2*G*N)
+    //  const void *g_mxZ_,  // g_mxdt_ or nullptr
     bool removePadding_, int const* lastTokenIdsPtr_)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
@@ -249,7 +247,8 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 
                     int kStart = (iK - pipeS_) * cn<tileK_>;
 
-                    // dc & dA should be set to zero out of seq length, but this is done to
+                    // dc & dA should be set to zero out of seq length, but this is done
+                    // to
                     // dc by chunkcumsum, so no need here.
                     tmp2.x *= expf(s_mxdA[Q_ - 1] - s_mxdA[kStart + get(thread(iStep) / cn<tileM_>)])
                         * s_mxdc[kStart + get(thread(iStep) / cn<tileM_>)];
@@ -408,13 +407,14 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
     void* g_mxSt_,       // float B*C*H*N*P
     void const* g_mxdc_, // float B*C*H*Q
     void const* g_mxdA_, // float B*C*H*Q
-                         //  const void *g_mxdt_, // Tp_   B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
-                         //  const void *g_mxdb_, // Wt_       H
-                         //  const void *g_mxA_,  // Wt_       H
-                         //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
-                         //  const void *g_mxD_,  // Wt_       H
-    void const* g_mxX_,  // Tp_   B*L*(H*P+2*G*N)
-                         //  const void *g_mxZ_,  // g_mxdt_ or nullptr
+                         //  const void *g_mxdt_, // Tp_
+    // B*L*((g_mxZ?2:1)*H*P+2*G+round_up(H,8))
+    //  const void *g_mxdb_, // Wt_       H
+    //  const void *g_mxA_,  // Wt_       H
+    //  const void *g_mxCB_, // Tp_   B*C*G*Q*Q
+    //  const void *g_mxD_,  // Wt_       H
+    void const* g_mxX_, // Tp_   B*L*(H*P+2*G*N)
+    //  const void *g_mxZ_,  // g_mxdt_ or nullptr
     bool removePadding_, int const* lastTokenIdsPtr_)
 {
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900 && defined(__CUDA_ARCH_FEAT_SM90_ALL)
@@ -576,7 +576,9 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 #pragma unroll
             for (int iM = 0; iM < tileM_; iM += 64)
                 asm volatile(
-                    "@elected_one cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes"
+                    "@elected_one "
+                    "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::"
+                    "complete_tx::bytes"
                     " [%0], [%1, {%2, %3, %4}], [%5];\n" ::"r"(
                         b_mxL + iK.var % pipeS_ * (tileM_ * tileK_ * 2) + iM * tileK_ * 2),
                     "l"((CUtensorMap const*) g_mxX_), "r"(get(mStart * cn<tileM_>) + iM), "r"(gStart.var),
@@ -584,7 +586,9 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 #pragma unroll
             for (int iN = 0; iN < tileN_; iN += 64)
                 asm volatile(
-                    "@elected_one cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes"
+                    "@elected_one "
+                    "cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::"
+                    "complete_tx::bytes"
                     " [%0], [%1, {%2, %3, %4}], [%5];\n" ::"r"(
                         b_mxR + iK.var % pipeS_ * (tileN_ * tileK_ * 2) + iN * tileK_ * 2),
                     "l"((CUtensorMap const*) g_mxX_ + 1), "r"(get(nStart * cn<tileN_>) + iN), "r"(hStart.var),
@@ -628,7 +632,8 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 
                     int kStart = (iK - pipeS_) * cn<tileK_>;
 
-                    // dc & dA should be set to zero out of seq length, but this is done to
+                    // dc & dA should be set to zero out of seq length, but this is done
+                    // to
                     // dc by chunkcumsum, so no need here.
                     tmp2.x *= expf(s_mxdA[Q_ - 1] - s_mxdA[kStart + get(thread(iStep) / cn<tileM_>)])
                         * s_mxdc[kStart + get(thread(iStep) / cn<tileM_>)];
@@ -674,13 +679,16 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 
             if (threadIdx.y == 0 && threadIdx.z == 0)
             {
-                asm volatile("@elected_one mbarrier.arrive.expect_tx.shared.b64 _, [%0], %1;\n" ::"r"(
-                                 b_mbar + jK.var % pipeS_ * 8),
+                asm volatile(
+                    "@elected_one mbarrier.arrive.expect_tx.shared.b64 _, "
+                    "[%0], %1;\n" ::"r"(b_mbar + jK.var % pipeS_ * 8),
                     "r"((tileM_ + tileN_) * tileK_ * 2));
 #pragma unroll
                 for (int iM = 0; iM < tileM_; iM += 64)
                     asm volatile(
-                        "@elected_one cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes"
+                        "@elected_one "
+                        "cp.async.bulk.tensor.3d.shared::cluster.global."
+                        "mbarrier::complete_tx::bytes"
                         " [%0], [%1, {%2, %3, %4}], [%5];\n" ::"r"(
                             b_mxL + jK.var % pipeS_ * (tileM_ * tileK_ * 2) + iM * tileK_ * 2),
                         "l"((CUtensorMap const*) g_mxX_), "r"(get(mStart * cn<tileM_>) + iM), "r"(gStart.var),
@@ -688,7 +696,9 @@ __global__ std::enable_if_t<std::is_same_v<Tp_, half> || std::is_same_v<Tp_, __n
 #pragma unroll
                 for (int iN = 0; iN < tileN_; iN += 64)
                     asm volatile(
-                        "@elected_one cp.async.bulk.tensor.3d.shared::cluster.global.mbarrier::complete_tx::bytes"
+                        "@elected_one "
+                        "cp.async.bulk.tensor.3d.shared::cluster.global."
+                        "mbarrier::complete_tx::bytes"
                         " [%0], [%1, {%2, %3, %4}], [%5];\n" ::"r"(
                             b_mxR + jK.var % pipeS_ * (tileN_ * tileK_ * 2) + iN * tileK_ * 2),
                         "l"((CUtensorMap const*) g_mxX_ + 1), "r"(get(nStart * cn<tileN_>) + iN), "r"(hStart.var),
@@ -2260,7 +2270,5 @@ static inline ChunkStateKernelFunc getChunkStateKernel(int B_, int L_, int H_, i
     return nullptr;
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 // vim: ts=2 sw=2 sts=2 et sta

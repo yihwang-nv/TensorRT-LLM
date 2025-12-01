@@ -20,15 +20,14 @@
 #include <float.h>
 #include <type_traits>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace mmha
 {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Forward declaration of the kernel launcher to avoid including decoderMaskedMultiheadAttentionLaunch.h
+// Forward declaration of the kernel launcher to avoid including
+// decoderMaskedMultiheadAttentionLaunch.h
 template <typename T, typename KVCacheBuffer, typename T_PARAMS, int Dh, bool BLOCK_SPARSE_ATTN,
     bool IMPLICIT_REL_ATTN_BIAS, bool ATTN_LOGIT_SOFTCAPPING>
 void mmha_launch_kernel(const T_PARAMS& params, KVCacheBuffer const& kv_cache_buffer,
@@ -101,19 +100,29 @@ void multihead_attention_(const KERNEL_PARAMS_TYPE& params, KVCacheBuffer const&
     bool const enable_attn_logit_softcapping = params.attn_logit_softcapping_scale > 0.f;
     int const head_size = params.hidden_size_per_head;
     TLLM_CHECK_WITH_INFO(!has_implicit_rel_attn_bias || head_size == 32 || head_size == 64 || head_size == 128,
-        "MMHA kernels haven't instantiate implicit_relative_attention_bias paths for head size %d.", head_size);
+        "MMHA kernels haven't instantiate "
+        "implicit_relative_attention_bias paths for head size "
+        "%d.",
+        head_size);
     TLLM_CHECK_WITH_INFO(!enable_attn_logit_softcapping || head_size == 128 || head_size == 256,
-        "MMHA kernels haven't instantiate attn_logit_softcapping_scale paths for head size %d.", head_size);
+        "MMHA kernels haven't instantiate "
+        "attn_logit_softcapping_scale paths for head size %d.",
+        head_size);
     TLLM_CHECK_WITH_INFO(!(enable_attn_logit_softcapping && has_implicit_rel_attn_bias),
-        "MMHA kernels haven't instantiate implicit_relative_attention_bias + attn_logit_softcapping_scale paths for "
+        "MMHA kernels haven't instantiate implicit_relative_attention_bias + "
+        "attn_logit_softcapping_scale paths for "
         "head size %d.",
         head_size);
 
     bool const has_block_sparse_attn = params.block_sparse_attention;
     TLLM_CHECK_WITH_INFO(!has_block_sparse_attn || head_size == 128,
-        "MMHA kernels were not instantiated for block_sparse_attention for head size %d.", head_size);
+        "MMHA kernels were not instantiated for "
+        "block_sparse_attention for head size %d.",
+        head_size);
     TLLM_CHECK_WITH_INFO(!(has_implicit_rel_attn_bias && has_block_sparse_attn),
-        "MMHA kernels do not support combining implicit_relative_attention_bias and block_sparse_attention");
+        "MMHA kernels do not support combining "
+        "implicit_relative_attention_bias and "
+        "block_sparse_attention");
 
     switch (params.hidden_size_per_head)
     {
@@ -121,7 +130,8 @@ void multihead_attention_(const KERNEL_PARAMS_TYPE& params, KVCacheBuffer const&
     case 64: MMHA_LAUNCH_KERNE_EX1(64);
     case 128: MMHA_LAUNCH_KERNE_EX2(128);
     case 256: MMHA_LAUNCH_KERNE_EX3(256);
-#ifndef FAST_BUILD // skip mmha 48, 80, 96, 104, 112, 144, 160, 192 and 224 for fast build
+#ifndef FAST_BUILD // skip mmha 48, 80, 96, 104, 112, 144, 160, 192 and 224 for
+                   // fast build
     case 48: MMHA_LAUNCH_KERNEL(48);
     case 80: MMHA_LAUNCH_KERNEL(80);
     case 96: MMHA_LAUNCH_KERNEL(96);
@@ -176,6 +186,4 @@ INSTANTIATE_MMHA_NORMAL_AND_PAGED(__nv_bfloat16, false)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

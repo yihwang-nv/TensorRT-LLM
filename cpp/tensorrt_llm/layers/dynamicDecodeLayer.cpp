@@ -15,7 +15,6 @@
  */
 
 #include "dynamicDecodeLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/decodingKernels.h"
 #include "tensorrt_llm/layers/layerUtils.h"
@@ -30,9 +29,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -133,8 +130,9 @@ void DynamicDecodeLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Te
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
     auto setupParams = std::dynamic_pointer_cast<DynamicDecodeSetupParams>(baseSetupParams);
-    workspace->setDeviceBatchSlots(
-        batchSlots); // Copy the input batch slots to device for faster access in devie usage (kernels).
+    workspace->setDeviceBatchSlots(batchSlots); // Copy the input batch slots to
+                                                // device for faster access in
+                                                // devie usage (kernels).
 
     TLLM_CHECK_WITH_INFO(setupParams->decodingParams, "decodingParams for setup is not set");
     if (setupParams->decodingParams->outputLogProbs)
@@ -148,7 +146,8 @@ void DynamicDecodeLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Te
     if (mConfiguredBeamWidth == -1)
     {
         // This code is left only for Python runtime
-        // In C++ runtime given maxBeamWidth should always be equal to the runtime beamWidth
+        // In C++ runtime given maxBeamWidth should always be equal to the runtime
+        // beamWidth
         TLLM_CHECK(mDecodingMode.isAuto());
         mConfiguredBeamWidth = beamWidth;
         mDecodingMode
@@ -185,7 +184,8 @@ void DynamicDecodeLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> co
 
     TLLM_CHECK_WITH_INFO(
         mDecodingMode.isExplicitDraftTokens() || mDecodingMode.isEagle() || params->logits || params->logitsVec,
-        "If not Explicit Draft Tokens or Eagle mode, either logits or logitsVec have to be specified.");
+        "If not Explicit Draft Tokens or Eagle mode, either "
+        "logits or logitsVec have to be specified.");
     TLLM_CHECK_WITH_INFO(
         baseOutputs->sequenceLength.has_value(), "sequenceLength tensor is required in DynamicDecoderLayer.");
 
@@ -208,7 +208,8 @@ void DynamicDecodeLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> co
     }
 
     mCyclicStep = mCyclicStep % mRuntimeMaxSeqLen;
-    //! Copy the input batch slots to device for faster access in devie usage (kernels).
+    //! Copy the input batch slots to device for faster access in devie usage
+    //(kernels).
     workspace->setDeviceBatchSlots(params->batchSlots);
 
     prepareIdsPtrs(baseOutputs, params->batchSlots, localDecoderDomain.getBatchSize(),
@@ -296,7 +297,8 @@ void DynamicDecodeLayer<T>::prepareOutputData(std::shared_ptr<BaseDecodingOutput
     invokeCopyNextStepIds(newTokensPtr, outputIdsPtrDevice, sequenceLengthsPtr, numNewTokens, batchSlotsPtr, batchSize,
         maxBatchSize, beamWidth, maxSeqLen, maxTokensPerStep, stream);
 
-    // Transpose output log probs from [maxSeqLen, batchSize, beamWidth] to [batchSize, beamWidth, maxSeqLen]
+    // Transpose output log probs from [maxSeqLen, batchSize, beamWidth] to
+    // [batchSize, beamWidth, maxSeqLen]
     if (outputLogProbs && outputs->outputLogProbsTiled)
     {
         auto logProbsMaxSeqLen = outputs->outputLogProbsTiled.value()->getDimension<0>();
@@ -312,6 +314,4 @@ void DynamicDecodeLayer<T>::prepareOutputData(std::shared_ptr<BaseDecodingOutput
 template class DynamicDecodeLayer<float>;
 template class DynamicDecodeLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

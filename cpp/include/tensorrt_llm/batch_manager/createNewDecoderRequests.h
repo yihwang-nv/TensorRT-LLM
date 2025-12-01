@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -27,9 +27,7 @@
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class SamplingConfig;
 
@@ -38,14 +36,14 @@ namespace decoder
 class DecoderState;
 } // namespace decoder
 
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class MedusaBuffers;
 class DecoderInputBuffers;
 
-class CreateNewDecoderRequests : Algorithm
+class CreateNewDecoderRequests : tensorrt_llm::common::Algorithm
 {
 public:
     constexpr static auto name{"CreateNewDecoderRequests"};
@@ -86,6 +84,4 @@ private:
     bool mIsNormalizeLogProbs;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

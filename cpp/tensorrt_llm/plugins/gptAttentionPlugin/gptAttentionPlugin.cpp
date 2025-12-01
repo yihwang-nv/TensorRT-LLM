@@ -16,9 +16,8 @@
  */
 
 #include "gptAttentionPlugin.h"
-#include "tensorrt_llm/batch_manager/contextProgress.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/batch_manager/contextProgress.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention.h"
 #include "tensorrt_llm/kernels/gptKernels.h"
@@ -52,7 +51,8 @@ GPTAttentionPlugin::GPTAttentionPlugin(int layer_idx, int num_heads, int vision_
     int rotary_embedding_dim, // for RoPE. 0 for non-RoPE
     float rotary_embedding_base, tensorrt_llm::kernels::RotaryScalingType rotary_embedding_scale_type,
     float rotary_embedding_scale, float rotary_embedding_short_m_scale,
-    float rotary_embedding_long_m_scale, // magnitude scaling factors for Phi-3 long RoPE
+    float rotary_embedding_long_m_scale, // magnitude scaling factors for Phi-3
+                                         // long RoPE
     int rotary_embedding_max_positions, int rotary_embedding_original_max_positions, int tp_size,
     int tp_rank,                         // for ALiBi
     bool unfuse_qkv_gemm,                // for AutoPP
@@ -78,8 +78,10 @@ GPTAttentionPlugin::GPTAttentionPlugin(int layer_idx, int num_heads, int vision_
         is_mla_enabled, q_lora_rank, kv_lora_rank, qk_nope_head_dim, qk_rope_head_dim, v_head_dim, fuse_fp4_quant,
         skip_attn, cp_size, cp_rank, cp_group)
 {
-    TLLM_CHECK_WITH_INFO(
-        !is_mla_enabled, "GPTAttentionPlugin no longer supports MLA. Please use the PyTorch workflow instead.");
+    TLLM_CHECK_WITH_INFO(!is_mla_enabled,
+        "GPTAttentionPlugin no longer supports "
+        "MLA. Please use the PyTorch workflow "
+        "instead.");
     initEntryIdx();
 }
 
@@ -230,49 +232,62 @@ static int getPackedTensorHiddenDimIndex(bool removePadding)
     return removePadding ? 1 : 2;
 }
 
-// NOTE: generation input length might be larger than one in the spec decoding mode.
+// NOTE: generation input length might be larger than one in the spec decoding
+// mode.
 int GPTAttentionPlugin::getGenerationInputSequenceLength(
     nvinfer1::PluginTensorDesc const* inputDesc, int32_t localNbSeq, int32_t localNbTokens) const
 {
     if (mRemovePadding)
     {
-        // Speculative decoding mode might need variable generation input sequence length.
+        // Speculative decoding mode might need variable generation input sequence
+        // length.
         if (mIsSpecDecodingEnabled && mUseSpecDecoding)
         {
-            TLLM_CHECK_WITH_INFO(mCpSize <= 1, "Context Parallel does not support speculative decoding mode for now");
-            // SPEC_DECODING_POSITION_OFFSETS: [batch_size, max_generation_input_length].
+            TLLM_CHECK_WITH_INFO(mCpSize <= 1,
+                "Context Parallel does not support "
+                "speculative decoding mode for now");
+            // SPEC_DECODING_POSITION_OFFSETS: [batch_size,
+            // max_generation_input_length].
             return inputDesc[getIdx(IdxEntry::SPEC_DECODING_POSITION_OFFSETS)].dims.d[1];
         }
         else
         {
             if (mCpSize > 1)
             {
-                // Given that localNbTokens == (beamSize * localNbSeq + mCpSize - 1) / mCpSize, but when mCpSize - 1 >
-                // localNbSeq, there are multiple choices for beamSize. Assume beamSize == 1 here.
+                // Given that localNbTokens == (beamSize * localNbSeq + mCpSize - 1) /
+                // mCpSize, but when mCpSize - 1 >
+                // localNbSeq, there are multiple choices for beamSize. Assume beamSize
+                // == 1 here.
                 TLLM_CHECK_WITH_INFO(localNbTokens == (localNbSeq + mCpSize - 1) / mCpSize,
-                    "Context Parallel does not support beamSize > 1 for non-speculative decoding mode, "
+                    "Context Parallel does not support beamSize > 1 "
+                    "for non-speculative decoding mode, "
                     "localNbTokens=%d, localNbSeq=%d",
                     localNbTokens, localNbSeq);
                 return 1;
             }
-            // [num_tokens, local_hidden_size] where num_tokens = batch_size * generation_input_length
+            // [num_tokens, local_hidden_size] where num_tokens = batch_size *
+            // generation_input_length
             TLLM_CHECK_WITH_INFO(localNbTokens % localNbSeq == 0,
-                "seq_len should be same for all generation requests, localNbTokens=%d, localNbSeq=%d", localNbTokens,
-                localNbSeq);
+                "seq_len should be same for all generation "
+                "requests, localNbTokens=%d, localNbSeq=%d",
+                localNbTokens, localNbSeq);
             return localNbTokens / localNbSeq;
         }
     }
     else
     {
-        // We don't have IFB without mRemovePadding, so just take it out from inputDesc
+        // We don't have IFB without mRemovePadding, so just take it out from
+        // inputDesc
         // [batch_size, seq_len, local_hidden_size]
         return inputDesc[getIdx(IdxEntry::QKV_TENSOR)].dims.d[1];
     }
 }
 
 // outputs
-//     output_tensor [batch_size, seq_len, local_hidden_size] or [num_tokens, local_hidden_size]
-//     present_key_value_pool (optional if mPagedKVCache is false) [batch_size, 2, local_num_kv_heads, max_seq_len,
+//     output_tensor [batch_size, seq_len, local_hidden_size] or [num_tokens,
+// local_hidden_size]
+//     present_key_value_pool (optional if mPagedKVCache is false) [batch_size,
+// 2, local_num_kv_heads, max_seq_len,
 //     head_size]
 nvinfer1::DimsExprs GPTAttentionPlugin::getOutputDimensions(
     int outputIndex, nvinfer1::DimsExprs const* inputs, int nbInputs, nvinfer1::IExprBuilder& exprBuilder) noexcept
@@ -280,13 +295,15 @@ nvinfer1::DimsExprs GPTAttentionPlugin::getOutputDimensions(
     if (mFuseFp4Quant)
     {
         TLLM_CHECK(outputIndex == 0 || outputIndex == 1 || (!mPagedKVCache && useKVCache() && outputIndex == 2));
-        // Compute the output dimension for FP4 quantized tensor. Consistent with QuantizeToFP4Plugin.
+        // Compute the output dimension for FP4 quantized tensor. Consistent with
+        // QuantizeToFP4Plugin.
         if (outputIndex == 0)
         {
             auto ret = inputs[getIdx(IdxEntry::QKV_TENSOR)];
             return ret;
         }
-        // Compute the output dimension for output scaling factor tensor. Consistent with QuantizeToFP4Plugin.
+        // Compute the output dimension for output scaling factor tensor. Consistent
+        // with QuantizeToFP4Plugin.
         if (outputIndex == 1)
         {
             auto ret = inputs[getIdx(IdxEntry::QKV_TENSOR)];
@@ -297,7 +314,8 @@ nvinfer1::DimsExprs GPTAttentionPlugin::getOutputDimensions(
             ret.d[getPackedTensorHiddenDimIndex(mRemovePadding) - 1]
                 = exprBuilder.operation(DimensionOperation::kPROD, *dimM, *exprBuilder.constant(128));
             // Hidden size dimension.
-            // Div (rounding up) by 16 since 16 elements share one SF and SF padded to k%4==0.
+            // Div (rounding up) by 16 since 16 elements share one SF and SF padded to
+            // k%4==0.
             ret.d[getPackedTensorHiddenDimIndex(mRemovePadding)] = exprBuilder.operation(DimensionOperation::kCEIL_DIV,
                 *ret.d[getPackedTensorHiddenDimIndex(mRemovePadding)], *exprBuilder.constant(16));
             return ret;
@@ -451,7 +469,8 @@ bool GPTAttentionPlugin::supportsFormatCombination(
     }
     else if (pos == nbInputs + 1 && mFuseFp4Quant)
     {
-        // Set dtype for output scaling factor tensor. Use kINT32 as storage type (same as QuantizeToFP4Plugin).
+        // Set dtype for output scaling factor tensor. Use kINT32 as storage type
+        // (same as QuantizeToFP4Plugin).
         posCaseLine = __LINE__;
         result = (inOut[pos].type == nvinfer1::DataType::kFP8) && (inOut[pos].format == TensorFormat::kLINEAR);
     }
@@ -485,9 +504,11 @@ void GPTAttentionPlugin::configurePluginImpl(nvinfer1::DynamicPluginTensorDesc c
     int beamWidth = -1;
     if (!isCrossAttention() && useKVCache())
     {
-        // desc_val == -1 means beam_width is not static, we should look at min/max/opt.
+        // desc_val == -1 means beam_width is not static, we should look at
+        // min/max/opt.
         //
-        // In prepareEnqueueGeneration, we'll prepare for all cases where beam_width doesn't exceed max.
+        // In prepareEnqueueGeneration, we'll prepare for all cases where beam_width
+        // doesn't exceed max.
         // TODO: pass min AND max to prepareEnqueueGeneration instead of max only.
         int desc_val = in[getIdx(IdxEntry::CACHE_INDIR)].desc.dims.d[1];
         int max_val = in[getIdx(IdxEntry::CACHE_INDIR)].max.d[1];
@@ -499,7 +520,8 @@ void GPTAttentionPlugin::configurePluginImpl(nvinfer1::DynamicPluginTensorDesc c
     }
     TLLM_CHECK(beamWidth != -1);
 
-    // Commonly, cyclic_attention_window_size, and max_attention_window_size will be the same
+    // Commonly, cyclic_attention_window_size, and max_attention_window_size will
+    // be the same
     // unless each layer has different attention window sizes.
     // the kv_cache capacity.
     int max_encoder_context_len = isCrossAttention() ? in[getIdx(IdxEntry::CROSS_KV_LENGTH)].desc.dims.d[0] : 0;
@@ -521,7 +543,8 @@ void GPTAttentionPlugin::configurePluginImpl(nvinfer1::DynamicPluginTensorDesc c
 
     prepareEnqueueGeneration<T, KVCacheBuffer>(enqueueParams);
 
-    // Always reserve SemaphoreArray (for multi-block mode) as MMHA may enable multi-block mode when shared memory is
+    // Always reserve SemaphoreArray (for multi-block mode) as MMHA may enable
+    // multi-block mode when shared memory is
     // not enough.
     auto const& ctxLenTensor = in[getIdx(IdxEntry::CONTEXT_LENGTHS)];
     TLLM_CHECK_DEBUG(ctxLenTensor.max.nbDims == 1);
@@ -662,8 +685,10 @@ int GPTAttentionPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc,
     {
         auto seqIdxBeg = nbContextRequests;
         auto tokenIdxBeg = mCpSize > 1 ? contextTokenIdxEndForCp : contextTokenIdxEnd;
-        // if mRemovePadding is true, we may have IFB, and need to remove context tokens.
-        // if mRemovePadding is false, it is only generation requests, so just multiply batch_beam and seq_len (May not
+        // if mRemovePadding is true, we may have IFB, and need to remove context
+        // tokens.
+        // if mRemovePadding is false, it is only generation requests, so just
+        // multiply batch_beam and seq_len (May not
         // 1 for Parallel Decoding)
         auto localNbTokens = mRemovePadding
             ? inputDesc[getIdx(IdxEntry::QKV_TENSOR)].dims.d[0] - tokenIdxBeg
@@ -683,12 +708,18 @@ int GPTAttentionPlugin::enqueueSome(int32_t seqIdxBeg, int32_t localNbSeq, int32
     nvinfer1::PluginTensorDesc const* inputDesc, nvinfer1::PluginTensorDesc const* outputDesc,
     void const* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream)
 {
-    //     relative_attention_bias [head_num, max_seq_len, max_seq_len] (optional in relative position)
-    //                          or [head_num, num_buckets] (optional in implicit relative attention)
-    //     cross_kv [batch_size, seq_len, 2 * local_hidden_size] or [num_tokens, 2 * local_hidden_size]
-    //               when enable remove_input_padding (optional in cross attention mode)
-    //     cross_kv_length [int] max encoder input context length (optional in cross attention mode)
-    //     encoder_input_lengths [batch_size] raw sequence lengths (optional in cross attention mode)
+    //     relative_attention_bias [head_num, max_seq_len, max_seq_len] (optional
+    // in relative position)
+    //                          or [head_num, num_buckets] (optional in implicit
+    // relative attention)
+    //     cross_kv [batch_size, seq_len, 2 * local_hidden_size] or [num_tokens, 2
+    // * local_hidden_size]
+    //               when enable remove_input_padding (optional in cross attention
+    // mode)
+    //     cross_kv_length [int] max encoder input context length (optional in
+    // cross attention mode)
+    //     encoder_input_lengths [batch_size] raw sequence lengths (optional in
+    // cross attention mode)
 
     using runtime::RequestType;
 
@@ -790,24 +821,31 @@ int GPTAttentionPlugin::enqueueSome(int32_t seqIdxBeg, int32_t localNbSeq, int32
 
     int max_encoder_context_len = isCrossAttention() ? inputDesc[getIdx(IdxEntry::CROSS_KV_LENGTH)].dims.d[0] : 0;
     // for enc-dec model, since decoder_input_ids could be longer than 1,
-    // such model has an encoder context (for cross attn) and an decoder context (for self attn)
+    // such model has an encoder context (for cross attn) and an decoder context
+    // (for self attn)
     // clarify 3 lens:
-    // -- max_context_q_len: len of decoder input. No "max" concept, it's what it is given.
-    //                     Also called (decoder_)input_seq_length, normally 1 for encoder-decoder start token
+    // -- max_context_q_len: len of decoder input. No "max" concept, it's what it
+    // is given.
+    //                     Also called (decoder_)input_seq_length, normally 1 for
+    // encoder-decoder start token
     // -- max_seq_len: max allowed len of decoder output, i.e. final results
-    // -- max_encoder_context_len: len of encoder input (in cross attn). Also called encoder_input_seq_length
+    // -- max_encoder_context_len: len of encoder input (in cross attn). Also
+    // called encoder_input_seq_length
 
     int const beamWidth
         = isCrossAttention() ? 1 : (useKVCache() ? inputDesc[getIdx(IdxEntry::CACHE_INDIR)].dims.d[1] : 1);
 
-    // Commonly, cyclic_attention_window_size, and max_attention_window_size will be the same
+    // Commonly, cyclic_attention_window_size, and max_attention_window_size will
+    // be the same
     // unless each layer has different attention window sizes.
     // the kv_cache capacity.
     int const max_attention_window_size = isCrossAttention()
         ? max_encoder_context_len
         : (useKVCache() ? inputDesc[getIdx(IdxEntry::CACHE_INDIR)].dims.d[2] : 0);
-    // The cyclic_attention_window_size will determine the cyclic kv cache position of new tokens.
-    // Note that this cyclic_attention_window_size might be smaller than the actual kv cache capactity.
+    // The cyclic_attention_window_size will determine the cyclic kv cache
+    // position of new tokens.
+    // Note that this cyclic_attention_window_size might be smaller than the
+    // actual kv cache capactity.
     int const* cyclic_attention_window_sizes
         = reinterpret_cast<int const*>(inputs[getIdx(IdxEntry::HOST_MAX_ATTENTION_WINDOW)]);
     int const cyclic_attention_window_size
@@ -872,8 +910,10 @@ int GPTAttentionPlugin::enqueueSome(int32_t seqIdxBeg, int32_t localNbSeq, int32
 
         int32_t const layerToPool = host_pool_mapping[mLayerIdx * 2];
         int32_t const layerIdxInCachePool = host_pool_mapping[mLayerIdx * 2 + 1];
-        TLLM_LOG_TRACE("Layer%d: LayerCachePoolLocator{.indexOfPool=%d, .layerIdxInCachePool=%d}", mLayerIdx,
-            layerToPool, layerIdxInCachePool);
+        TLLM_LOG_TRACE(
+            "Layer%d: LayerCachePoolLocator{.indexOfPool=%d, "
+            ".layerIdxInCachePool=%d}",
+            mLayerIdx, layerToPool, layerIdxInCachePool);
         auto const seqStride = getStride(kvCacheBlockOffsetsShape, 1);
         auto const poolStride = getStride(kvCacheBlockOffsetsShape, 0);
         auto const seqOffset = seqIdxBeg * seqStride;
@@ -902,10 +942,12 @@ int GPTAttentionPlugin::enqueueSome(int32_t seqIdxBeg, int32_t localNbSeq, int32
             = reinterpret_cast<void*>(typed_host_pool_pointers[layerToPool * 2 + 1] + layerOffset);
     }
 
-    // The index of kv cache tensor in outputs. If fuse FP4 quant, an additional scaling factor output is added before
+    // The index of kv cache tensor in outputs. If fuse FP4 quant, an additional
+    // scaling factor output is added before
     // the kv cache tensor.
     int const kvCacheIdxInOutputs = mFuseFp4Quant ? 2 : 1;
-    // The number of elements per storage type. For FP4 output, storage type is uint8_t.
+    // The number of elements per storage type. For FP4 output, storage type is
+    // uint8_t.
     int const numEltsPerStorageType = mFuseFp4Quant ? 2 : 1;
 
     AttentionOutT* context_buf_ = static_cast<AttentionOutT*>(outputs[0])
@@ -942,17 +984,20 @@ int GPTAttentionPlugin::enqueueSome(int32_t seqIdxBeg, int32_t localNbSeq, int32
     int num_decoding_draft_tokens = 0;
     if (mIsSpecDecodingEnabled && mUseSpecDecoding)
     {
-        // Second dimension of spec_decoding_position_offsets is num_decoding_draft_tokens + 1.
+        // Second dimension of spec_decoding_position_offsets is
+        // num_decoding_draft_tokens + 1.
         // [batch_size, num_decoding_draft_tokens + 1]
         num_decoding_draft_tokens = inputDesc[getIdx(IdxEntry::SPEC_DECODING_POSITION_OFFSETS)].dims.d[1] - 1;
         if (num_decoding_draft_tokens > 0)
         {
-            // spec_decoding_* tensors are not filled for context requests. Hence, always strting from 0th index
+            // spec_decoding_* tensors are not filled for context requests. Hence,
+            // always strting from 0th index
             int32_t constexpr genSeqIdx = 0;
             spec_decoding_packed_mask = static_cast<int const*>(inputs[getIdx(IdxEntry::SPEC_DECODING_PACKED_MASK)])
                 + genSeqIdx * getStride(inputDesc[getIdx(IdxEntry::SPEC_DECODING_PACKED_MASK)].dims, 0);
             // Packed as [num_tokens, packed_mask_size]
-            // Use seqIdxBeg * (num_decoding_draft_tokens + 1) here as only generation tokens have the packed_mask
+            // Use seqIdxBeg * (num_decoding_draft_tokens + 1) here as only generation
+            // tokens have the packed_mask
             // buffer.
             // TODO: support variable sequence length based on generationTokenIdxBeg.
             spec_decoding_packed_mask = static_cast<int const*>(inputs[getIdx(IdxEntry::SPEC_DECODING_PACKED_MASK)])
@@ -1093,12 +1138,14 @@ int GPTAttentionPlugin::enqueueSome(int32_t seqIdxBeg, int32_t localNbSeq, int32
         int const* cache_indir
             = beamWidth == 1 ? nullptr : reinterpret_cast<int const*>(inputs[getIdx(IdxEntry::CACHE_INDIR)]);
 
-        // Medusa: the max input sequence length if variable sequence length is needed.
+        // Medusa: the max input sequence length if variable sequence length is
+        // needed.
         int const input_seq_length = getGenerationInputSequenceLength(inputDesc, localNbSeq, localNbTokens);
         int const max_past_kv_length = isCrossAttention() ? max_encoder_context_len : max_context_kv_len;
         auto qkvDims = inputDesc[getIdx(IdxEntry::QKV_TENSOR)].dims;
         TLLM_CHECK_WITH_INFO(input_seq_length == 1 || (mIsSpecDecodingEnabled && mUseSpecDecoding),
-            "Only speculative decoding mode supports input length > 1 in the generation phase, input_seq_length=%d, "
+            "Only speculative decoding mode supports input length > 1 in the "
+            "generation phase, input_seq_length=%d, "
             "mIsSpecDecodingEnabled=%s, nDims=%d, (" FMT_DIM ", " FMT_DIM ", " FMT_DIM ")",
             input_seq_length, mIsSpecDecodingEnabled ? "true" : "false", qkvDims.nbDims, qkvDims.d[0], qkvDims.d[1],
             qkvDims.d[2]);

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "request.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/serializeUtils.h"
@@ -49,9 +49,7 @@ using VecTokens = tle::VecTokens;
 using IdType = tle::IdType;
 using VecTokenExtraIds = tle::VecTokenExtraIds;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::executor
+namespace tensorrt_llm::nanobind::executor
 {
 
 void initRequestBindings(nb::module_& m)
@@ -133,27 +131,24 @@ void initRequestBindings(nb::module_& m)
                  std::optional<std::vector<tle::SizeType32>> const& // beamWidthArray
                  >(),
             // clang-format off
-            nb::arg("beam_width") = 1,
-            nb::kw_only(),
-            nb::arg("top_k") = nb::none(),
-            nb::arg("top_p") = nb::none(),
-            nb::arg("top_p_min") = nb::none(),
-            nb::arg("top_p_reset_ids") = nb::none(),
-            nb::arg("top_p_decay") = nb::none(),
-            nb::arg("seed") = nb::none(),
-            nb::arg("temperature") = nb::none(),
-            nb::arg("min_tokens") = nb::none(),
-            nb::arg("beam_search_diversity_rate") = nb::none(),
-            nb::arg("repetition_penalty") = nb::none(),
-            nb::arg("presence_penalty") = nb::none(),
-            nb::arg("frequency_penalty") = nb::none(),
-            nb::arg("prompt_ignore_length") = nb::none(),
-            nb::arg("length_penalty") = nb::none(),
-            nb::arg("early_stopping") = nb::none(),
-            nb::arg("no_repeat_ngram_size") = nb::none(),
-            nb::arg("num_return_sequences") = nb::none(),
-            nb::arg("min_p") = nb::none(),
-            nb::arg("beam_width_array") = nb::none())               // clang-format on
+             nb::arg("beam_width") = 1, nb::kw_only(),
+             nb::arg("top_k") = nb::none(), nb::arg("top_p") = nb::none(),
+             nb::arg("top_p_min") = nb::none(),
+             nb::arg("top_p_reset_ids") = nb::none(),
+             nb::arg("top_p_decay") = nb::none(), nb::arg("seed") = nb::none(),
+             nb::arg("temperature") = nb::none(),
+             nb::arg("min_tokens") = nb::none(),
+             nb::arg("beam_search_diversity_rate") = nb::none(),
+             nb::arg("repetition_penalty") = nb::none(),
+             nb::arg("presence_penalty") = nb::none(),
+             nb::arg("frequency_penalty") = nb::none(),
+             nb::arg("prompt_ignore_length") = nb::none(),
+             nb::arg("length_penalty") = nb::none(),
+             nb::arg("early_stopping") = nb::none(),
+             nb::arg("no_repeat_ngram_size") = nb::none(),
+             nb::arg("num_return_sequences") = nb::none(),
+             nb::arg("min_p") = nb::none(),
+             nb::arg("beam_width_array") = nb::none())               // clang-format on
         .def_prop_rw("beam_width", &tle::SamplingConfig::getBeamWidth, &tle::SamplingConfig::setBeamWidth)
         .def_prop_rw("top_k", &tle::SamplingConfig::getTopK, &tle::SamplingConfig::setTopK)
         .def_prop_rw("top_p", &tle::SamplingConfig::getTopP, &tle::SamplingConfig::setTopP)
@@ -420,8 +415,10 @@ void initRequestBindings(nb::module_& m)
         .def("__setstate__", TokenRangeRetentionConfigSetstate)
         .def("__eq__", &tle::KvCacheRetentionConfig::TokenRangeRetentionConfig::operator==);
 
-    // There's a circular dependency between the declaration of the TokenRangeRetentionPriority and
-    // KvCacheRetentionConfig bindings. Defer definition of the KvCacheRetentionConfig bindings until the
+    // There's a circular dependency between the declaration of the
+    // TokenRangeRetentionPriority and
+    // KvCacheRetentionConfig bindings. Defer definition of the
+    // KvCacheRetentionConfig bindings until the
     // TokenRangeRetentionPriority bindings have been defined.
     kvCacheRetentionConfig
         .def(nb::init<std::vector<tle::KvCacheRetentionConfig::TokenRangeRetentionConfig>, tle::RetentionPriority,
@@ -654,45 +651,42 @@ void initRequestBindings(nb::module_& m)
                  std::optional<tle::CacheSaltIDType>            // cacheSaltID
                  >(),
             // clang-format off
-        nb::arg("input_token_ids"),
-        nb::arg("max_tokens"),
-        nb::kw_only(),
-        nb::arg("streaming") = false,
-        nb::arg("sampling_config") = tle::SamplingConfig(),
-        nb::arg("output_config") = tle::OutputConfig(),
-        nb::arg("end_id") = nb::none(),
-        nb::arg("pad_id") = nb::none(),
-        nb::arg("position_ids") = nb::none(),
-        nb::arg("bad_words") = nb::none(),
-        nb::arg("stop_words") = nb::none(),
-        nb::arg("embedding_bias") = nb::none(),
-        nb::arg("external_draft_tokens_config") = nb::none(),
-        nb::arg("prompt_tuning_config") = nb::none(),
-        nb::arg("multimodal_input") = nb::none(),
-        nb::arg("multimodal_embedding") = nb::none(),
-        nb::arg("mrope_config") = nb::none(),
-        nb::arg("lora_config") = nb::none(),
-        nb::arg("lookahead_config") = nb::none(),
-        nb::arg("kv_cache_retention_config") = nb::none(),
-        nb::arg("logits_post_processor_name") = nb::none(),
-        nb::arg("logits_post_processor") = nb::none(),
-        nb::arg("encoder_input_token_ids") = nb::none(),
-        nb::arg("client_id") = nb::none(),
-        nb::arg("return_all_generated_tokens") = false,
-        nb::arg("priority") = tle::Request::kDefaultPriority,
-        nb::arg("type") = tle::RequestType::REQUEST_TYPE_CONTEXT_AND_GENERATION,
-        nb::arg("context_phase_params") = nb::none(),
-        nb::arg("encoder_input_features") = nb::none(),
-        nb::arg("encoder_output_length") = nb::none(),
-        nb::arg("cross_attention_mask") = nb::none(),
-        nb::arg("num_return_sequences") = 1,
-        nb::arg("eagle_config") = nb::none(),
-        nb::arg("skip_cross_attn_blocks") = nb::none(),
-        nb::arg("guided_decoding_params") = nb::none(),
-        nb::arg("language_adapter_uid") = nb::none(),
-        nb::arg("allotted_time_ms") = nb::none(),
-        nb::arg("cache_salt_id") = nb::none()
-    )             // clang-format on
+             nb::arg("input_token_ids"), nb::arg("max_tokens"), nb::kw_only(),
+             nb::arg("streaming") = false,
+             nb::arg("sampling_config") = tle::SamplingConfig(),
+             nb::arg("output_config") = tle::OutputConfig(),
+             nb::arg("end_id") = nb::none(), nb::arg("pad_id") = nb::none(),
+             nb::arg("position_ids") = nb::none(),
+             nb::arg("bad_words") = nb::none(),
+             nb::arg("stop_words") = nb::none(),
+             nb::arg("embedding_bias") = nb::none(),
+             nb::arg("external_draft_tokens_config") = nb::none(),
+             nb::arg("prompt_tuning_config") = nb::none(),
+             nb::arg("multimodal_input") = nb::none(),
+             nb::arg("multimodal_embedding") = nb::none(),
+             nb::arg("mrope_config") = nb::none(),
+             nb::arg("lora_config") = nb::none(),
+             nb::arg("lookahead_config") = nb::none(),
+             nb::arg("kv_cache_retention_config") = nb::none(),
+             nb::arg("logits_post_processor_name") = nb::none(),
+             nb::arg("logits_post_processor") = nb::none(),
+             nb::arg("encoder_input_token_ids") = nb::none(),
+             nb::arg("client_id") = nb::none(),
+             nb::arg("return_all_generated_tokens") = false,
+             nb::arg("priority") = tle::Request::kDefaultPriority,
+             nb::arg("type") =
+                 tle::RequestType::REQUEST_TYPE_CONTEXT_AND_GENERATION,
+             nb::arg("context_phase_params") = nb::none(),
+             nb::arg("encoder_input_features") = nb::none(),
+             nb::arg("encoder_output_length") = nb::none(),
+             nb::arg("cross_attention_mask") = nb::none(),
+             nb::arg("num_return_sequences") = 1,
+             nb::arg("eagle_config") = nb::none(),
+             nb::arg("skip_cross_attn_blocks") = nb::none(),
+             nb::arg("guided_decoding_params") = nb::none(),
+             nb::arg("language_adapter_uid") = nb::none(),
+             nb::arg("allotted_time_ms") = nb::none(),
+             nb::arg("cache_salt_id") = nb::none())              // clang-format on
         .def_prop_ro("input_token_ids", &tle::Request::getInputTokenIds)
         .def_prop_ro("max_tokens", &tle::Request::getMaxTokens)
         .def_prop_rw("streaming", &tle::Request::getStreaming, &tle::Request::setStreaming)
@@ -845,8 +839,10 @@ void initRequestBindings(nb::module_& m)
             nb::cast<std::optional<tle::IterationType>>(state[5])};
     };
 
-    // There's a circular dependency between the declaration of the TimingMetrics and RequestPerfMetrics bindings.
-    // Defer definition of the RequestPerfMetrics bindings until the TimingMetrics have been defined.
+    // There's a circular dependency between the declaration of the
+    // TimingMetrics and RequestPerfMetrics bindings.
+    // Defer definition of the RequestPerfMetrics bindings until the
+    // TimingMetrics have been defined.
     requestPerfMetrics.def(nb::init<>())
         .def_rw("timing_metrics", &tle::RequestPerfMetrics::timingMetrics)
         .def_rw("kv_cache_metrics", &tle::RequestPerfMetrics::kvCacheMetrics)
@@ -968,6 +964,4 @@ void initRequestBindings(nb::module_& m)
         .def("__setstate__", responseSetstate);
 }
 
-} // namespace nanobind::executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::executor

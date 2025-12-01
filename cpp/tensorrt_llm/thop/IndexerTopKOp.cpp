@@ -31,7 +31,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -125,12 +126,13 @@ void indexer_topk_prefill(th::Tensor const& logits, th::Tensor const& row_starts
 
 } // end namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "indexer_topk_decode(Tensor logits, Tensor seq_lens, Tensor indices, int next_n, int index_topk=2048) -> "
+        "indexer_topk_decode(Tensor logits, Tensor seq_lens, Tensor indices, "
+        "int next_n, int index_topk=2048) -> "
         "()");
 }
 
@@ -142,7 +144,8 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "indexer_topk_prefill(Tensor logits, Tensor row_starts, Tensor row_ends, Tensor indices, int "
+        "indexer_topk_prefill(Tensor logits, Tensor row_starts, Tensor "
+        "row_ends, Tensor indices, int "
         "index_topk=2048) -> ()");
 }
 

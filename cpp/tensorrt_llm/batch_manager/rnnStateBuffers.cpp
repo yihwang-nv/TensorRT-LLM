@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,19 +17,16 @@
  */
 
 #include "rnnStateBuffers.h"
-#include "tensorrt_llm/batch_manager/llmRequest.h"
 
+#include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/batch_manager/rnnStateManager.h"
 #include "tensorrt_llm/batch_manager/runtimeBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/runtime/tllmRuntime.h"
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 RnnStateBuffers::RnnStateBuffers(SizeType32 maxBatchSize, runtime::TllmRuntime const& runtime)
@@ -78,6 +76,4 @@ void RnnStateBuffers::getBuffers(TensorMap& inputBuffers) const
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

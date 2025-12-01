@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
@@ -26,14 +25,12 @@
 
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::decoder
+namespace tensorrt_llm::runtime::decoder
 {
 class DecoderState;
 }
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class DecoderInputBuffers
@@ -80,7 +77,8 @@ public:
 
     //! Logits for speculative decoding (Medusa).
     //! The vector is sparse, only slots in forwardBatchSlots are used.
-    //! [maxBatchSize][maxAcceptedDraftTokensPerStep][maxDraftTokens + 1, vocabSizePadded]
+    //! [maxBatchSize][maxAcceptedDraftTokensPerStep][maxDraftTokens + 1,
+    // vocabSizePadded]
     std::vector<std::vector<runtime::ITensor::SharedPtr>> predictedDraftLogits;
 };
 
@@ -99,12 +97,15 @@ public:
     void setupSpeculativeDecoding(
         SizeType32 maxNumSequences, SizeType32 maxTokensPerStep, runtime::ModelConfig const& modelConfig);
 
-    TensorPtr sequenceLengthsHost; // [mMaxNumRequests, beamWidth], pinned host tensor
-    TensorPtr newOutputTokensHost; // [maxTokensPerStep, mMaxNumRequests, beamWidth]
+    TensorPtr sequenceLengthsHost; // [mMaxNumRequests, beamWidth], pinned host
+                                   // tensor
+    TensorPtr newOutputTokensHost; // [maxTokensPerStep, mMaxNumRequests,
+                                   // beamWidth]
     TensorPtr cumLogProbsHost;     // [mMaxNumRequests, beamWidth]
     TensorPtr logProbsHost;        // [mMaxNumRequests, beamWidth, maxSeqLen]
     TensorPtr finishedSumHost;     // [mMaxNumRequests], pinned host tensor
-    TensorPtr finishReasonsHost;   // [mMaxNumRequests, beamWidth], pinned host tensor
+    TensorPtr finishReasonsHost;   // [mMaxNumRequests, beamWidth], pinned host
+                                   // tensor
 
     // speculative decoding buffers
     TensorPtr nextDraftTokensHost;        // [mMaxNumRequests, maxTokensPerStep-1]
@@ -150,8 +151,10 @@ public:
     using SizeType32 = runtime::SizeType32;
     using TensorPtr = runtime::ITensor::SharedPtr;
 
-    TensorPtr outputIds;           // [beamWidth, maxSeqLen], outputIds of single batch slot
-    TensorPtr outputIdsHost;       // [beamWidth, maxSeqLen], outputIds of single batch slot
+    TensorPtr outputIds;           // [beamWidth, maxSeqLen], outputIds of single batch
+                                   // slot
+    TensorPtr outputIdsHost;       // [beamWidth, maxSeqLen], outputIds of single
+                                   // batch slot
     TensorPtr sequenceLengths;     // [beamWidth]
     TensorPtr sequenceLengthsHost; // [beamWidth]
     TensorPtr cumLogProbs;         // [beamWidth]
@@ -186,6 +189,4 @@ private:
     std::unique_ptr<mpi::MpiRequest> mRequest4;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

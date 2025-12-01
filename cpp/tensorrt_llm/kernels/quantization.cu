@@ -27,10 +27,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 void invokeQuantization(
@@ -144,7 +141,8 @@ void invokeFP4Quantization(int b, int m, int n, T const* input, float const* SFS
         dim3 block(std::min(int(n / CVT_FP8_TO_FP4_ELTS_PER_THREAD), 512));
         // Get number of blocks per SM (assume we can fully utilize the SM).
         int const numBlocksPerSM = std::max(1u, 2048u / block.x);
-        // The number of blocks for m. The m dimension will be padded to 128 for swizzled layout.
+        // The number of blocks for m. The m dimension will be padded to 128 for
+        // swizzled layout.
         int numBlocksForM = layout == QuantizationSFLayout::SWIZZLED ? PadUpFn(m, 128) : m;
         dim3 grid(std::min(numBlocksForM, multiProcessorCount * numBlocksPerSM));
 
@@ -163,7 +161,8 @@ void invokeFP4Quantization(int b, int m, int n, T const* input, float const* SFS
         dim3 block(std::min(int(n / CVT_ELTS_PER_THREAD), 512));
         // Get number of blocks per SM (assume we can fully utilize the SM).
         int const numBlocksPerSM = std::max(1u, 2048u / block.x);
-        // The number of blocks for m. The m dimension will be padded to 128 for swizzled layout.
+        // The number of blocks for m. The m dimension will be padded to 128 for
+        // swizzled layout.
         int numBlocksForM = layout == QuantizationSFLayout::SWIZZLED ? PadUpFn(m, 128) : m;
         dim3 grid(std::min(numBlocksForM, multiProcessorCount * numBlocksPerSM));
 
@@ -201,7 +200,8 @@ void invokeMxFP8Quantization(int b, int m, int n, int padded_n, T const* input, 
     dim3 block(std::min(int(padded_n / CVT_ELTS_PER_THREAD), 512));
     // Get number of blocks per SM (assume we can fully utilize the SM).
     int const numBlocksPerSM = std::max(1u, 2048u / block.x);
-    // The number of blocks for m. The m dimension will be padded to 128 for swizzled layout.
+    // The number of blocks for m. The m dimension will be padded to 128 for
+    // swizzled layout.
     int numBlocksForM = layout == QuantizationSFLayout::SWIZZLED ? PadUpFn(m, 128) : m;
     dim3 grid(std::min(numBlocksForM, multiProcessorCount * numBlocksPerSM));
 
@@ -245,7 +245,8 @@ __global__ void block_scale_interleave_kernel(int numBatches, int numRows, int n
                 // Without batching, the math in get_sf_out_offset is the same as
                 // int const numSfTilesK = (numCols + 4 - 1) / 4;
                 // int const tileOffset = ((mi / 128) * numSfTilesK + ki / 4) * 512;
-                // int const dstIdx = tileOffset + (mi % 32) * 16 + ((mi % 128) / 32) * 4 + ki % 4;
+                // int const dstIdx = tileOffset + (mi % 32) * 16 + ((mi % 128) / 32) *
+                // 4 + ki % 4;
                 auto dstIdx = get_sf_out_offset_128x4(batchIdxOpt, rowIdx, colIdx, numRowsOpt, numCols);
                 SFOutput[dstIdx] = sf;
             }
@@ -429,6 +430,4 @@ template void invokeFP4Quantization<__nv_fp8_e4m3, 32>(int b, int m, int n, __nv
     int multiProcessorCount, cudaStream_t stream);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

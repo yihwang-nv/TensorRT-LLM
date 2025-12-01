@@ -19,12 +19,7 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 /// @brief Get the current timestamp in the format "MM-DD-YYYY HH:MM:SS:uuuuuu"
 std::string getCurrentTimestamp();
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

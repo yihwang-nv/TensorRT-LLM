@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 #include "eagleSampleAndAcceptDraftTokensPlugin.h"
-#include "tensorrt_llm/common/assert.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/dataType.h"
 #include "tensorrt_llm/common/memoryUtils.h"
@@ -131,7 +130,8 @@ bool EagleSampleAndAcceptDraftTokensPlugin::supportsFormatCombination(
     }
     else if (pos == getIdx(InputIdxEntry::TEMPERATURE) || pos == getIdx(InputIdxEntry::RAND_VALIDATION)
         || pos == getIdx(InputIdxEntry::POSTERIOR_ALPHA)
-        || pos == getIdx(InputIdxEntry::POSTERIOR_THRESHOLD)) // temperature, rand_validation
+        || pos == getIdx(InputIdxEntry::POSTERIOR_THRESHOLD)) // temperature,
+    // rand_validation
     {
         return (inOut[pos].type == nvinfer1::DataType::kFLOAT) && (inOut[pos].format == TensorFormat::kLINEAR);
     }
@@ -208,7 +208,8 @@ void EagleSampleAndAcceptDraftTokensPlugin::samplePrimeHeadTokens(nvinfer1::Plug
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
-    // auto const maxNumTokens = inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[0];
+    // auto const maxNumTokens =
+    // inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[0];
     auto const vocabSizePadded = inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[1];
     auto const batchSize = inputDesc[getIdx(InputIdxEntry::PATHS)].dims.d[0];
     auto const maxDecodingTokens = inputDesc[getIdx(InputIdxEntry::PATHS)].dims.d[1];
@@ -263,7 +264,8 @@ void EagleSampleAndAcceptDraftTokensPlugin::doTypicalAcceptance(nvinfer1::Plugin
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
-    // auto const maxNumTokens = inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[0];
+    // auto const maxNumTokens =
+    // inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[0];
     auto const vocabSizePadded = inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[1];
 
     auto const batchSize = inputDesc[getIdx(InputIdxEntry::PATHS)].dims.d[0];
@@ -336,7 +338,8 @@ void EagleSampleAndAcceptDraftTokensPlugin::acceptDraftTokens(nvinfer1::PluginTe
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
-    // auto const maxNumTokens = inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[0];
+    // auto const maxNumTokens =
+    // inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[0];
     auto const vocabSizePadded = inputDesc[getIdx(InputIdxEntry::LOGITS)].dims.d[1];
 
     auto const batchSize = inputDesc[getIdx(InputIdxEntry::PATHS)].dims.d[0];
@@ -350,7 +353,8 @@ void EagleSampleAndAcceptDraftTokensPlugin::acceptDraftTokens(nvinfer1::PluginTe
     size_t offset{0};
 
     // auto const samplingWorkspaceSize
-    //     = getTopKWorkspaceSize<T>(batchSize, maxDecodingTokens, /* maxTopK */ 1, vocabSizePadded);
+    //     = getTopKWorkspaceSize<T>(batchSize, maxDecodingTokens, /* maxTopK */
+    // 1, vocabSizePadded);
 
     TokenIdType* outputIds = reinterpret_cast<TokenIdType*>(
         tc::nextWorkspacePtr(workspaceBytePtr, offset, batchSize * maxDecodingTokens * sizeof(TokenIdType)));
@@ -376,7 +380,8 @@ void EagleSampleAndAcceptDraftTokensPlugin::acceptDraftTokens(nvinfer1::PluginTe
 
     if (useDynamicTree)
     {
-        // For Eagle-2, after verification and acceptance, the original path becomes useless.
+        // For Eagle-2, after verification and acceptance, the original path becomes
+        // useless.
         // All set to '-1'
         cudaMemsetAsync(outputs[getIdx(OutputIdxEntry::NEXT_DRAFT_PATHS)], -1,
             batchSize * maxDecodingTokens * maxPathLen * sizeof(SizeType32), stream);

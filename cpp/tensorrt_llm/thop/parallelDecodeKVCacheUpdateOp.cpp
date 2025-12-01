@@ -23,7 +23,8 @@
 namespace th = torch;
 namespace tksd = tensorrt_llm::kernels::speculative_decoding;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -37,8 +38,10 @@ void updateKVCacheDraftTokenLocation(torch::Tensor seqAcceptedDraftTokenOffsetsT
     th::optional<int64_t> maxBlocksPerSeqOpt = th::nullopt, th::optional<int64_t> tokensPerBlockOpt = th::nullopt,
     th::optional<int64_t> stream_ptr = th::nullopt)
 {
-    TLLM_CHECK_WITH_INFO(
-        at::cuda::is_available(), "update_kv_cache_draft_token_location should be called with cuda enabled.");
+    TLLM_CHECK_WITH_INFO(at::cuda::is_available(),
+        "update_kv_cache_draft_token_"
+        "location should be called "
+        "with cuda enabled.");
     cudaStream_t stream;
     if (stream_ptr.has_value())
     {
@@ -60,14 +63,16 @@ void updateKVCacheDraftTokenLocation(torch::Tensor seqAcceptedDraftTokenOffsetsT
 
     TLLM_CHECK_WITH_INFO(pastKeyValueLengthsTensor.dim() == 1 && pastKeyValueLengthsTensor.size(0) == seqCount
             && pastKeyValueLengthsTensor.scalar_type() == torch::kInt,
-        "past_key_value_lengths tensor should be 1D int tensor with same length as seqCount");
+        "past_key_value_lengths tensor should be 1D int tensor "
+        "with same length as seqCount");
     int* rewindDraftTokenTensorPtr = nullptr;
     if (rewindDraftTokenTensor.has_value())
     {
         TLLM_CHECK_WITH_INFO(rewindDraftTokenTensor.value().dim() == 1
                 && rewindDraftTokenTensor.value().size(0) == seqCount
                 && rewindDraftTokenTensor.value().scalar_type() == torch::kInt,
-            "rewindDraftTokenTensor should be 1D int tensor same length as seqCount");
+            "rewindDraftTokenTensor should be 1D int tensor same length as "
+            "seqCount");
         rewindDraftTokenTensorPtr = rewindDraftTokenTensor.value().data_ptr<int>();
     }
 
@@ -83,7 +88,8 @@ void updateKVCacheDraftTokenLocation(torch::Tensor seqAcceptedDraftTokenOffsetsT
 
         auto const& pointerArray = pointerArrayOpt.value();
         auto const& offsetArray = offsetArrayOpt.value();
-        // chunked_context + sliding window attention is not supported in python runtime, so useOneMoreBlock can always
+        // chunked_context + sliding window attention is not supported in python
+        // runtime, so useOneMoreBlock can always
         // be supported.
         bool constexpr canUseOneMoreBlock{true};
 
@@ -115,7 +121,7 @@ void updateKVCacheDraftTokenLocation(torch::Tensor seqAcceptedDraftTokenOffsetsT
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto update_kv_cache_draft_token_location = torch::RegisterOperators(
     "tensorrt_llm::update_kv_cache_draft_token_location", &tensorrt_llm::torch_ext::updateKVCacheDraftTokenLocation);

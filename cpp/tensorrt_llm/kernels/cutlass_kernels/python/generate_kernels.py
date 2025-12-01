@@ -30,13 +30,13 @@ EpiTagNames = {
 
 EpiTag = {
     TrtLlm_EpilogueTag.epilogue_op_default:
-    "tensorrt_llm::cutlass_extensions::EpilogueOpDefault",
+    "tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefault",
     TrtLlm_EpilogueTag.epilogue_op_bias:
-    "tensorrt_llm::cutlass_extensions::EpilogueOpBias",
+    "tensorrt_llm::kernels::cutlass_extensions::EpilogueOpBias",
     TrtLlm_EpilogueTag.epilogue_op_silu:
-    "tensorrt_llm::cutlass_extensions::EpilogueOpDefaultSilu",
+    "tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefaultSilu",
     TrtLlm_EpilogueTag.epilogue_op_gelu:
-    "tensorrt_llm::cutlass_extensions::EpilogueOpDefaultFtGelu"
+    "tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefaultFtGelu"
 }
 
 EpiFusion = {
@@ -219,7 +219,7 @@ template void sm90_generic_mixed_gemm_kernelLauncher<{act_tag}, {weight_tag}, {s
 {cute_cta_shape}, {cute_cga_shape},
 {kernel_sched}, {epi_sched}> (
 const {act_tag}*, const {weight_tag}*, const {scale_zero_tag}*, const {scale_zero_tag}*, const {bias_tag}*, const float,
-{out_tag}*, int, int, int, const int, tensorrt_llm::cutlass_extensions::CutlassGemmConfig, char*, size_t, cudaStream_t, int*
+{out_tag}*, int, int, int, const int, tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig, char*, size_t, cudaStream_t, int*
 );"""
     elif operation.gemm_kind == GemmKind.Grouped:
         if operation.act_type != operation.weight_type and (
@@ -309,17 +309,15 @@ def get_file_content(launcher_inl_files, operations):
 
     file_content = f"""{includes}
 #include "tensorrt_llm/common/config.h"
-TRTLLM_NAMESPACE_BEGIN
-namespace kernels
-{{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
+
 namespace cutlass_kernels_oss
 {{
 
 {instantiations}
 
 }} // namespace cutlass_kernels_oss
-}} // namespace kernels
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 """
     return file_content
 

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -34,14 +33,12 @@
 #include <cuda_bf16.h>
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class CudaStream;
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 class Request;
@@ -185,30 +182,41 @@ enum class ModelType
 /// @brief The batching type
 enum class BatchingType
 {
-    /// @brief STATIC refers to the traditional batching scheme with a batch of requests running in lockstep until the
-    /// full generation for all of them is complete. Requests in a batch are all padded up to the maximum input and
+    /// @brief STATIC refers to the traditional batching scheme with a batch of
+    /// requests running in lockstep until the
+    /// full generation for all of them is complete. Requests in a batch are all
+    /// padded up to the maximum input and
     /// output sequence length of any member of the batch.
     kSTATIC = 0,
 
-    /// @brief INFLIGHT refers to a scheme where newly arrived requests are dynamically incorporated into the batch
-    /// under execution, and requests are returned as soon as the end condition is met without any padding.
+    /// @brief INFLIGHT refers to a scheme where newly arrived requests are
+    /// dynamically incorporated into the batch
+    /// under execution, and requests are returned as soon as the end condition
+    /// is met without any padding.
     kINFLIGHT = 1,
 };
 
-/// @brief The policy used to select the subset of available requests in each iteration of the executor generation loop
+/// @brief The policy used to select the subset of available requests in each
+/// iteration of the executor generation loop
 enum class CapacitySchedulerPolicy
 {
-    /// @brief MAX_UTILIZATION packs as many requests as the underlying TRT engine can support in any iteration of the
-    /// InflightBatching generation loop. While this is expected to maximize GPU throughput, it might require that some
-    /// requests be paused and restarted depending on peak KV cache memory availability.
+    /// @brief MAX_UTILIZATION packs as many requests as the underlying TRT
+    /// engine can support in any iteration of the
+    /// InflightBatching generation loop. While this is expected to maximize GPU
+    /// throughput, it might require that some
+    /// requests be paused and restarted depending on peak KV cache memory
+    /// availability.
     kMAX_UTILIZATION = 0,
 
-    /// @brief GUARANTEED_NO_EVICT uses KV cache more conservatively guaranteeing that a request, once started, will run
+    /// @brief GUARANTEED_NO_EVICT uses KV cache more conservatively
+    /// guaranteeing that a request, once started, will run
     /// to completion without eviction.
     kGUARANTEED_NO_EVICT = 1,
 
-    /// @brief kSTATIC_BATCH does not schedule new requests until all requests in current batch are completed.
-    /// Similar to kGUARANTEED_NO_EVICT, requests will run to completion without eviction.
+    /// @brief kSTATIC_BATCH does not schedule new requests until all requests
+    /// in current batch are completed.
+    /// Similar to kGUARANTEED_NO_EVICT, requests will run to completion without
+    /// eviction.
     kSTATIC_BATCH = 2
 };
 
@@ -219,7 +227,8 @@ enum class ContextChunkingPolicy
     /// @brief Sequential chunking, complete the unfinished context phase first.
     kFIRST_COME_FIRST_SERVED = 0,
 
-    /// @brief Iterate through each context request in sequence and attempt to increase its chunk
+    /// @brief Iterate through each context request in sequence and attempt to
+    /// increase its chunk
     /// count until the constraint is exceeded.
     kEQUAL_PROGRESS = 1,
 };
@@ -233,16 +242,22 @@ enum class CommunicationType
 
 enum class CommunicationMode
 {
-    kLEADER, // With the leader mode, only the leader can enqueue requests. The requests will be
-             // broadcasted to the workers. All participants can get response via awaitResponses. The leader is the
-             // first participant in the provided participant IDS, or 0 if participant ID is not provided
-    kORCHESTRATOR, // With the orchestrator mode, only the orchestrator can enqueue requests and await responses. The
-                   // requests will be broadcasted to the workers. The orchestrator will spawn new processes for the
+    kLEADER, // With the leader mode, only the leader can enqueue requests. The
+             // requests will be
+    // broadcasted to the workers. All participants can get response via
+    // awaitResponses. The leader is the
+    // first participant in the provided participant IDS, or 0 if participant ID
+    // is not provided
+    kORCHESTRATOR, // With the orchestrator mode, only the orchestrator can
+                   // enqueue requests and await responses. The
+                   // requests will be broadcasted to the workers. The orchestrator will spawn
+                   // new processes for the
                    // execution of the model
 };
 
 /// @brief Struct that holds the stats of a KV cache manager.
-// See KvCacheStats definition in kvCacheManager.h for more information about each field.
+// See KvCacheStats definition in kvCacheManager.h for more information about
+// each field.
 struct KvCacheStats
 {
     /// @brief Max number of blocks
@@ -261,11 +276,13 @@ struct KvCacheStats
     SizeType32 reusedBlocks;
     /// @brief Number of not reused block
     SizeType32 missedBlocks;
-    /// @brief Measuring the KV Cache reuse rate. cacheHitRate = reusedBlocks / (reusedBlocks + missedBlocks).
+    /// @brief Measuring the KV Cache reuse rate. cacheHitRate = reusedBlocks /
+    /// (reusedBlocks + missedBlocks).
     float cacheHitRate;
 };
 
-/// @brief Struct that holds the stats of static batching models for a single iteration
+/// @brief Struct that holds the stats of static batching models for a single
+/// iteration
 struct StaticBatchingStats
 {
     /// @brief Number of scheduled requests
@@ -280,7 +297,8 @@ struct StaticBatchingStats
     SizeType32 emptyGenSlots;
 };
 
-/// @brief Struct that holds the stats of inflight batching models for a single iteration
+/// @brief Struct that holds the stats of inflight batching models for a
+/// single iteration
 struct InflightBatchingStats
 {
     /// @brief Number of scheduled requests
@@ -308,12 +326,14 @@ struct SpecDecodingStats
     SizeType64 numAcceptedTokens;
     /// @brief Number of requests with at least one draft token in batch
     SizeType64 numRequestsWithDraftTokens;
-    /// @brief Acceptance length, defined as average number of tokens produced per step for all requests with at least
+    /// @brief Acceptance length, defined as average number of tokens produced
+    /// per step for all requests with at least
     /// one draft token
     double acceptanceLength;
     /// @brief Iteration latency for draft token generation only (ms)
     double iterLatencyMS;
-    /// @brief Draft overhead, defined as iterLatencyMS (specdec) / iterLatencyMS (total)
+    /// @brief Draft overhead, defined as iterLatencyMS (specdec) /
+    /// iterLatencyMS (total)
     double draftOverhead;
 };
 
@@ -326,7 +346,8 @@ struct IterationStats
     IterationType iter;
     /// @brief Iteration latency (ms)
     double iterLatencyMS;
-    /// @brief The total time spent in queue by the requests that became active in this iteration (ms)
+    /// @brief The total time spent in queue by the requests that became active
+    /// in this iteration (ms)
     double newActiveRequestsQueueLatencyMS;
     /// @brief Number of new fetched active requests
     SizeType32 numNewActiveRequests;
@@ -371,7 +392,8 @@ struct IterationStats
 /// @brief Enum class that represents the state of a request
 enum class RequestStage
 {
-    /// @brief Request that have been received but not yet included in the active requests (due to constraints such as
+    /// @brief Request that have been received but not yet included in the
+    /// active requests (due to constraints such as
     /// maximum batch size for example).
     kQUEUED,
     /// @brief Active request in encoder phase
@@ -384,12 +406,15 @@ enum class RequestStage
     kGENERATION_COMPLETE,
 };
 
-/// @brief Struct that holds the request stats in the case of disaggregated serving
+/// @brief Struct that holds the request stats in the case of disaggregated
+/// serving
 struct DisServingRequestStats
 {
-    /// @brief The total time spent on transferring KV cache from context phase to generation phase (ms)
+    /// @brief The total time spent on transferring KV cache from context phase
+    /// to generation phase (ms)
     double kvCacheTransferMS;
-    /// @brief The total size of KV cache transferred from context phase to generation phase (bytes)
+    /// @brief The total size of KV cache transferred from context phase to
+    /// generation phase (bytes)
     size_t kvCacheSize;
 };
 
@@ -404,11 +429,13 @@ struct RequestStats
     SizeType32 contextPrefillPosition;
     /// @brief The number of generated tokens so far
     SizeType32 numGeneratedTokens;
-    /// @brief The average number of decoded tokens per iteration. It is >= 1 for speculative decoding.
+    /// @brief The average number of decoded tokens per iteration. It is >= 1
+    /// for speculative decoding.
     float avgNumDecodedTokensPerIter;
     /// @brief Whether the request is scheduled for the current iteration
     bool scheduled;
-    /// @brief Whether the request is being paused at the current iteration due to lack of resources (KV cache blocks
+    /// @brief Whether the request is being paused at the current iteration due
+    /// to lack of resources (KV cache blocks
     /// exhaustion for example)
     bool paused;
     /// @brief Stats specific to disaggregated serving
@@ -421,7 +448,8 @@ struct RequestStats
     SizeType32 reusedBlocksPerRequest;
     /// @brief Number of missed blocks per request
     SizeType32 missedBlocksPerRequest;
-    /// @brief KV Cache Hit Rate per request, defined as reusedBlocks / (reusedBlocks + missedBlocks)
+    /// @brief KV Cache Hit Rate per request, defined as reusedBlocks /
+    /// (reusedBlocks + missedBlocks)
     FloatType kvCacheHitRatePerRequest;
 };
 
@@ -467,7 +495,8 @@ struct RequestPerfMetrics
         SizeType32 numReusedBlocks{0};
         /// @brief Number of missed blocks
         SizeType32 numMissedBlocks{0};
-        /// @brief KV Cache Hit Rate, defined as reusedBlocks / (reusedBlocks + missedBlocks)
+        /// @brief KV Cache Hit Rate, defined as reusedBlocks / (reusedBlocks +
+        /// missedBlocks)
         FloatType kvCacheHitRate{0.f};
     };
 
@@ -514,10 +543,12 @@ enum class FinishReason
     /// @brief The request finished because a stop word was generated.
     kSTOP_WORDS = 2,
 
-    /// @brief The request finished because the maximum number of tokens was reached.
+    /// @brief The request finished because the maximum number of tokens was
+    /// reached.
     kLENGTH = 3,
 
-    /// @brief The request finished because it got timed out (via the mAllotedTime parameter)
+    /// @brief The request finished because it got timed out (via the
+    /// mAllotedTime parameter)
     kTIMED_OUT = 4,
 
     /// @brief The request was cancelled by calling cancelRequest.
@@ -536,7 +567,8 @@ enum class KvCacheTransferMode
 class DecodingMode
 {
 public:
-    /// @brief No mode specified. Config will be determined from the beam width of the first request at runtime
+    /// @brief No mode specified. Config will be determined from the beam width
+    /// of the first request at runtime
     /// TopKTopP if beamWidth == 1, BeamSearch otherwise
     static auto constexpr Auto()
     {
@@ -859,7 +891,8 @@ public:
 
 private:
     static SizeType32 constexpr kNumFlags{12};
-    // Config will be determined from the beam width of the first request at runtime if no mode specified.
+    // Config will be determined from the beam width of the first request at
+    // runtime if no mode specified.
     // TopKTopP if beamWidth == 1, BeamSearch otherwise
     static UnderlyingType constexpr kUseRepetitionPenalties{1u << 0};
     static UnderlyingType constexpr kUseFrequencyPenalties{1u << 1};
@@ -1046,6 +1079,4 @@ static_assert(!DecodingMode::Eagle().isLookahead());
 static_assert(!DecodingMode::Eagle().isExplicitDraftTokens());
 static_assert(!DecodingMode::Eagle().isExternalDraftTokens());
 static_assert(DecodingMode::Eagle().isEagle());
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

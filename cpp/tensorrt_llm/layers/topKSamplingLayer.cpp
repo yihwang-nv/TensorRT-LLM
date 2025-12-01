@@ -16,7 +16,6 @@
  */
 
 #include "topKSamplingLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/decodingCommon.h"
@@ -31,9 +30,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -82,7 +79,8 @@ void TopKSamplingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Ten
     auto const paramsSize = expandMatchElements(batchSize, runtimeTopK, runtimeTopP);
 
     TLLM_CHECK_WITH_INFO(paramsSize != 0,
-        fmtstr("TopKSamplingLayer got parameter with unexpected size, want 1 or batchSize(%d), got"
+        fmtstr("TopKSamplingLayer got parameter with unexpected size, want 1 "
+               "or batchSize(%d), got"
                "runtimeTopK.size() = %zu, runtimeTopP.size() = %zu",
             batchSize, runtimeTopK.size(), runtimeTopP.size()));
 
@@ -98,7 +96,8 @@ void TopKSamplingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, Ten
     // Update parameters on both device and host, so we can
     // - determine whether we can skip launch kernel by examine mSkipDecodeHost
     // - select best kernel by examine mRuntimeTopKHost
-    // without consulting device memory, or we'll have to do an expensive synchronization.
+    // without consulting device memory, or we'll have to do an expensive
+    // synchronization.
     SizeType32* topKsPtr = nullptr;
     float* topPsPtr = nullptr;
 
@@ -200,6 +199,4 @@ size_t TopKSamplingLayer<T>::getWorkspaceSize() const noexcept
 template class TopKSamplingLayer<float>;
 template class TopKSamplingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

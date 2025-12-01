@@ -15,11 +15,8 @@
  */
 
 #include "tensorrt_llm/runtime/tllmBuffers.h"
-#include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 template <typename TAllocator>
 typename PoolAllocator<TAllocator>::PoolType& PoolAllocator<TAllocator>::getPool()
@@ -75,7 +72,9 @@ void MulticastTensorView::reshape(nvinfer1::Dims const& dims)
     auto new_size = nonNegative(volume(dims));
     if (new_size > getCapacity())
     {
-        TLLM_THROW("MulticastTensorView::reshape() cannot be larger than origin tensor.");
+        TLLM_THROW(
+            "MulticastTensorView::reshape() cannot be larger than origin "
+            "tensor.");
     }
     mDims = dims;
 }
@@ -117,6 +116,4 @@ MemoryType MulticastTensorView::getMemoryType() const
 
 // explicit instantiations
 template class PoolAllocator<PinnedAllocator>;
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

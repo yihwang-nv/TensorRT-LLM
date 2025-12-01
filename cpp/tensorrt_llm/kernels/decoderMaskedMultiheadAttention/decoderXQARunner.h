@@ -33,10 +33,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T, typename KVCacheBuffer>
 struct XQADispatchHelper
@@ -81,7 +78,8 @@ public:
 
     /**
      * \param[in] xqaParams the xqaParams to be tested against.
-     * \param[in] forConfigurePlugin indicates whether this method is called in configurePlugin, or in
+     * \param[in] forConfigurePlugin indicates whether this method is called in
+     * configurePlugin, or in
      * enqueueGeneration.
      */
     bool shouldUse(XQAParams const& xqaParams, bool forConfigurePlugin);
@@ -157,6 +155,4 @@ private:
     std::unique_ptr<jit::CubinObjRegistry> mCubinObjRegistry;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -16,7 +16,6 @@
  */
 
 #include "decodingLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/layers/beamSearchLayer.h"
 #include "tensorrt_llm/layers/decodingParams.h"
 #include "tensorrt_llm/layers/eagleDecodingLayer.h"
@@ -31,9 +30,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -75,7 +72,8 @@ DecodingLayer<T>::DecodingLayer(executor::DecodingMode const& mode, DecoderDomai
     else
     {
         TLLM_CHECK_WITH_INFO(false,
-            "Decoding mode is none of the supported {TopK, TopP, TopKTopP, BeamSearch, Medusa, Lookahead, "
+            "Decoding mode is none of the supported {TopK, "
+            "TopP, TopKTopP, BeamSearch, Medusa, Lookahead, "
             "ExplicitDraftTokens, ExternalDraftTokens, Eagle}");
     }
 
@@ -107,7 +105,8 @@ void DecodingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, TensorC
     else
     {
         TLLM_CHECK_WITH_INFO(false,
-            "Decoding mode is none of the supported {TopK, TopP, TopKTopP, BeamSearch, Medusa, Lookahead, "
+            "Decoding mode is none of the supported {TopK, "
+            "TopP, TopKTopP, BeamSearch, Medusa, Lookahead, "
             "ExplicitDraftTokens, ExternalDraftTokens, Eagle}");
     }
 
@@ -172,7 +171,8 @@ std::tuple<std::shared_ptr<BaseDecodingOutputs>, std::shared_ptr<BaseDecodingInp
         TLLM_CHECK_WITH_INFO(localDecoderDomain.getBeamWidth() == 1,
             "Decoding mode is TopK and/or TopP, but beamWidth != 1 (%d != 1)", localDecoderDomain.getBeamWidth());
 
-        // In sampling, we have supported batch sampling. So, we always compute all
+        // In sampling, we have supported batch sampling. So, we always compute
+        // all
         // sentences once.
         TensorConstPtr logitsSlice = ITensor::slice(*params->logits, 0, localBatchSize);
         TensorConstPtr endIdSlice = ITensor::slice(endIds, 0, localBatchSize);
@@ -256,7 +256,8 @@ std::tuple<std::shared_ptr<BaseDecodingOutputs>, std::shared_ptr<BaseDecodingInp
     else
     {
         TLLM_CHECK_WITH_INFO(false,
-            "Decoding mode is none of the supported {TopK, TopP, TopKTopP, BeamSearch, Medusa, Lookahead, "
+            "Decoding mode is none of the supported {TopK, "
+            "TopP, TopKTopP, BeamSearch, Medusa, Lookahead, "
             "ExplicitDraftTokens, ExternalDraftTokens, Eagle}");
     }
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
@@ -266,6 +267,4 @@ std::tuple<std::shared_ptr<BaseDecodingOutputs>, std::shared_ptr<BaseDecodingInp
 template class DecodingLayer<float>;
 template class DecodingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

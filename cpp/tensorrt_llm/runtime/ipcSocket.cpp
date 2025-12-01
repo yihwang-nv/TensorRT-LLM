@@ -17,7 +17,6 @@
 
 #include "ipcSocket.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/utils/multiDeviceUtils.h"
 
@@ -66,9 +65,7 @@
 #define NCCL_IPC_SOCKNAME_LEN 64
 #define NCCL_IPC_SOCKNAME_STR "/tmp/ub-socket-%d-%lx"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 struct NcclIpcSocket
 {
@@ -320,7 +317,6 @@ void ncclIpcSocketSendFd(std::shared_ptr<NcclIpcSocket> handle, int sendFd, int 
     ncclIpcSocketSendMsg(handle, NULL, 0, sendFd, rank, handle->hash);
 }
 
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-TRTLLM_NAMESPACE_END
 #endif // ENABLE_MULTI_DEVICE

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include <fcntl.h>
 #include <memory>
 #include <mutex>
@@ -29,9 +28,7 @@
 #include <unordered_map>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::kv_cache
+namespace tensorrt_llm::executor::kv_cache
 {
 
 enum class MemoryType : uint8_t
@@ -43,7 +40,8 @@ enum class MemoryType : uint8_t
     kFILE
 };
 
-// `MemoryDesc` is used to describe a memory region, which can then be designated
+// `MemoryDesc` is used to describe a memory region, which can then be
+// designated
 // as the source or destination of read/write operations.
 class MemoryDesc
 {
@@ -197,8 +195,10 @@ using RegisterDescs = MemoryDescs;
 using SyncMessage = std::string;
 using ConnectionInfoType = std::string;
 
-// `AgentDesc` represents the unique identifier for reading and writing to the agent.
-// By accessing this identifier, the backend can establish the correct connection.
+// `AgentDesc` represents the unique identifier for reading and writing to the
+// agent.
+// By accessing this identifier, the backend can establish the correct
+// connection.
 class AgentDesc final
 {
 public:
@@ -216,7 +216,8 @@ private:
     std::string mBackendAgentDesc;
 };
 
-// `TransferOp` is an enumeration that represents the types of transfer operations.
+// `TransferOp` is an enumeration that represents the types of transfer
+// operations.
 // Currently, it supports two operations: `read` and `write`.
 enum class TransferOp : uint8_t
 {
@@ -224,7 +225,8 @@ enum class TransferOp : uint8_t
     kWRITE,
 };
 
-// `TransferRequest` is used to represent the transfer requests supported by the underlying agent.
+// `TransferRequest` is used to represent the transfer requests supported by
+// the underlying agent.
 class TransferRequest
 {
 public:
@@ -233,7 +235,8 @@ public:
     /// @param srcDescs Description of the source memory region.
     /// @param dstDescs Description of the destination memory region.
     /// @param remoteName Name of the remote counterpart.
-    /// @param syncMessage Synchronization information for the end of the transfer.
+    /// @param syncMessage Synchronization information for the end of the
+    /// transfer.
     TransferRequest(TransferOp op, TransferDescs srcDescs, TransferDescs dstDescs, std::string const& remoteName,
         std::optional<SyncMessage> syncMessage = std::nullopt)
         : mOp{op}
@@ -308,12 +311,14 @@ public:
 
     /// @brief Initialize and establish a connection with a remote agent.
     /// @param name Specify the name of the remote agent.
-    /// @param agentDesc Provide the necessary communication details for connecting to the remote agent.
+    /// @param agentDesc Provide the necessary communication details for
+    /// connecting to the remote agent.
     virtual void loadRemoteAgent(std::string const& name, AgentDesc const& agentDesc) = 0;
 
     /// @brief Initialize and establish a connection with a remote agent.
     /// @param name Specify the name of the remote agent.
-    /// @param connectionInfo Provide the necessary communication details for connecting to the remote agent.
+    /// @param connectionInfo Provide the necessary communication details for
+    /// connecting to the remote agent.
     virtual void loadRemoteAgent(std::string const& name, ConnectionInfoType const& connectionInfo) = 0;
 
     /// @brief Invalidate a connection with a remote agent.
@@ -333,13 +338,16 @@ public:
     /// @return The status of the requests.
     [[nodiscard]] virtual std::unique_ptr<TransferStatus> submitTransferRequests(TransferRequest const& request) = 0;
 
-    /// @brief Generate a notification, not bound to a transfer, e.g., for control.
-    /// @param name Specify the name of the remote agent to which the information should be sent.
+    /// @brief Generate a notification, not bound to a transfer, e.g., for
+    /// control.
+    /// @param name Specify the name of the remote agent to which the
+    /// information should be sent.
     /// @param syncMessage The data or message intended for synchronization.
     virtual void notifySyncMessage(std::string const& name, SyncMessage const& syncMessage) = 0;
 
     /// @brief Retrieve notification messages sent by other agents.
-    /// @return A mapping from remote agent names to their respective notification messages.
+    /// @return A mapping from remote agent names to their respective
+    /// notification messages.
     virtual std::unordered_map<std::string, std::vector<SyncMessage>> getNotifiedSyncMessages() = 0;
 
     /// @brief Check if metadata is available for a remote agent.
@@ -411,6 +419,4 @@ template <typename... Args>
     TLLM_THROW("Unknown backend name.");
 }
 
-} // namespace executor::kv_cache
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::kv_cache

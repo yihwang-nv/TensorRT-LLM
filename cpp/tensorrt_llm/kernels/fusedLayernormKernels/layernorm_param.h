@@ -20,10 +20,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 struct GeneralFP4AddBiasResidualPreLayerNormParam
@@ -44,6 +41,4 @@ struct GeneralFP4AddBiasResidualPreLayerNormParam
     cudaStream_t stream;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
@@ -26,20 +25,22 @@
 
 #include <memory>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class CudaStream
 {
 public:
-    //! Creates a new cuda stream on the current device. The stream will be destroyed in the destructor.
+    //! Creates a new cuda stream on the current device. The stream will be
+    // destroyed in the destructor.
     //!
-    //! \param flags Flags for stream creation. See ::cudaStreamCreateWithFlags for a list of valid flags that can be
+    //! \param flags Flags for stream creation. See ::cudaStreamCreateWithFlags
+    // for a list of valid flags that can be
     //! passed.
-    //! \param priority Priority of the stream. Lower numbers represent higher priorities. See
-    //! ::cudaDeviceGetStreamPriorityRange for more information about the meaningful stream priorities that can be
+    //! \param priority Priority of the stream. Lower numbers represent higher
+    // priorities. See
+    //! ::cudaDeviceGetStreamPriorityRange for more information about the
+    // meaningful stream priorities that can be
     //! passed.
     explicit CudaStream(unsigned int flags = cudaStreamNonBlocking, int priority = 0)
         : mDevice{tensorrt_llm::common::getDevice()}
@@ -55,14 +56,16 @@ public:
     //!
     //! \param stream The stream to pass to this object.
     //! \param device The device on which the stream was created.
-    //! \param ownsStream Whether this object owns the stream and destroys it in the destructor.
+    //! \param ownsStream Whether this object owns the stream and destroys it in
+    // the destructor.
     explicit CudaStream(cudaStream_t stream, int device, bool ownsStream = true)
         : mDevice{device}
     {
         mStream = StreamPtr{stream, Deleter{ownsStream}};
     }
 
-    //! Construct with an existing cuda stream or the default stream by passing nullptr.
+    //! Construct with an existing cuda stream or the default stream by passing
+    // nullptr.
     explicit CudaStream(cudaStream_t stream)
         : CudaStream{stream, tensorrt_llm::common::getDevice(), false}
     {
@@ -143,6 +146,4 @@ private:
     int mDevice{-1};
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

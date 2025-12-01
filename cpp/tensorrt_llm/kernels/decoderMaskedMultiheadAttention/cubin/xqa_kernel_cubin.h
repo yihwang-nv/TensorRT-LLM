@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-TRTLLM_NAMESPACE_BEGIN
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
+
 // clang-format off
 // SingleQueryToken kernels.
 #ifndef EXCLUDE_SM_80
@@ -1913,5 +1912,4 @@ static const struct XQAKernelMetaInfo
 };
 
 // clang-format on
-} // namespace kernels
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

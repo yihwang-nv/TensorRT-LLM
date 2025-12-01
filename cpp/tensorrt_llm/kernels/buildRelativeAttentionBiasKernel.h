@@ -20,16 +20,11 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 void invokeBuildRelativeAttentionBias(T* relative_attention_bias, T const* relative_attention_bias_table,
     int const head_num, int const seq_len, int const num_bucket, bool const is_bidirectional, int const max_distance,
     cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

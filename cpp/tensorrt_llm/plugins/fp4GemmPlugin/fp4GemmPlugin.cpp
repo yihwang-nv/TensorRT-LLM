@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 
 #include "fp4GemmPlugin.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 
 using namespace nvinfer1;
 using namespace tensorrt_llm::common;
@@ -44,7 +44,8 @@ void Fp4GemmPluginProfiler::runTactic(
     int m, int n, int k, Fp4GemmPluginProfiler::Config const& tactic, char* workspace, cudaStream_t const& stream)
 {
     // Workspace size required by gemm runner
-    // NB: this function will throw exception when selected tactic exceeds SMEM, which is then
+    // NB: this function will throw exception when selected tactic exceeds SMEM,
+    // which is then
     // caught by gemmPluginProfiler and it will register this tactic as invalid
     size_t wsSizeRunner = mRunner->getWorkspaceSize(m, n, k, /* batch_count */ 1);
 
@@ -66,8 +67,8 @@ void Fp4GemmPluginProfiler::runTactic(
     char* workspaceTmp = reinterpret_cast<char*>(nextWorkspacePtr(wsBytePointer, wsByteOffset, wsSizeRunner));
 
     // Run profiling
-    mRunner->gemm(dTmp, aTmp, bTmp, a_sf, b_sf, global_sf, m, n, k, /* batch_count */ 1, tactic, workspaceTmp,
-        wsSizeRunner, stream);
+    mRunner->gemm(dTmp, aTmp, bTmp, a_sf, b_sf, global_sf, m, n, k,
+        /* batch_count */ 1, tactic, workspaceTmp, wsSizeRunner, stream);
     sync_check_cuda_error(stream);
 }
 
@@ -282,8 +283,8 @@ int Fp4GemmPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc, nvinfer1
     if (m >= 1)
     {
         mGemmRunner->gemm(outputs[0], inputs[0], inputs[2], inputs[1], inputs[3],
-            reinterpret_cast<float const*>(inputs[4]), m, n, k, /* batch_count */ 1, *bestTactic,
-            reinterpret_cast<char*>(workspace), wsSize, stream);
+            reinterpret_cast<float const*>(inputs[4]), m, n, k,
+            /* batch_count */ 1, *bestTactic, reinterpret_cast<char*>(workspace), wsSize, stream);
     }
     sync_check_cuda_error(stream);
     return 0;
@@ -402,7 +403,8 @@ IPluginV2* Fp4GemmPluginCreator::createPlugin(char const* name, PluginFieldColle
     {
         // Fp4GemmPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
-        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ false);
         auto* obj = new Fp4GemmPlugin(sf_vec_size, output_type, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
@@ -421,8 +423,10 @@ IPluginV2* Fp4GemmPluginCreator::deserializePlugin(
     // call CumsumLastDimPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
-        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
+        auto pluginProfiler = mGemmPluginProfileManager.createGemmPluginProfiler(
+            /* inference */ true);
         auto* obj = new Fp4GemmPlugin(serialData, serialLength, pluginProfiler);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;

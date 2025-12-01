@@ -22,13 +22,10 @@
 
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <typename InputT, typename OutputT, typename IdxT, bool DoSoftmaxBeforeTopK>
 void invokeCustomMoeRouting(InputT* routerLogits, OutputT* topkValues, IdxT* topkIndices, int64_t const numTokens,
     int64_t const numExperts, int64_t const topK, cudaStream_t const stream);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

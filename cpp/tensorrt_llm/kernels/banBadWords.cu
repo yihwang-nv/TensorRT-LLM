@@ -21,10 +21,7 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 __global__ void ban_bad_words(T* logits, TokenIdType const** output_ids_ptr, SizeType32 const** parent_ids_ptr,
@@ -130,6 +127,4 @@ template void invokeBanBadWords(float* logits, TokenIdType const** output_ids_pt
     SizeType32 const* bad_words_lens, SizeType32 max_bad_words_len, SizeType32 vocab_size_padded,
     SizeType32 const* sequence_lengths, SizeType32 max_seq_len, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -27,9 +27,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 CublasMMWrapper::CublasMMWrapper(std::shared_ptr<cublasHandle_t> cublasHandle,
     std::shared_ptr<cublasLtHandle_t> cublasltHandle, cudaStream_t stream, void* workspace)
     : mCublasHandle(cublasHandle)
@@ -152,13 +149,15 @@ void CublasMMWrapper::Gemm(cublasOperation_t transa, cublasOperation_t transb, i
 {
     if (heuristic)
     {
-        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, 1.0f, 0.0f, /* hasAlgo */ (*heuristic).algo,
+        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, 1.0f, 0.0f,
+            /* hasAlgo */ (*heuristic).algo,
             (*heuristic).state == CUBLAS_STATUS_SUCCESS && (*heuristic).workspaceSize < CUBLAS_WORKSPACE_SIZE,
             /* usingCublasLt */ true);
     }
     else
     {
-        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, 1.0f, 0.0f, {}, /* hasAlgo */ false,
+        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, 1.0f, 0.0f, {},
+            /* hasAlgo */ false,
             /* usingCublasLt */ true);
     }
 }
@@ -169,13 +168,15 @@ void CublasMMWrapper::Gemm(cublasOperation_t transa, cublasOperation_t transb, i
 {
     if (heuristic)
     {
-        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, f_alpha, f_beta, /* hasAlgo */ (*heuristic).algo,
+        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, f_alpha, f_beta,
+            /* hasAlgo */ (*heuristic).algo,
             (*heuristic).state == CUBLAS_STATUS_SUCCESS && (*heuristic).workspaceSize < CUBLAS_WORKSPACE_SIZE,
             /* usingCublasLt */ true);
     }
     else
     {
-        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, f_alpha, f_beta, {}, /* hasAlgo */ false,
+        Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, f_alpha, f_beta, {},
+            /* hasAlgo */ false,
             /* usingCublasLt */ true);
     }
 }
@@ -185,7 +186,8 @@ void CublasMMWrapper::Gemm(cublasOperation_t transa, cublasOperation_t transb, i
 {
     bool usingCublasLt = mAType == CUDA_R_16F || mAType == CUDA_R_8F_E4M3;
 
-    Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, f_alpha, f_beta, {}, /* hasAlgo */ false,
+    Gemm(transa, transb, m, n, k, A, lda, B, ldb, C, ldc, f_alpha, f_beta, {},
+        /* hasAlgo */ false,
         /* usingCublasLt */ usingCublasLt);
 }
 
@@ -221,7 +223,8 @@ void CublasMMWrapper::Gemm(cublasOperation_t transa, cublasOperation_t transb, i
     {
         check_cuda_error(cublasSetStream(getCublasHandle(), mStream));
         check_cuda_error(cublasSetWorkspace(getCublasHandle(), mCublasWorkspace, workspaceSize));
-        // Go with default heuristic to choose tactic as cuBLAS does not allow to choose tactics in Ampere+
+        // Go with default heuristic to choose tactic as cuBLAS does not allow to
+        // choose tactics in Ampere+
         cublasGemmAlgo_t cublasAlgo = CUBLAS_GEMM_DEFAULT;
         check_cuda_error(cublasGemmEx(getCublasHandle(), transa, transb, m, n, k, alpha, A, mAType, lda, B, mBType, ldb,
             beta, C, mCType, ldc, mComputeType, static_cast<cublasGemmAlgo_t>(cublasAlgo)));
@@ -308,7 +311,8 @@ void CublasMMWrapper::setGemmConfig(
     bool isFp16ComputeType = computeType == CUDA_R_16F;
     if (mAType == CUDA_R_4F_E2M1)
     {
-        // for cublaslt nvfp4 gemm, fp32 compute type and fp32 scale type are required
+        // for cublaslt nvfp4 gemm, fp32 compute type and fp32 scale type are
+        // required
         mComputeType = CUBLAS_COMPUTE_32F;
         mScaleType = CUDA_R_32F;
     }
@@ -376,59 +380,16 @@ static inline char const* mmaToString(uint16_t mma)
 static inline char const* cgaToString(uint16_t cga)
 {
     // clang-format off
-  static const char* cgaStr[] = {"AUTO",
-                                 "ILLEGAL",
-                                 "1x1x1",
-                                 "1x2x1",
-                                 "1x4x1",
-                                 "2x1x1",
-                                 "2x2x1",
-                                 "2x4x1",
-                                 "4x1x1",
-                                 "4x2x1",
-                                 "4x4x1",
-                                 "1x8x1",
-                                 "8x1x1",
-                                 "2x8x1",
-                                 "8x2x1",
-                                 "1x16x1",
-                                 "16x1x1",
-                                 "1x3x1",
-                                 "1x5x1",
-                                 "1x6x1",
-                                 "1x7x1",
-                                 "1x9x1",
-                                 "1x10x1",
-                                 "1x11x1",
-                                 "1x12x1",
-                                 "1x13x1",
-                                 "1x14x1",
-                                 "1x15x1",
-                                 "2x3x1",
-                                 "2x5x1",
-                                 "2x6x1",
-                                 "2x7x1",
-                                 "3x1x1",
-                                 "3x2x1",
-                                 "3x3x1",
-                                 "3x4x1",
-                                 "3x5x1",
-                                 "4x3x1",
-                                 "5x1x1",
-                                 "5x2x1",
-                                 "5x3x1",
-                                 "6x1x1",
-                                 "6x2x1",
-                                 "7x1x1",
-                                 "7x2x1",
-                                 "9x1x1",
-                                 "10x1x1",
-                                 "11x1x1",
-                                 "12x1x1",
-                                 "13x1x1",
-                                 "14x1x1",
-                                 "15x1x1",
-                                 };
+  static const char *cgaStr[] = {
+    "AUTO",   "ILLEGAL", "1x1x1",  "1x2x1",  "1x4x1",  "2x1x1",  "2x2x1",
+    "2x4x1",  "4x1x1",   "4x2x1",  "4x4x1",  "1x8x1",  "8x1x1",  "2x8x1",
+    "8x2x1",  "1x16x1",  "16x1x1", "1x3x1",  "1x5x1",  "1x6x1",  "1x7x1",
+    "1x9x1",  "1x10x1",  "1x11x1", "1x12x1", "1x13x1", "1x14x1", "1x15x1",
+    "2x3x1",  "2x5x1",   "2x6x1",  "2x7x1",  "3x1x1",  "3x2x1",  "3x3x1",
+    "3x4x1",  "3x5x1",   "4x3x1",  "5x1x1",  "5x2x1",  "5x3x1",  "6x1x1",
+    "6x2x1",  "7x1x1",   "7x2x1",  "9x1x1",  "10x1x1", "11x1x1", "12x1x1",
+    "13x1x1", "14x1x1",  "15x1x1",
+  };
     // clang-format on
 
     static_assert(sizeof(cgaStr) / sizeof(cgaStr[0]) == CUBLASLT_CLUSTER_SHAPE_END,
@@ -461,7 +422,8 @@ static void print_algo(cublasLtMatmulAlgo_t const* matmulAlgo)
 
     TLLM_LOG_DEBUG(
         "algo={ %d %d %d splitK=%d reduc=%d swizzle=%d custom=%d mma=%s cga=%s}"
-        " [-algo%d -m_tile%d -m_stages%d -m_numsK%d -m_reduction%d -m_swizzle%d -m_custom%d -m_mma%d -m_cga%d "
+        " [-algo%d -m_tile%d -m_stages%d -m_numsK%d -m_reduction%d -m_swizzle%d "
+        "-m_custom%d -m_mma%d -m_cga%d "
         "\n",
         algoId, tile, stages, numSplitsK, reductionScheme, swizzle, customOption, mmaToString(mma), cgaToString(cga),
         algoId, tile, stages, numSplitsK, reductionScheme, swizzle, customOption, mma, cga);
@@ -472,8 +434,10 @@ static void print_algo(cublasLtMatmulAlgo_t const* matmulAlgo)
 bool CublasMMWrapper::checkTactic(cublasOperation_t transa, cublasOperation_t transb, int const m, int const n,
     int const k, int const lda, int const ldb, int const ldc, cublasLtMatmulAlgo_t const& algo)
 {
-    TLLM_CHECK_WITH_INFO(
-        descriptorsCreated(), "Descriptors are not created! Call createDescriptors before calling this function");
+    TLLM_CHECK_WITH_INFO(descriptorsCreated(),
+        "Descriptors are not created! "
+        "Call createDescriptors before "
+        "calling this function");
 
     cublasLtMatmulHeuristicResult_t heurResult;
     cublasStatus_t algoStatus = cublasLtMatmulAlgoCheck(
@@ -482,7 +446,9 @@ bool CublasMMWrapper::checkTactic(cublasOperation_t transa, cublasOperation_t tr
     if (algoStatus != CUBLAS_STATUS_SUCCESS || heurResult.state != CUBLAS_STATUS_SUCCESS
         || heurResult.workspaceSize > CUBLAS_WORKSPACE_SIZE)
     {
-        TLLM_LOG_WARNING("CheckTactic failed with status: %d and heuristic status: %d with workspace size: %d.\n",
+        TLLM_LOG_WARNING(
+            "CheckTactic failed with status: %d and heuristic status: "
+            "%d with workspace size: %d.\n",
             algoStatus, heurResult.state, heurResult.workspaceSize);
         return false;
     }
@@ -495,8 +461,10 @@ bool CublasMMWrapper::checkTactic(cublasOperation_t transa, cublasOperation_t tr
 std::vector<cublasLtMatmulHeuristicResult_t> CublasMMWrapper::getTactics(cublasOperation_t transa,
     cublasOperation_t transb, int const m, int const n, int const k, int const lda, int const ldb, int const ldc)
 {
-    TLLM_CHECK_WITH_INFO(
-        descriptorsCreated(), "Descriptors are not created! Call createDescriptors before calling this function");
+    TLLM_CHECK_WITH_INFO(descriptorsCreated(),
+        "Descriptors are not created! "
+        "Call createDescriptors before "
+        "calling this function");
 
     auto const heuristics = getTactics(getCublasLtHandle(), mOperationDesc, mADesc, mBDesc, mCDesc, mCDesc);
 
@@ -520,7 +488,8 @@ std::vector<cublasLtMatmulHeuristicResult_t> CublasMMWrapper::getTactics(cublasL
     uint64_t workspace_size = CUBLAS_WORKSPACE_SIZE;
     check_cuda_error(cublasLtMatmulPreferenceSetAttribute(
         preference, CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES, &workspace_size, sizeof(workspace_size)));
-    // Restrict reduction algorithms for numerical stability and better determinism
+    // Restrict reduction algorithms for numerical stability and better
+    // determinism
     uint32_t reduction_mask = CUBLASLT_REDUCTION_SCHEME_MASK;
     check_cuda_error(cublasLtMatmulPreferenceSetAttribute(
         preference, CUBLASLT_MATMUL_PREF_REDUCTION_SCHEME_MASK, &reduction_mask, sizeof(reduction_mask)));
@@ -581,10 +550,12 @@ void CublasMMWrapper::BlockScaleGemm(cublasOperation_t transa, cublasOperation_t
     int const k, void const* A, int const lda, void const* B, int const ldb, void* C, int const ldc, void const* a_sf,
     void const* b_sf, float const* alpha, cublasLtMatmulAlgo_t const* algo)
 {
-    // Verify input data types (currently supports FP4, can be extended to more formats in the future)
+    // Verify input data types (currently supports FP4, can be extended to more
+    // formats in the future)
     TLLM_CHECK_WITH_INFO(mAType == CUDA_R_4F_E2M1 && mBType == CUDA_R_4F_E2M1,
         "BlockScaleGemm currently requires FP4 input types. "
-        "Future versions may support other quantized formats with block-wise scaling.");
+        "Future versions may support other quantized formats "
+        "with block-wise scaling.");
 
     // Validate input pointers
     TLLM_CHECK_WITH_INFO(A != nullptr, "A pointer is null");
@@ -659,7 +630,5 @@ void CublasMMWrapper::BlockScaleGemm(cublasOperation_t transa, cublasOperation_t
 }
 
 #endif
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

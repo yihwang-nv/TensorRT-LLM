@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,15 @@
  */
 
 #pragma once
-#include "tensorrt_llm/batch_manager/cacheTransceiver.h"
 #include <fstream>
 #include <future>
 #include <map>
 #include <string>
 #include <vector>
 
+#include "tensorrt_llm/batch_manager/cacheTransceiver.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/cacheCommunicator.h"
@@ -35,9 +35,7 @@
 #include "tensorrt_llm/runtime/cudaEvent.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 namespace kv_cache_manager
@@ -48,7 +46,8 @@ class BaseCacheFormatter;
 using BaseCacheFormatter = kv_cache_manager::BaseCacheFormatter;
 using BlockKey = kv_cache_manager::BlockKey;
 
-// TODO: unify the following class into a namespace like tensorrt_llm::transmission
+// TODO: unify the following class into a namespace like
+// tensorrt_llm::transmission
 using DataContext = tensorrt_llm::executor::kv_cache::DataContext;
 using Connection = tensorrt_llm::executor::kv_cache::Connection;
 using ConnectionManager = tensorrt_llm::executor::kv_cache::ConnectionManager;
@@ -122,14 +121,16 @@ public:
 
     [[nodiscard]] LlmRequest const& getLlmRequest() const;
 
-    // in CacheSender, the LlmRequest is not available until the sendSync is called
+    // in CacheSender, the LlmRequest is not available until the sendSync is
+    // called
     void setLlmRequest(LlmRequest const& llmRequest);
 
     void setTime(TimeNames name);
 
     void appendMeasure(LlmRequest::TimePoint start, LlmRequest::TimePoint end, size_t size);
 
-    // TODO: 1. use global id instead of context request id; 2. export to llm metrics instead of file
+    // TODO: 1. use global id instead of context request id; 2. export to llm
+    // metrics instead of file
     void exportMeasure(std::ofstream& outFile, bool isContext) const;
 
     [[nodiscard]] int32_t getIndexFromEnd() const
@@ -171,13 +172,15 @@ struct TransceiverTag
     static constexpr int32_t kREADY_SIGNAL_TAG{42};
 };
 
-// Used to store the information that needs to be sent to the context executor to ensure the generation
+// Used to store the information that needs to be sent to the context executor
+// to ensure the generation
 // executor smoothly receives the data.
 class RequestInfo
 {
 public:
     /// @brief Constructor.
-    /// @param requestId The ID used in the context phase of the current request.
+    /// @param requestId The ID used in the context phase of the current
+    /// request.
     /// @param transState The state of the data transceiver.
     RequestInfo(LlmRequest::RequestIdType requestId, executor::DataTransceiverState transState);
 
@@ -244,9 +247,11 @@ public:
     CacheSender() = default;
 
     /// @brief Asynchronously respond to the request and send data.
-    /// @param llmRequest Request object. Its data should be ready when called, and the data for this request
+    /// @param llmRequest Request object. Its data should be ready when called,
+    /// and the data for this request
     /// should remain valid until future synchronization.
-    /// @return Once the data is fully sent, the future object will become valid.
+    /// @return Once the data is fully sent, the future object will become
+    /// valid.
     [[nodiscard]] virtual std::future<void> sendAsync(LlmRequest& llmRequest) const;
 
     /// @brief Return the internal communicator status.
@@ -266,12 +271,14 @@ public:
     virtual RequestInfo recvRequestInfo();
 
     /// @brief Cancel the request.
-    /// @param requestId The ID used in the context phase of the current request.
+    /// @param requestId The ID used in the context phase of the current
+    /// request.
     /// @return Whether the request is cancelled.
     virtual bool cancelRequest(LlmRequest const& llmRequest);
 
     /// @brief Send ready signal.
-    /// @param requestId The ID used in the context phase of the current request.
+    /// @param requestId The ID used in the context phase of the current
+    /// request.
     /// @param isReady Whether the request is ready to be received.
     virtual void sendReadySignal(LlmRequest::RequestIdType requestId, bool isReady);
 
@@ -299,9 +306,12 @@ public:
     CacheReceiver() = default;
 
     /// @brief Asynchronously send a request to receive data.
-    /// @param llmRequest Request object. Its data should be in an allocated but unwritten state when called, and the
-    /// data for this request should remain intact only after future synchronization.
-    /// @return Once the data is fully received, the future object will become valid.
+    /// @param llmRequest Request object. Its data should be in an allocated but
+    /// unwritten state when called, and the
+    /// data for this request should remain intact only after future
+    /// synchronization.
+    /// @return Once the data is fully received, the future object will become
+    /// valid.
     [[nodiscard]] virtual std::future<void> receiveAsync(LlmRequest& llmRequest) const;
 
     virtual TransferSession sendRequestInfo(LlmRequest const& llmRequest);
@@ -332,6 +342,4 @@ private:
     std::unique_ptr<Impl, ImplDeleter> mImpl;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

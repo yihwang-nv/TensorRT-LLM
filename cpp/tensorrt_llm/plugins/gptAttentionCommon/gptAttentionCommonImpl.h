@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +19,8 @@
 #pragma once
 
 #include "gptAttentionCommon.h"
-#include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 template <typename T>
 T* GPTAttentionPluginCommon::cloneImpl() const noexcept
@@ -31,7 +29,8 @@ T* GPTAttentionPluginCommon::cloneImpl() const noexcept
     auto* plugin = new T(static_cast<T const&>(*this));
     plugin->setPluginNamespace(mNamespace.c_str());
 
-    // Cloned plugins should be in initialized state with correct resources ready to be enqueued.
+    // Cloned plugins should be in initialized state with correct resources
+    // ready to be enqueued.
     plugin->initialize();
     return plugin;
 }
@@ -54,6 +53,4 @@ T* GPTAttentionPluginCreatorCommon::deserializePluginImpl(
     }
     return nullptr;
 }
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

@@ -22,10 +22,7 @@
 #include <cstdint>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 class KVCacheIndex
 {
@@ -56,6 +53,4 @@ private:
     UnderlyingType value;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

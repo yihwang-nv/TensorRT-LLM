@@ -17,13 +17,13 @@
 #include "moe_gemm_template_dispatch.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels
+namespace cutlass_kernels
 {
 #ifdef ENABLE_BF16
 template class MoeGemmRunner<__nv_bfloat16, cutlass::uint4b_t, __nv_bfloat16>;
 #endif
-} // namespace kernels::cutlass_kernels
+} // namespace cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

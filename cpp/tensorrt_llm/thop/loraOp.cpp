@@ -26,7 +26,8 @@ namespace th = torch;
 namespace tk = tensorrt_llm::kernels;
 using tensorrt_llm::common::fmtstr;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -40,8 +41,10 @@ enum class RequestType : int32_t
 int64_t getNumTokens(th::Tensor const& input)
 {
     int ndim = input.sizes().size();
-    TLLM_CHECK_WITH_INFO(
-        3 == ndim || 2 == ndim, "hidden_state dimension should be either 2 [numTokens, hidden], or 3 [b, s, hidden]");
+    TLLM_CHECK_WITH_INFO(3 == ndim || 2 == ndim,
+        "hidden_state dimension should "
+        "be either 2 [numTokens, "
+        "hidden], or 3 [b, s, hidden]");
     int64_t num_tokens = input.sizes()[0];
     if (ndim == 3)
     {
@@ -51,7 +54,8 @@ int64_t getNumTokens(th::Tensor const& input)
 }
 
 std::vector<th::Tensor> lora_grouped_gemm(th::Tensor const& input, th::Tensor const& host_request_types,
-    std::vector<th::Tensor> const& lora_ranks, // numModules tensors, each tensors has single value
+    std::vector<th::Tensor> const& lora_ranks, // numModules tensors, each
+                                               // tensors has single value
     std::vector<th::Tensor> const& lora_weights_pointers, th::Tensor const& host_context_lengths,
     std::vector<int64_t> const& output_hidden_sizes, bool transA, bool transB, int64_t const max_low_rank,
     int64_t const& weight_index, bool isRemoveInputPadding)
@@ -99,8 +103,10 @@ std::vector<th::Tensor> lora_grouped_gemm(th::Tensor const& input, th::Tensor co
         int idx = 0;
         for (int reqId = 0; reqId < numReqs; reqId++)
         {
-            // loraWeightModulePtrs has 3 pointers for each module: A,B, and an optional DoRA magnitude
-            // the current LoRA plugin does not apply DoRA scaling, so the magnitude is ignored
+            // loraWeightModulePtrs has 3 pointers for each module: A,B, and an
+            // optional DoRA magnitude
+            // the current LoRA plugin does not apply DoRA scaling, so the magnitude
+            // is ignored
             RequestType const reqType = static_cast<RequestType const>(reqTypes[reqId]);
             if (reqType == RequestType::kGENERATION)
             {
@@ -123,12 +129,16 @@ std::vector<th::Tensor> lora_grouped_gemm(th::Tensor const& input, th::Tensor co
             }
         }
 
-        // In 1st generation phase cross attention qkv lora, cross qkv is skipped by passing an empty encoder_output
-        // (passing 0 to dim) getNumTokens() will get in cross qkv_lora. Skipping the check for this case.
+        // In 1st generation phase cross attention qkv lora, cross qkv is skipped by
+        // passing an empty encoder_output
+        // (passing 0 to dim) getNumTokens() will get in cross qkv_lora. Skipping
+        // the check for this case.
         if (numTokens > 0)
         {
             TLLM_CHECK_WITH_INFO(idx == numTokens,
-                fmtstr("LoraParams and input dims don't match, lora tokens %d input tokens %ld", idx, numTokens));
+                fmtstr("LoraParams and input dims don't match, lora "
+                       "tokens %d input tokens %ld",
+                    idx, numTokens));
         }
     }
 
@@ -176,7 +186,7 @@ std::vector<th::Tensor> lora_grouped_gemm(th::Tensor const& input, th::Tensor co
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

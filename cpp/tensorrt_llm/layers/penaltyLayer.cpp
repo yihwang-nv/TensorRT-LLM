@@ -16,7 +16,6 @@
  */
 
 #include "penaltyLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/penaltyKernels.h"
@@ -32,9 +31,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -156,7 +153,8 @@ void PenaltyLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, TensorCo
     if (mConfiguredBeamWidth == -1)
     {
         // This code is left only for Python runtime
-        // In C++ runtime given maxBeamWidth should always be equal to the runtime beamWidth
+        // In C++ runtime given maxBeamWidth should always be equal to the runtime
+        // beamWidth
         TLLM_CHECK(mDecodingMode.isAuto());
         mConfiguredBeamWidth = beamWidth;
         mDecodingMode
@@ -179,8 +177,10 @@ void PenaltyLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth, TensorCo
     bool const useMinLength = mDecodingMode.isUseMinLength() && penaltyParams->minLength.has_value();
     bool const usePromptIgnoreLength
         = mDecodingMode.isUseOccurrencePenalty() && penaltyParams->promptIgnoreLength.has_value();
-    // FIXME: once one of the requests has some penalty, we will always have to compute it.
-    // To avoid that we need to scan through all active requests at each iteration.
+    // FIXME: once one of the requests has some penalty, we will always have to
+    // compute it.
+    // To avoid that we need to scan through all active requests at each
+    // iteration.
     mUseTemperature |= useTemperature;
     mUseRepetitionPenalty |= useRepetitionPenalty;
     mUsePresencePenalty |= usePresencePenalty;
@@ -346,7 +346,8 @@ void PenaltyLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> const& b
 
     if (penaltyParams.beamWidth > 1)
     {
-        // Convert logits into logProbs before penalties, only necessary in Beam-Search.
+        // Convert logits into logProbs before penalties, only necessary in
+        // Beam-Search.
         BiasSoftmaxParams<T> biasSoftmaxParams;
         biasSoftmaxParams.logitsPtrs = const_cast<T**>(penaltyParams.inputLogits);
         biasSoftmaxParams.bias = penaltyParams.biases;
@@ -383,6 +384,4 @@ void PenaltyLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> const& b
 template class PenaltyLayer<float>;
 template class PenaltyLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

@@ -24,7 +24,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -38,7 +39,9 @@ th::Tensor gatherTree(                                    // BS: batch_size, BM:
     th::Tensor& tiled_input_lengths,                      // [BS*BM], int
     th::optional<th::Tensor> cum_log_probs_opt,           // [BS, BM], float
     th::optional<th::Tensor> log_probs_opt,               // [BS, BM, MSL], float
-    th::optional<th::Tensor> log_probs_tiled_opt,         // [MSL, BS, BM], float, transpose of output_log_probs_opt
+    th::optional<th::Tensor> log_probs_tiled_opt,         // [MSL, BS, BM], float,
+                                                          // transpose of
+                                                          // output_log_probs_opt
     th::optional<th::Tensor> beam_hyps_output_ids_cba,    // [BS, BM*2, MSL], int
     th::optional<th::Tensor> beam_hyps_seq_len_cba,       // [BS, BM*2], int
     th::optional<th::Tensor> beam_hyps_cum_log_probs_cba, // [BS, BM*2], float
@@ -104,9 +107,11 @@ th::Tensor gatherTree(                                    // BS: batch_size, BM:
         param.beams = get_ptr<int32_t>(workspace);
         // Remove prompt length if possible
         param.sequenceLengths = get_ptr<int32_t>(sequence_lengths);
-        // add sequence_length 1 here because the sequence_length of time step t is t - 1
+        // add sequence_length 1 here because the sequence_length of time step t is
+        // t - 1
         param.maxSequenceLengthFinalStep = 1;
-        // response input lengths (used to slice the ids during postprocessing), used in interactive generation
+        // response input lengths (used to slice the ids during postprocessing),
+        // used in interactive generation
         // This feature is not supported yet, setting it to nullptr temporarily.
         param.responseInputLengths = nullptr;
         param.maxSeqLen = max_seq_len;
@@ -137,6 +142,6 @@ th::Tensor gatherTree(                                    // BS: batch_size, BM:
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto gather_tree = torch::RegisterOperators("tensorrt_llm::gather_tree", &tensorrt_llm::torch_ext::gatherTree);

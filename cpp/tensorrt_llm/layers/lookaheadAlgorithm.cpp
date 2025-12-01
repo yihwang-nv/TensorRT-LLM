@@ -16,7 +16,6 @@
 
 #include "tensorrt_llm/layers/lookaheadAlgorithm.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/layers/lookaheadDecodingUtils.h"
@@ -27,9 +26,7 @@
 #include <memory>
 #include <tuple>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 using namespace tensorrt_llm::runtime;
@@ -119,7 +116,8 @@ void LookaheadAlgorithm::accept(TensorConstPtr const& generatedTokens)
     std::copy(goldRange.begin() + genLen, goldRange.begin() + genLen + mN - 1, goldRange.begin());
 }
 
-//! lookahead has two phase, prefill the past tokens matrix and maintain past tokens matrix.
+//! lookahead has two phase, prefill the past tokens matrix and maintain past
+// tokens matrix.
 runtime::SizeType32 LookaheadAlgorithm::lookahead(
     TensorPtr const& draftTokens, TensorPtr const& positionIds, runtime::SizeType32 startPosId)
 {
@@ -583,6 +581,4 @@ void LookaheadAlgorithm::update(TensorPtr const& acceptedTokens, TensorPtr const
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

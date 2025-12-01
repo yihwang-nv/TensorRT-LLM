@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/arrayView.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/dataType.h"
 #include "tensorrt_llm/kernels/decodingCommon.h"
 #include "tensorrt_llm/kernels/kvCacheIndex.h"
@@ -41,9 +40,7 @@
 #include <typeinfo>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 enum class MemoryType : std::int32_t
@@ -196,7 +193,8 @@ struct DataTypeTraits<kDataType, kUnsigned, true>
     static auto constexpr size = sizeof(type);
 };
 
-//! \brief A wrapper around `nvinfer1::DataType` that provides a support for pointer types.
+//! \brief A wrapper around `nvinfer1::DataType` that provides a support for
+// pointer types.
 class BufferDataType
 {
 public:
@@ -396,7 +394,8 @@ public:
     [[nodiscard]] virtual void const* data() const = 0;
 
     //!
-    //! \brief Returns a pointer to the underlying array at a given element index.
+    //! \brief Returns a pointer to the underlying array at a given element
+    // index.
     //!
     [[nodiscard]] virtual void* data(std::size_t index)
     {
@@ -405,7 +404,8 @@ public:
     }
 
     //!
-    //! \brief Returns a pointer to the underlying array at a given element index.
+    //! \brief Returns a pointer to the underlying array at a given element
+    // index.
     //!
     [[nodiscard]] virtual void const* data(std::size_t index) const
     {
@@ -448,7 +448,8 @@ public:
     [[nodiscard]] virtual char const* getMemoryTypeName() const;
 
     //!
-    //! \brief Resizes the buffer. This is a no-op if the new size is smaller than or equal to the current capacity.
+    //! \brief Resizes the buffer. This is a no-op if the new size is smaller
+    // than or equal to the current capacity.
     //!
     virtual void resize(std::size_t newSize) = 0;
 
@@ -470,7 +471,8 @@ public:
     IBuffer& operator=(IBuffer const&) = delete;
 
     //!
-    //! \brief Creates a sliced view on the underlying `buffer`. The view will have the same data type as `buffer`.
+    //! \brief Creates a sliced view on the underlying `buffer`. The view will
+    // have the same data type as `buffer`.
     //!
     //! \param buffer The buffer to view.
     //! \param offset The offset of the view.
@@ -498,7 +500,8 @@ public:
     }
 
     //!
-    //! \brief Returns a view on the underlying `tensor` which can be independently resized.
+    //! \brief Returns a view on the underlying `tensor` which can be
+    // independently resized.
     //!
     //! \param tensor The tensor to view.
     //! \return A view on the `tensor`.
@@ -530,7 +533,8 @@ public:
     }
 
     //!
-    //! \brief Wraps the given `data` in an `IBuffer`. The `IBuffer` will not own the underlying `data` and cannot
+    //! \brief Wraps the given `data` in an `IBuffer`. The `IBuffer` will not
+    // own the underlying `data` and cannot
     //! be resized beyond `capacity`.
     //!
     //! \param data The data to wrap.
@@ -608,7 +612,8 @@ T* bufferCast(IBuffer& buffer)
     return static_cast<T*>(buffer.data());
 }
 
-/// @brief Retrieves a T typed pointer to the underlying data of the buffer pointed to by the bufferPtr, or nullptr if
+/// @brief Retrieves a T typed pointer to the underlying data of the buffer
+/// pointed to by the bufferPtr, or nullptr if
 /// the bufferPtr is null.
 /// @tparam T The type of the underlying data.
 /// @param bufferPtr A possibly null shared ptr.
@@ -624,7 +629,8 @@ T* bufferCastOrNull(IBuffer::SharedPtr const& bufferPtr)
     return static_cast<T*>(nullptr);
 }
 
-/// @brief Retrieves a T const typed pointer to the underlying data of the buffer pointed to by the bufferPtr, or
+/// @brief Retrieves a T const typed pointer to the underlying data of the
+/// buffer pointed to by the bufferPtr, or
 /// nullptr if the bufferPtr is null.
 /// @tparam T The type of the underlying data.
 /// @param bufferPtr A possibly null shared ptr.
@@ -640,8 +646,10 @@ T const* bufferCastOrNull(IBuffer::SharedConstPtr const& bufferPtr)
     return static_cast<T const*>(nullptr);
 }
 
-/// @brief Retrieves a T typed pointer to the underlying data of the buffer pointed to by the buffer pointer
-/// contained in the optionalBufferPtr, or nullptr if the optional doesn't have a value.
+/// @brief Retrieves a T typed pointer to the underlying data of the buffer
+/// pointed to by the buffer pointer
+/// contained in the optionalBufferPtr, or nullptr if the optional doesn't
+/// have a value.
 /// @tparam T The type of the underlying data.
 /// @param optionalBufferPtr A possibly empty optional.
 /// @return A pointer to T, possibly nullptr.
@@ -656,8 +664,10 @@ T* bufferCastOrNull(std::optional<IBuffer::SharedPtr> const& optionalBufferPtr)
     return static_cast<T*>(nullptr);
 }
 
-/// @brief Retrieves a T const typed pointer to the underlying data of the buffer pointed to by the buffer pointer
-/// contained in the optionalBufferPtr, or nullptr if the optional doesn't have a value.
+/// @brief Retrieves a T const typed pointer to the underlying data of the
+/// buffer pointed to by the buffer pointer
+/// contained in the optionalBufferPtr, or nullptr if the optional doesn't
+/// have a value.
 /// @tparam T The type of the underlying data.
 /// @param optionalBufferPtr A possibly empty optional.
 /// @return A pointer to const T, possibly nullptr.
@@ -700,6 +710,4 @@ public:
 //! \brief Utility function to print a buffer.
 std::ostream& operator<<(std::ostream& output, IBuffer const& buffer);
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

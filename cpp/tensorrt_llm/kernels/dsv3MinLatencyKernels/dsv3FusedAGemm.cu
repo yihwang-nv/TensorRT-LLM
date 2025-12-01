@@ -30,9 +30,9 @@ using bf16_t = __nv_bfloat16;
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::dsv3MinLatencyKernels
+namespace dsv3MinLatencyKernels
 {
 
 __device__ void hmma_16_8_16_f32acc_bf16ab(
@@ -492,7 +492,8 @@ public:
         };
         constexpr int cosize_smem_c = ((tile_m * cta_mma_n) / 32) * (32 + 2);
 
-// This should be optimized to STS.64 but can not be STS.128 due to the bank index.
+// This should be optimized to STS.64 but can not be STS.128 due to the bank
+// index.
 #pragma unroll
         for (int m_idx_thread = 0; m_idx_thread < thread_m; m_idx_thread++)
         {
@@ -599,8 +600,9 @@ __global__ __launch_bounds__(256, 1) void fused_a_gemm_kernel(
     {
         for (int i = 0; i < stage_cnt; i++)
         {
-            initialize_barrier(smem_barrier + i * 2 + 0, load_thread_cnt);    // producer
-            initialize_barrier(smem_barrier + i * 2 + 1, compute_thread_cnt); // consumer
+            initialize_barrier(smem_barrier + i * 2 + 0, load_thread_cnt); // producer
+            initialize_barrier(smem_barrier + i * 2 + 1,
+                compute_thread_cnt);                                       // consumer
         }
     }
     __syncthreads();
@@ -636,7 +638,9 @@ void invokeFusedAGemm(T* output, T const* mat_a, T const* mat_b, int num_tokens,
     auto const sm = tensorrt_llm::common::getSMVersion();
     if (sm < 90)
     {
-        std::cerr << "FusedAGemm required CUDA ARCH >= SM_90, not supported on this architecture" << std::endl;
+        std::cerr << "FusedAGemm required CUDA ARCH >= SM_90, not supported on "
+                     "this architecture"
+                  << std::endl;
         assert(false);
     }
     constexpr int gemm_m = kHdOut; // 2112
@@ -684,6 +688,6 @@ template void invokeFusedAGemm<__nv_bfloat16, 7168, 2112, 8>(
 
 template void invokeFusedAGemm<__nv_bfloat16, 7168, 2112, 16>(
     __nv_bfloat16*, __nv_bfloat16 const*, __nv_bfloat16 const*, int num_tokens, cudaStream_t);
-} // namespace kernels::dsv3MinLatencyKernels
+} // namespace dsv3MinLatencyKernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -27,8 +27,8 @@
 #include <cuda_runtime_api.h>
 #include <unistd.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
+namespace tensorrt_llm
+{
 namespace runtime::ub
 {
 #define UB_ONESHOT_DEFAULT_VALUE 1
@@ -273,7 +273,9 @@ int create_communicator_grouped2(communicator** comm, tensorrt_llm::runtime::Wor
         if ((*comm)->tp_rank == 0)
         {
             TLLM_LOG_INFO(
-                "[UserBuffer] rank %d, MC initialized successfully, window size = %ld", (*comm)->nvrank, mc_maxsize);
+                "[UserBuffer] rank %d, MC initialized successfully, "
+                "window size = %ld",
+                (*comm)->nvrank, mc_maxsize);
         }
     }
     else
@@ -286,7 +288,8 @@ int create_communicator_grouped2(communicator** comm, tensorrt_llm::runtime::Wor
     }
 
 #define LOCALSIZE 4 * (REG0_OFFSET(*comm) + REG0_FLAGS + REG0_COMMBUFFER * NBUF)
-    register_user_buffer_collective(&((*comm)->gpu_ptrs), LOCALSIZE, *comm); // will use handler 0
+    register_user_buffer_collective(&((*comm)->gpu_ptrs), LOCALSIZE,
+        *comm); // will use handler 0
 
     TLLM_CUDA_CHECK(cudaMalloc(&(*comm)->send_id, (*comm)->nranks * sizeof(int)));
     TLLM_CUDA_CHECK(cudaMalloc(&(*comm)->recv_id, MAX_REGIONS * (*comm)->nranks * sizeof(int)));
@@ -428,8 +431,10 @@ error:
     }
     else if (comm->myrank == 0)
     {
-        TLLM_LOG_WARNING("[UserBuffer] warning region %d size %ld MB registered without MC access", hndl,
-            aligned_size / 1024 / 1024);
+        TLLM_LOG_WARNING(
+            "[UserBuffer] warning region %d size %ld MB registered "
+            "without MC access",
+            hndl, aligned_size / 1024 / 1024);
     }
     comm->mem_size[hndl] = aligned_size;
     comm->mem_ptr[hndl] = *gpubuff;
@@ -438,4 +443,4 @@ error:
 }
 } // namespace runtime::ub
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

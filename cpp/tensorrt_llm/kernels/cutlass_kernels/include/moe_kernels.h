@@ -34,10 +34,8 @@
 #include <random>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 // Change to following declarations must sync with lora.h in public repo
 class LoraImpl;
 
@@ -128,7 +126,8 @@ struct ActivationParams
         : activation_type(activation_type)
     {
         TLLM_CHECK_WITH_INFO(activation_type != ActivationType::SwigluBias,
-            "SwigluBias is not supported in ActivationParams without swiglu_alpha and swiglu_beta");
+            "SwigluBias is not supported in ActivationParams "
+            "without swiglu_alpha and swiglu_beta");
     }
 
     ActivationParams(
@@ -150,23 +149,34 @@ struct ActivationParams
 /**
  * \brief Describes what parallelism mode the MoE is using
  *
- * Tensor Parallelism refers to the mode where the weight matrices for each expert are sliced up between nodes.
- * Each node will handle part of each expert, the final result is achieved by summing the result.
- * The inter_size dimension should be divided by the number of nodes prior to passing it to the MoE plugin, only the
- * required slice of the weights should be provided to the plugin FC1 is a ColumnLinear and FC2 is a RowLinear, see
+ * Tensor Parallelism refers to the mode where the weight matrices for each
+ *expert are sliced up between nodes.
+ * Each node will handle part of each expert, the final result is achieved by
+ *summing the result.
+ * The inter_size dimension should be divided by the number of nodes prior to
+ *passing it to the MoE plugin, only the
+ * required slice of the weights should be provided to the plugin FC1 is a
+ *ColumnLinear and FC2 is a RowLinear, see
  * tensorrt_llm/mlp/mlp.py for an example of how this works for a single MLP
  *
- * NOTE: The bias for fc2 is only applied on rank 0. If we added it on all nodes the allreduce() would contain multiple
- * copies of the bias. The bias on other node will be ignored, and may be set to nullptr
+ * NOTE: The bias for fc2 is only applied on rank 0. If we added it on all nodes
+ *the allreduce() would contain multiple
+ * copies of the bias. The bias on other node will be ignored, and may be set to
+ *nullptr
  *
- * Expert Parallelism refers to the mode where experts are divided between the nodes. Each node will handle only the
- * tokens that are routed to the experts it is assigned to. Only the weights for the node's experts should be provided
- * to the plugin For example, with #experts = 8, expert parallelism = 2: Node 0 would handle experts 0-3, and node 1
+ * Expert Parallelism refers to the mode where experts are divided between the
+ *nodes. Each node will handle only the
+ * tokens that are routed to the experts it is assigned to. Only the weights for
+ *the node's experts should be provided
+ * to the plugin For example, with #experts = 8, expert parallelism = 2: Node 0
+ *would handle experts 0-3, and node 1
  * would handle experts 4-7
  *
  * Regardless of parallelism mode:
- *  * The input routing values must be the complete routing for all tokens/experts (required for softmax)
- *  * An allreduce must be run on the result to combine the results from different nodes if parallelism > 1
+ *  * The input routing values must be the complete routing for all
+ *tokens/experts (required for softmax)
+ *  * An allreduce must be run on the result to combine the results from
+ *different nodes if parallelism > 1
  */
 struct MOEParallelismConfig
 {
@@ -253,24 +263,27 @@ struct QuantParams
     {
         bool fc2_use_per_expert_act_scale = false;
         float const* dequant_fc1 = nullptr;   // (num_experts_per_node, )
-        float const* quant_fc2 = nullptr;     // (1, ) or (num_experts_per_node, ) based on fc2_use_per_expert_act_scale
+        float const* quant_fc2 = nullptr;     // (1, ) or (num_experts_per_node, ) based
+                                              // on fc2_use_per_expert_act_scale
         float const* dequant_fc2 = nullptr;   // (num_experts_per_node, )
         float const* quant_final = nullptr;   // (1, )
         float const* dequant_input = nullptr; // (1, )
     } fp8;
 
     // FP8 MXFP4 quantization params
-    // This mode uses regular global scale for FP8 activations and block scaling for MXFP4 weights
+    // This mode uses regular global scale for FP8 activations and block scaling
+    // for MXFP4 weights
     struct FP8MXFP4Inputs
     {
         struct GemmInputs
         {
             bool use_per_expert_act_scale = false;
-            float const* act_global_scale
-                = nullptr;                       // (1, ) or (num_experts_per_node, ) based on use_per_expert_act_scale
+            float const* act_global_scale = nullptr; // (1, ) or
+                                                     // (num_experts_per_node, ) based
+                                                     // on use_per_expert_act_scale
             TmaWarpSpecializedGroupedGemmInput::MXFPXElementSF const* weight_block_scale
-                = nullptr;                       // (experts, n, k / 32)
-            float const* global_scale = nullptr; // (num_experts_per_node, )
+                = nullptr;                           // (experts, n, k / 32)
+            float const* global_scale = nullptr;     // (num_experts_per_node, )
         };
 
         GemmInputs fc1;
@@ -299,11 +312,12 @@ struct QuantParams
         {
             bool use_per_expert_act_scale = false;
 
-            float const* act_global_scale
-                = nullptr;                       // (1, ) or (num_experts_per_node, ) based on use_per_expert_act_scale
+            float const* act_global_scale = nullptr; // (1, ) or
+                                                     // (num_experts_per_node, ) based
+                                                     // on use_per_expert_act_scale
             TmaWarpSpecializedGroupedGemmInput::NVFP4ElementSF const* weight_block_scale
-                = nullptr;                       // (experts, n, k / 16)
-            float const* global_scale = nullptr; // (num_experts_per_node, )
+                = nullptr;                           // (experts, n, k / 16)
+            float const* global_scale = nullptr;     // (num_experts_per_node, )
         };
 
         GemmInputs fc1;
@@ -390,7 +404,6 @@ struct QuantParams
         TmaWarpSpecializedGroupedGemmInput::NVFP4ElementSF const* fc2_weight_block_scale,
         float const* fc2_global_scale, //
         bool fc1_use_per_expert_act_scale = false, bool fc2_use_per_expert_act_scale = false)
-
     {
         QuantParams qp;
         qp.fp4.fc1 = {fc1_use_per_expert_act_scale, fc1_act_global_scale, fc1_weight_block_scale, fc1_global_scale};
@@ -421,9 +434,11 @@ struct QuantParams
 struct MoeMinLatencyParams
 {
     // All these are allocated on device memory
-    // Number of active experts on current node; smaller than or equal to num_experts_per_node
+    // Number of active experts on current node; smaller than or equal to
+    // num_experts_per_node
     int* num_active_experts_per_node;
-    // The score of each token for each activated expert. 0 if the expert is not chosen by the token.
+    // The score of each token for each activated expert. 0 if the expert is not
+    // chosen by the token.
     // Only the first num_active_experts_per_ rows are valid
     float* experts_to_token_score;
     // The global expert id for each activated expert
@@ -529,8 +544,10 @@ public:
     bool use_fused_finalize_ = true;
 };
 
-// Assumes inputs activations are row major. Weights need to be preprocessed by th_op/weight_quantize.cc .
-// Nested in a class to avoid multiple calls to cudaGetDeviceProperties as this call can be expensive.
+// Assumes inputs activations are row major. Weights need to be preprocessed by
+// th_op/weight_quantize.cc .
+// Nested in a class to avoid multiple calls to cudaGetDeviceProperties as this
+// call can be expensive.
 // Avoid making several duplicates of this class.
 template <typename T,                   /* The type used for activations */
     typename WeightType,                /* The type for the MoE weights */
@@ -580,11 +597,14 @@ class CutlassMoeFCRunner : public CutlassMoeFCRunnerInterface
 
     static constexpr bool use_block_scaling = use_fp4 || use_wfp4afp8;
 
-    // This should leave the variable unchanged in any currently supported configuration
+    // This should leave the variable unchanged in any currently supported
+    // configuration
     using UnfusedGemmOutputType = BackBoneType;
 
-    // We introduce this as a separate parameter, so that if we ever remove the above condition we can decouple
-    // BackBoneType and OutputType easily. For now these are required to be equivalent
+    // We introduce this as a separate parameter, so that if we ever remove the
+    // above condition we can decouple
+    // BackBoneType and OutputType easily. For now these are required to be
+    // equivalent
     static_assert(std::is_same_v<OutputType, BackBoneType>, "Scale and bias types must match OutputType");
 
 public:
@@ -628,12 +648,15 @@ public:
         bool use_deepseek_fp8_block_scale, bool min_latency_mode, MoeMinLatencyParams& min_latency_params,
         cudaStream_t stream) override;
 
-    // We make these GEMM1 & GEMM2 static because they need to be stateless for the profiler to work
+    // We make these GEMM1 & GEMM2 static because they need to be stateless for
+    // the profiler to work
     static void gemm1(MoeGemmRunner<T, WeightType, OutputType, ScaleBiasType>& gemm_runner,
         // This argument must not be null if fp8 block scaling is being used.
         // The gemm_runner will be ignored in that case. NOTE: it would
-        // be great if we could consolidate gemm_runner and fp8_blockscale_gemm_runner.
-        // For now, they don't share the same interface, so we just use two separate
+        // be great if we could consolidate gemm_runner and
+        // fp8_blockscale_gemm_runner.
+        // For now, they don't share the same interface, so we just use two
+        // separate
         // arguments.
         DeepSeekBlockScaleGemmRunner* fp8_blockscale_gemm_runner, T const* const input, T* const output,
         void* const intermediate_result, int64_t const* const expert_first_token_offset,
@@ -665,7 +688,8 @@ public:
         cutlass_extensions::CutlassGemmConfig config, bool min_latency_mode, int* num_active_experts_per,
         int* active_expert_global_ids);
 
-    // Overrides to allow us to forward on to the internal functions with the pointers using the correct type
+    // Overrides to allow us to forward on to the internal functions with the
+    // pointers using the correct type
     void gemm1(void const* const input, void* const output, void* const intermediate_result,
         int64_t const* const expert_first_token_offset, TmaWarpSpecializedGroupedGemmInput tma_ws_input_template,
         void const* const fc1_expert_weights, void const* const fc1_expert_biases,
@@ -805,7 +829,8 @@ private:
 private:
     bool mayHaveDifferentGEMMOutputType() const
     {
-        // We just check if its supported because we need to know when calculating workspace size
+        // We just check if its supported because we need to know when calculating
+        // workspace size
         return (
             (moe_gemm_runner_.supportsTmaWarpSpecialized() && !std::is_same_v<T, UnfusedGemmOutputType>) || use_fp8);
     }
@@ -888,7 +913,8 @@ private:
     void* glu_inter_result_{};
     void* fc2_result_{};
     T* fc1_result_{};
-    // TODO If we fuse the quantization for GEMM2 into GEMM1 we will need two pointers
+    // TODO If we fuse the quantization for GEMM2 into GEMM1 we will need two
+    // pointers
     TmaWarpSpecializedGroupedGemmInput::ElementSF* fc1_fp4_act_scale_;
     TmaWarpSpecializedGroupedGemmInput::ElementSF* fc2_fp4_act_scale_;
     float const** alpha_scale_ptr_array_fc1_ = nullptr;
@@ -1019,6 +1045,5 @@ private:
 void populateRandomBuffer(void* buffer_void, size_t size, cudaStream_t stream);
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

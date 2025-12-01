@@ -16,7 +16,6 @@
  */
 
 #include "gemmSwigluPlugin.h"
-#include "tensorrt_llm/common/config.h"
 
 #include "cutlass/util/reference/device/tensor_fill.h"
 #include "cutlass_extensions/gemm_configs.h"

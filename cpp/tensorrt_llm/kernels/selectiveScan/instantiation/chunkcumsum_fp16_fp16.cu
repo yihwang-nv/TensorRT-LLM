@@ -17,14 +17,9 @@
 #include "../chunkcumsum.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 GetChunkCumsumKernelFunc getChunkCumsumKernel_fp16_fp16 = getChunkCumsumKernel<fp16_t, fp16_t>;
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 // vim: ts=2 sw=2 sts=2 et sta

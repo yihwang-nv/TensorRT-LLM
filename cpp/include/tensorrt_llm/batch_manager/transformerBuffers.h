@@ -18,21 +18,18 @@
 
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/kvCacheType.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class TllmRuntime;
 class MulticastTensor;
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 namespace kv_cache_manager
@@ -71,8 +68,10 @@ public:
     // sink token lengths.
     TensorPtr sinkTokenLengths;
     TensorPtr cacheIndirection;
-    TensorPtr kvCacheBlockOffsetsHost;   // [numPools, maxBatch * maxBeamWidth, 2, maxBlocksPerSeq]
-    TensorPtr kvCacheBlockOffsetsDevice; // [numPools, maxBatch * maxBeamWidth, 2, maxBlocksPerSeq]
+    TensorPtr kvCacheBlockOffsetsHost;   // [numPools, maxBatch * maxBeamWidth, 2,
+                                         // maxBlocksPerSeq]
+    TensorPtr kvCacheBlockOffsetsDevice; // [numPools, maxBatch * maxBeamWidth,
+                                         // 2, maxBlocksPerSeq]
     TensorPtr contextProgressHost;
 
     // Cross attention buffers
@@ -84,16 +83,20 @@ public:
     TensorPtr crossAttentionMaskCopyDstOffsets = nullptr; // [maxNumRequest] pinned memory.
     TensorPtr crossAttentionMaskCopySizes = nullptr;      // [maxNumRequest] pinned memory.
     TensorPtr crossAttentionMaskDevice = nullptr;         // [maxNumTokens, maxEncoderOutputLen]
-    // This is created to allow mixed memory types of crossAttentionMask (i.e. CPU and GPU).
+    // This is created to allow mixed memory types of crossAttentionMask (i.e.
+    // CPU and GPU).
     TensorPtr crossAttentionMaskPinnedHost = nullptr; // [maxNumTokens, maxEncoderOutputLen]
-    // See more details in tensorrt_llm/kernels/contextFusedMultiHeadAttention/fmhaPackedMask.cu.
+    // See more details in
+    // tensorrt_llm/kernels/contextFusedMultiHeadAttention/fmhaPackedMask.cu.
     // The attention packed mask for FMHA where each bit represents one mask.
-    TensorPtr crossAttentionPackedMaskDevice
-        = nullptr; // [maxBatchSize, maxInputLengthInBatch, roundUp(maxEncoderOutputLen, 32)]
-    // The number of cumulative Q sequence lengths in the mask input, which is used to get mask offsets for different
+    TensorPtr crossAttentionPackedMaskDevice = nullptr; // [maxBatchSize, maxInputLengthInBatch,
+                                                        // roundUp(maxEncoderOutputLen, 32)]
+    // The number of cumulative Q sequence lengths in the mask input, which is
+    // used to get mask offsets for different
     // requests.
     TensorPtr crossAttentionCuQSeqLensDevice = nullptr; // [maxBatchSize + 1]
-    // The number of cumulative Q sequence lengths in the packed mask, which is used to get mask offsets for different
+    // The number of cumulative Q sequence lengths in the packed mask, which is
+    // used to get mask offsets for different
     // requests.
     TensorPtr crossAttentionPackedMaskCuMaskRowsDevice = nullptr; // [maxBatchSize + 1]
 
@@ -128,7 +131,8 @@ public:
         kv_cache_manager::BaseKVCacheManager const* kvCacheManager,
         kv_cache_manager::BaseKVCacheManager const* crossKvCacheManager, runtime::BufferManager const& manager);
 
-    // Copy CacheIndirection from `decoderCacheIndirectionOutput` to `this->cacheIndirection`
+    // Copy CacheIndirection from `decoderCacheIndirectionOutput` to
+    // `this->cacheIndirection`
     void copyCacheIndirection(RequestVector const& genRequests, TensorPtr const& decoderCacheIndirectionOutput,
         runtime::CudaStream const& stream);
 
@@ -145,6 +149,4 @@ private:
     SizeType32 maxNumTokens;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

@@ -27,12 +27,10 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
-
-// A stateful callback functor that maintains the running sum between consecutive scans.
+// A stateful callback functor that maintains the running sum between
+// consecutive scans.
 struct BlockPrefixCallbackOp
 {
     // Running prefix
@@ -44,7 +42,8 @@ struct BlockPrefixCallbackOp
     {
     }
 
-    // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+    // Thread-0 is responsible for returning a value for seeding the block-wide
+    // scan.
     __device__ int operator()(int blockAggregate)
     {
         int oldPrefix = mRunningTotal;
@@ -53,8 +52,10 @@ struct BlockPrefixCallbackOp
     }
 };
 
-// Given an array of sequence lengths, with batchSize elements, that kernel computes the exclusive
-// prefix-sums of the sequence lengths. There are (batchSize+1) elements in seqOffsets.
+// Given an array of sequence lengths, with batchSize elements, that kernel
+// computes the exclusive
+// prefix-sums of the sequence lengths. There are (batchSize+1) elements in
+// seqOffsets.
 //
 // seqOffsets[ 0]        = 0
 // seqOffsets[ii]        = seqLengths[0] + .. + seqLengths[ii-1],
@@ -62,9 +63,12 @@ struct BlockPrefixCallbackOp
 //
 // This kernel uses a single thread block of THREADS_PER_BLOCK threads.
 
-// This kernel also computes the padding offsets: Given the index (idx) of a token in a ragged tensor,
-// we need the index of the token in the corresponding tensor with padding. We compute an array
-// of numTokens elements, called the paddingOffsets, such that the position in the padded tensor
+// This kernel also computes the padding offsets: Given the index (idx) of a
+// token in a ragged tensor,
+// we need the index of the token in the corresponding tensor with padding. We
+// compute an array
+// of numTokens elements, called the paddingOffsets, such that the position in
+// the padded tensor
 // of the token "idx" in the ragged tensor is given by idx + paddingOffset[idx].
 //
 // That kernel uses a grid of batchSize blocks.
@@ -93,7 +97,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
     bool const need_encoder_padding_offsets = (params.encoderPaddingOffsets != nullptr) && calculate_kv_offsets;
     [[maybe_unused]] int* smemEncoderSeqQOffsets;
 
-    // The implementation of the parallel scan in the thread block (see CUB for details).
+    // The implementation of the parallel scan in the thread block (see CUB for
+    // details).
     using BlockScan = cub::BlockScan<int, THREADS_PER_BLOCK>;
 
     // Allocate storage in shared memory to do the scan.
@@ -101,7 +106,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
     [[maybe_unused]] __shared__ typename BlockScan::TempStorage tempMaskStorage;
     [[maybe_unused]] __shared__ typename BlockScan::TempStorage tempKVStorage;
 
-    // This prefixOp operator keeps a running sum for when we need multiple iterations of the loop.
+    // This prefixOp operator keeps a running sum for when we need multiple
+    // iterations of the loop.
     BlockPrefixCallbackOp prefixQOp(0);
     BlockPrefixCallbackOp prefixMaskOp(0);
     BlockPrefixCallbackOp prefixKVOp(0);
@@ -114,8 +120,10 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
 
     // Iterate over the sequences in the batch.
     //
-    // The loop index does not depend on the thread index to make sure all the threads enter the
-    // loop as we have __syncthreads in it (and we need all threads to participate to avoid
+    // The loop index does not depend on the thread index to make sure all the
+    // threads enter the
+    // loop as we have __syncthreads in it (and we need all threads to participate
+    // to avoid
     // deadlocks).
     // Only the last block computes the full sequence offsets.
     bool const storeSeqOffsets = blockIdx.x == (params.batchSize - 1);
@@ -133,7 +141,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
         if (batchIdx < batchSizeBound)
         {
             seqQLength = fixed_q_seqlen ? params.maxQSeqLength : params.seqQLengths[batchIdx];
-            // Need to pad mask rows to multiple of 128 for each sequence in the batch.
+            // Need to pad mask rows to multiple of 128 for each sequence in the
+            // batch.
             packedMaskRows = calculate_packed_mask_row_offsets
                 ? divUp(seqQLength, int(FLASH_ATTEN_PACKED_MASK_M_ALIGNMENT)) * FLASH_ATTEN_PACKED_MASK_M_ALIGNMENT
                 : 0;
@@ -188,7 +197,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
             }
         }
 
-        // Make sure the shared memory can be reused for the next iteration of the loop.
+        // Make sure the shared memory can be reused for the next iteration of the
+        // loop.
         __syncthreads();
     }
 
@@ -197,7 +207,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
     // Compute the padding offsets.
     auto compute_padding_offset = [&](int* smem_offset, int maxSeqLength, int* paddingOffsets)
     {
-        // Block x dimension is the batch dimension, while threads iterate all tokens in the sequence.
+        // Block x dimension is the batch dimension, while threads iterate all
+        // tokens in the sequence.
         int seqBegin = smem_offset[batchIdx];
         // The offset to the 1st element of the next sequence.
         int seqEnd = smem_offset[batchIdx + 1];
@@ -245,7 +256,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void computeSeqAndPaddingOffsets
         }
     };
 
-    // Each block generates the rotary embedding inv_freq tensor for the corresponding sequence.
+    // Each block generates the rotary embedding inv_freq tensor for the
+    // corresponding sequence.
     int zid = 2 * threadIdx.x;
     int halfRotaryEmbeddingDim = params.rotaryEmbeddingDim / 2;
     if (params.rotaryEmbeddingDim > 0 && zid < params.rotaryEmbeddingDim)
@@ -307,7 +319,8 @@ void invokeBuildDecoderInfo(BuildDecoderInfoParams<T> const& params, cudaStream_
     // Compute the sequence and padding offsets.
     int const THREADS_PER_BLOCK = 256;
     TLLM_CHECK_WITH_INFO(params.rotaryEmbeddingDim / 2 <= 256 && params.rotaryEmbeddingDim % 2 == 0,
-        "Rotary embedding dim is assumed to be smaller than 512 and multiple of 2.");
+        "Rotary embedding dim is assumed to be smaller than 512 "
+        "and multiple of 2.");
     TLLM_CHECK_WITH_INFO(
         !(params.seqKVLengths == nullptr && params.rotaryEmbeddingDim > 0), "KV sequence lengths buffer is invalid.");
     bool const need_encoder_padding_offsets
@@ -325,7 +338,8 @@ void invokeBuildDecoderInfo(BuildDecoderInfoParams<T> const& params, cudaStream_
         memset((void*) &attentionMaskParams, 0, sizeof(attentionMaskParams));
         // Set parameters.
         attentionMaskParams.mask = params.attentionMask;
-        // Nullptr indicates that the row dimension are not packed (i.e. paddings are not removed).
+        // Nullptr indicates that the row dimension are not packed (i.e. paddings
+        // are not removed).
         attentionMaskParams.cuQSeqLens = nullptr;
         attentionMaskParams.actualQSeqLens = params.seqQLengths;
         attentionMaskParams.actualKvSeqLens = params.seqQLengths;
@@ -358,6 +372,4 @@ __global__ void updatePaddingCountKernel(int* paddingPerSeq, int const* seqLengt
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

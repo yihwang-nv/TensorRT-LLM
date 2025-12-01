@@ -26,10 +26,7 @@
 using namespace tensorrt_llm::common;
 using tensorrt_llm::common::op::UniqPtrWNullCopy;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,13 +35,13 @@ struct XqaFixedParams
     // Whether the attention is MLA.
     bool isMLA;
     // The QKV input data type.
-    kernels::Data_type inputDataType;
+    Data_type inputDataType;
     // The XQA KV cache data type.
-    kernels::Data_type kvDataType;
+    Data_type kvDataType;
     // The XQA output data type.
-    kernels::Data_type outputDataType;
+    Data_type outputDataType;
     // The XQA BMM dtype.
-    kernels::Data_type mathDataType;
+    Data_type mathDataType;
     // The number of Q heads.
     int numQHeads;
     // The number of Kv Heads.
@@ -96,7 +93,8 @@ public:
 private:
     // The fixed XQA parameters.
     XqaFixedParams mFixedParams;
-    // The data type of tensor Q, which determines the Q input data type of fmha kernels.
+    // The data type of tensor Q, which determines the Q input data type of fmha
+    // kernels.
     Data_type mQDataType;
     // Whether to enable trtllm-gen kernels.
     bool mUseTllmGen;
@@ -117,6 +115,4 @@ constexpr uint32_t xqaMlaCgaXBufSize = 8704 * 2;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (out) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (out) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +30,8 @@
 
 using torch::Tensor;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -49,7 +51,8 @@ struct hash_tuple
 };
 
 // got from cublasTest matmultFind
-// {mp2, k, n}: {algo, m_tile, m_stages, m_numsK, m_reduction, m_swizzle, m_custom, m_cga}
+// {mp2, k, n}: {algo, m_tile, m_stages, m_numsK, m_reduction, m_swizzle,
+// m_custom, m_cga}
 using AlgoListType = std::unordered_map<std::tuple<int32_t, int32_t, int32_t>, std::array<int, 8>, hash_tuple>;
 
 // bf16*bf16->fp32->bf16
@@ -59,7 +62,8 @@ AlgoListType spark_bf16_algo_list = {
     {{8, 2880, 201088}, {21, 11, 20, 1, 0, 0, 0, 0}},
     //-m32 -n1 -algo14 -m_reduction2 -m_numsK10 -m_workmem1024 -k2880
     {{8, 2880, 32}, {14, 0, 0, 10, 2, 0, 0, 0}},
-    //-m32 -n2048 -algo21 -m_tile11 -m_stages13 -m_reduction1 -m_numsK9 -m_workmem1024
+    //-m32 -n2048 -algo21 -m_tile11 -m_stages13 -m_reduction1 -m_numsK9
+    //-m_workmem1024
     //-k2880
     {{2048, 2880, 32}, {21, 11, 13, 9, 1, 0, 0, 0}},
     //-m32 -n2175 -algo21 -m_tile11 -m_stages19 -m_reduction1 -m_numsK11
@@ -72,18 +76,22 @@ AlgoListType spark_bf16_algo_list = {
     {{2048, 2880, 5120}, {21, 20, 15, 1, 0, 0, 0, 0}},
     //-m5120 -n2175 -algo21 -m_tile20 -m_stages15 -m_workmem1024 -k2880
     {{4096, 2880, 5120}, {21, 20, 15, 1, 0, 0, 0, 0}},
-    //-m2880 -n1 -algo23 -m_tile11 -m_stages14 -m_reduction1 -m_numsK24 -m_workmem1024 -k4096
+    //-m2880 -n1 -algo23 -m_tile11 -m_stages14 -m_reduction1 -m_numsK24
+    //-m_workmem1024 -k4096
     {{8, 4096, 2880}, {23, 11, 14, 24, 1, 0, 0, 0}},
-    //-m2880 -n2048 -ldc2880 -Poutt -ldd2880 -Ps -Pscales -algo21 -m_tile20 -m_stages15 -m_workmem1024 -k4096
+    //-m2880 -n2048 -ldc2880 -Poutt -ldd2880 -Ps -Pscales -algo21 -m_tile20
+    //-m_stages15 -m_workmem1024 -k4096
     {{2048, 4096, 2880}, {21, 20, 15, 1, 0, 0, 0, 0}},
-    //-m2880 -n2175 -ldc2880 -Poutt -ldd2880 -Ps -Pscales -algo21 -m_tile20 -m_stages15 -m_workmem1024 -k4096
+    //-m2880 -n2175 -ldc2880 -Poutt -ldd2880 -Ps -Pscales -algo21 -m_tile20
+    //-m_stages15 -m_workmem1024 -k4096
     {{4096, 4096, 2880}, {21, 20, 15, 1, 0, 0, 0, 0}},
 };
 
 // bf16*bf16->fp32->bf16
 AlgoListType bf16_algo_list = {
     // Deepseek v3/R1 router gemm
-    // [-algo66 -m_tile10 -m_stages35 -m_numsK1 -m_reduction0 -m_swizzle0 -m_custom3 -m_mma0 -m_cga2 -m_scheduling1]
+    // [-algo66 -m_tile10 -m_stages35 -m_numsK1 -m_reduction0 -m_swizzle0
+    // -m_custom3 -m_mma0 -m_cga2 -m_scheduling1]
     {{8, 7168, 256}, {66, 10, 35, 1, 0, 0, 3, 2}},
     {{512, 7168, 256}, {66, 48, 35, 1, 0, 0, 0, 2}},
     {{1024, 7168, 256}, {66, 13, 35, 1, 0, 0, 1, 3}},
@@ -92,12 +100,16 @@ AlgoListType bf16_algo_list = {
 // fp8*fp8->fp32->fp16
 AlgoListType fp8_algo_list = {
     // Llama-3.1-70B
-    // [-algo66 -m_tile393 -m_stages36 -m_numsK1 -m_reduction0 -m_swizzle0 -m_custom5 -m_mma0 -m_cga2 -m_scheduling1]
+    // [-algo66 -m_tile393 -m_stages36 -m_numsK1 -m_reduction0 -m_swizzle0
+    // -m_custom5 -m_mma0 -m_cga2 -m_scheduling1]
     {{8, 8192, 8192}, {66, 393, 36, 1, 0, 0, 5, 2}},
-    // [-algo66 -m_tile10 -m_stages36 -m_numsK1 -m_reduction0 -m_swizzle0 -m_custom1 -m_mma0 -m_cga2 -m_scheduling1]
+    // [-algo66 -m_tile10 -m_stages36 -m_numsK1 -m_reduction0 -m_swizzle0
+    // -m_custom1 -m_mma0 -m_cga2 -m_scheduling1]
     {{8, 8192, 57344}, {66, 10, 36, 1, 0, 0, 1, 2}},
-    // Llama-3.3-70B TP4 (this is the default algo on B200. Here we aim to use the same algo on GB200.)
-    // [-algo66 -m_tile393 -m_stages36 -m_numsK1 -m_reduction0 -m_swizzle0 -m_custom1 -m_mma0 -m_cga4 -m_scheduling1]
+    // Llama-3.3-70B TP4 (this is the default algo on B200. Here we aim to use the
+    // same algo on GB200.)
+    // [-algo66 -m_tile393 -m_stages36 -m_numsK1 -m_reduction0 -m_swizzle0
+    // -m_custom1 -m_mma0 -m_cga4 -m_scheduling1]
     {{8, 8192, 14336}, {66, 393, 36, 1, 0, 1, 1, 4}},
 };
 
@@ -142,7 +154,9 @@ bool find_special_algo(cublasLtMatmulAlgo_t& algo, std::shared_ptr<CublasMMWrapp
     else
     {
         TLLM_LOG_DEBUG(
-            "No special cublasLt algo found for aType=%d, outType=%d, compType=%d\n", aType, outType, compType);
+            "No special cublasLt algo found for aType=%d, outType=%d, "
+            "compType=%d\n",
+            aType, outType, compType);
         return false;
     }
     if (auto algo_iter = algo_list.find({mp2, k, n}); algo_iter != algo_list.end())
@@ -244,7 +258,8 @@ void cublas_gemm_caller(torch::Tensor& out, torch::Tensor const& a, torch::Tenso
     // hardcode compute type for FP8
     cublasComputeType_t compType = CUBLAS_COMPUTE_32F;
     cudaDataType_t scaleType = CUDA_R_32F;
-    cublasWrapper->setGemmConfig(aType, bType, outType, /*computeType=*/scaleType);
+    cublasWrapper->setGemmConfig(aType, bType, outType,
+        /*computeType=*/scaleType);
 
     auto const workspace_options = torch::TensorOptions().dtype(torch::kUInt8).device(a.device());
     auto workspace = torch::empty(CUBLAS_WORKSPACE_SIZE, workspace_options);
@@ -284,13 +299,14 @@ void cublas_gemm_caller(torch::Tensor& out, torch::Tensor const& a, torch::Tenso
 #endif
 
     // swap A and B. A is column major, B is row major.
-    cublasWrapper->createDescriptors(
-        CUBLAS_OP_T, CUBLAS_OP_N, n, m, k, /*lda=*/k, /*ldb=*/k, /*ldc=*/n, /*fastAcc=*/fast_acc);
+    cublasWrapper->createDescriptors(CUBLAS_OP_T, CUBLAS_OP_N, n, m, k, /*lda=*/k,
+        /*ldb=*/k, /*ldc=*/n, /*fastAcc=*/fast_acc);
     if (use_scale)
         cublasWrapper->setScaleDescriptors(a_scale, b_scale);
     if (use_bias)
         cublasWrapper->setBiasDescriptor(bias_ptr);
-    cublasWrapper->Gemm(CUBLAS_OP_T, CUBLAS_OP_N, n, m, k, /*A=*/b_ptr, /*lda=*/k, /*B=*/a_ptr, /*ldb=*/k, out_ptr,
+    cublasWrapper->Gemm(CUBLAS_OP_T, CUBLAS_OP_N, n, m, k, /*A=*/b_ptr, /*lda=*/k,
+        /*B=*/a_ptr, /*ldb=*/k, out_ptr,
         /*ldc=*/n, 1.0F, 0.0F, algo, has_algo, true);
     cublasWrapper->destroyDescriptors();
 }
@@ -355,7 +371,8 @@ Tensor& cublas_mm_out(Tensor const& mat_a, Tensor const& mat_b, std::optional<at
     CHECK_TH_CUDA(out);
 
     TORCH_CHECK(mat_a.dim() == 2 && mat_b.dim() == 2 && out.dim() == 2);
-    // TODO: consider remove mat_b.to() and add extra transa & transb flag like trt's matmul
+    // TODO: consider remove mat_b.to() and add extra transa & transb flag like
+    // trt's matmul
     TORCH_CHECK(out.sizes()[0] == mat_a.sizes()[0] && mat_a.sizes()[1] == mat_b.sizes()[0]
         && mat_b.sizes()[1] == out.sizes()[1]);
 
@@ -379,14 +396,17 @@ Tensor cublas_mm(Tensor const& mat_a, Tensor const& mat_b, std::optional<at::Ten
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "cublas_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor scale_b, Tensor? bias,"
+        "cublas_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor "
+        "scale_b, Tensor? bias,"
         " ScalarType? out_dtype, bool to_userbuffers=False) -> (Tensor out)");
-    m.def("cublas_mm(Tensor mat_a, Tensor mat_b, Tensor? bias, ScalarType? out_dtype) -> (Tensor out)");
+    m.def(
+        "cublas_mm(Tensor mat_a, Tensor mat_b, Tensor? bias, ScalarType? "
+        "out_dtype) -> (Tensor out)");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

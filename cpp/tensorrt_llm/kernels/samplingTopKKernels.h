@@ -23,10 +23,7 @@
 #include "tensorrt_llm/runtime/common.h"
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 static constexpr runtime::SizeType32 TOP_K_MAX = 1024;
 
@@ -38,18 +35,22 @@ struct TopKSamplingKernelParams
     //! Log probabilities of each token in the vocab. If logitsHasProbs is true,
     //! logProbs must contain **just** probabilities instead of log probabilities.
     T const* logProbs{nullptr};
-    //! input buffer [batchSize][tokensPerStep, vocabSizePadded] array of pointers to logits.
+    //! input buffer [batchSize][tokensPerStep, vocabSizePadded] array of pointers
+    // to logits.
     //! If nullptr, logProbs is used.
     T const* const* logProbsPtrs{nullptr};
 
-    //! output buffer [maxBatchSize][maxSeqLen], optional. Contains pointers to rows
+    //! output buffer [maxBatchSize][maxSeqLen], optional. Contains pointers to
+    // rows
     //! with output tokens per request. If nullptr, outputIds must be provided.
     runtime::TokenIdType** outputIdsPtrs{nullptr};
-    //! output buffer [maxBatchSize, maxSeqLen], optional. Tensor to store output tokens.
+    //! output buffer [maxBatchSize, maxSeqLen], optional. Tensor to store output
+    // tokens.
     //! Not used if outputIdsPtrs != nullptr
     runtime::TokenIdType* outputIds{nullptr};
 
-    //! Required. Pointer to the workspace of size returned by getTopKWorkspaceSize.
+    //! Required. Pointer to the workspace of size returned by
+    // getTopKWorkspaceSize.
     //! Has to be pre-allocated by caller.
     //! Function does not take ownership of the buffer
     void* workspace{nullptr};
@@ -58,13 +59,16 @@ struct TopKSamplingKernelParams
     runtime::TokenIdType const* endIds{nullptr};
 
     //! input/output buffer [maxBatchSize], optional. If nullptr, seqLen is 0
-    //! Current sequence length of the request. Set up to, but excluding endId token.
+    //! Current sequence length of the request. Set up to, but excluding endId
+    // token.
     runtime::SizeType32* sequenceLengths{nullptr};
     //! input buffer[batchSize], optional. Indices of rows of data in memory pool.
     //! Linear indexing (batchIdx) is used if nullptr.
     runtime::SizeType32 const* batchSlots{nullptr};
-    //! input buffer [maxBatchSize], optional. Number of tokens per step for each request.
-    //! It is assumed that all requests have maxTokensPerStep tokens per step if nullptr.
+    //! input buffer [maxBatchSize], optional. Number of tokens per step for each
+    // request.
+    //! It is assumed that all requests have maxTokensPerStep tokens per step if
+    // nullptr.
     runtime::SizeType32 const* tokensPerStep{nullptr};
 
     //! input buffer [maxBatchSize], optional. If true, request exits early.
@@ -79,10 +83,13 @@ struct TopKSamplingKernelParams
     //! Cumulative log probability of selected tokens. Ignored if nullptr
     float* cumLogProbs{nullptr};
     //! output buffer
-    //! [maxBatchSize, maxTopK] when returnAllSelectedTokens, otherwise [maxSeqLen, maxBatchSize]
+    //! [maxBatchSize, maxTopK] when returnAllSelectedTokens, otherwise
+    //[maxSeqLen, maxBatchSize]
     //! Log probs is the probability induced by the top-k sampling.
-    //! If normalizeLogProbs is true, we normalize the probability 'expLogit' of the selected token
-    //! by the probability 's_sum' of a set of top-k tokens, meaning the logProb is the probability
+    //! If normalizeLogProbs is true, we normalize the probability 'expLogit' of
+    // the selected token
+    //! by the probability 's_sum' of a set of top-k tokens, meaning the logProb
+    // is the probability
     //! of the selected token, conditioned on the event that it is selected,
     //! i.e., log_prob = log P(i | i is in top-k) = log(expLogit / s_sum).
     //! Ignored if nullptr.
@@ -96,7 +103,8 @@ struct TopKSamplingKernelParams
     //! If nullptr maxTopK is used for all requests.
     runtime::SizeType32 const* topKs{nullptr};
     //! input buffer [maxBatchSize]. Probability for topP sampling per request.
-    //! Supported P is in range (0.0, 1.0]. If nullptr, topP is used for all requests
+    //! Supported P is in range (0.0, 1.0]. If nullptr, topP is used for all
+    // requests
     float const* topPs{nullptr};
     //! maximum among all topKs K for topK sampling
     runtime::SizeType32 maxTopK{TOP_K_MAX};
@@ -116,18 +124,23 @@ struct TopKSamplingKernelParams
     //! flag to return all selected TopK results
     bool returnAllSelectedTokens{false};
     //! flag to set strict TopP boundary.
-    //! If true, when randNum <=0.0f, the selection is completed, even if K draft tokens are not reached.
-    //! If false, when randNum <=0.0f, the selection will continue until it reaches K tokens.
+    //! If true, when randNum <=0.0f, the selection is completed, even if K draft
+    // tokens are not reached.
+    //! If false, when randNum <=0.0f, the selection will continue until it
+    // reaches K tokens.
     bool strictTopPBoundary{true};
 
     //! flag to return all selected TopK results per request.
     bool const* returnAllSelectedTokensPerSlot{nullptr};
 
     //! output buffer [maxBatchSize], optional.
-    //! Store the multinomial sampled target token id in TopK/TopP sampled tokens when returnAllSelectedTokens==True.
-    //! Only return when skipOutputIdCurrentStep != nullptr && skipOutputIdCurrentStep == False
+    //! Store the multinomial sampled target token id in TopK/TopP sampled tokens
+    // when returnAllSelectedTokens==True.
+    //! Only return when skipOutputIdCurrentStep != nullptr &&
+    // skipOutputIdCurrentStep == False
     runtime::TokenIdType* outputIdCurrentStep{nullptr};
-    //! input buffer [maxBatchSize]. Determine if multinomial sampling is required when returnAllSelectedTokens==True.
+    //! input buffer [maxBatchSize]. Determine if multinomial sampling is required
+    // when returnAllSelectedTokens==True.
     bool const* skipOutputIdCurrentStep{nullptr};
 
     void checkParams() const
@@ -173,9 +186,11 @@ struct TopKSamplingKernelParams
 };
 
 // clang-format off
-//! \brief Given logProbs, performs top K **and** top P sampling at the same time. Fills sampled tokens to outputIds.
+//! \brief Given logProbs, performs top K **and** top P sampling at the same
+// time. Fills sampled tokens to outputIds.
 //! Computes sequenceLength, finished state, cumLogProbs inplace.
-//! Sampling per request can be controlled using skipDecode, topPs and topKs parameters.
+//! Sampling per request can be controlled using skipDecode, topPs and topKs
+// parameters.
 //! Function sets workspaceSize and exits early if workspace is nullptr.
 //! If logits are Nan, we set output token to be the last in the vocabulary.
 // clang-format on
@@ -243,7 +258,9 @@ inline bool clampTopK(runtime::SizeType32& topK)
     if (topK < 0 || topK > TOP_K_MAX)
     {
         TLLM_LOG_WARNING(
-            "TopK (%d) is larger than max supported number (%d). Clip to max supported number.", topK, TOP_K_MAX);
+            "TopK (%d) is larger than max supported number (%d). Clip "
+            "to max supported number.",
+            topK, TOP_K_MAX);
         topK = std::clamp(topK, 0, TOP_K_MAX);
         return true;
     }
@@ -305,6 +322,4 @@ __device__ __host__ inline void setupTopKTopPRuntimeArgOne(runtime::SizeType32 b
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

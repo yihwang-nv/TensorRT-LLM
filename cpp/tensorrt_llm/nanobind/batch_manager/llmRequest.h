@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 
 #include <ATen/ATen.h>
 #include <ATen/ops/tensor.h>
@@ -28,16 +28,17 @@
 
 namespace nb = nanobind;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::batch_manager
+namespace tensorrt_llm::nanobind::batch_manager
 {
 
 namespace tb = tensorrt_llm::batch_manager;
 
-/* Unfortunately, torch's default nanobind bindings don't know about c10::cuda::CUDAStream,
- * so we have to pass the more generic c10::Stream, and convert it back to a full-fledged
- * torch.cuda.Stream in python. See example in test/bindings/test_gpt_manager.py
+/* Unfortunately, torch's default nanobind bindings don't know about
+ * c10::cuda::CUDAStream,
+ * so we have to pass the more generic c10::Stream, and convert it back to a
+ * full-fledged
+ * torch.cuda.Stream in python. See example in
+ * test/bindings/test_gpt_manager.py
  */
 class LlmRequest : public tb::GenericLlmRequest<at::Tensor, c10::Stream>
 {
@@ -163,6 +164,4 @@ public:
     [[nodiscard]] std::shared_ptr<tensorrt_llm::batch_manager::LlmRequest> toTrtLlm() const;
 };
 
-} // namespace nanobind::batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::batch_manager

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "lruPlugin.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 
 using namespace nvinfer1;
 using namespace tensorrt_llm::kernels;
@@ -74,7 +74,8 @@ nvinfer1::IPluginV2DynamicExt* lruPlugin::clone() const noexcept
 }
 
 // Outputs
-//     output_tensor: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     output_tensor: [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     state: [batch_size, dim]
 nvinfer1::DimsExprs lruPlugin::getOutputDimensions(
     int outputIndex, nvinfer1::DimsExprs const* inputs, int nbInputs, nvinfer1::IExprBuilder& exprBuilder) noexcept
@@ -155,22 +156,30 @@ int lruPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc, nvinfer1
     void const* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream)
 {
     // inputs
-    //     0.  x [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+    //     0.  x [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
     //     1.  A [dim]
-    //     2.  state [batch_size, dim] or host [1] containing only pointer for paged_state
-    //     3.  host_request_types [batch_size] int32. 0: context; 1: generation; 2: none.
+    //     2.  state [batch_size, dim] or host [1] containing only pointer for
+    // paged_state
+    //     3.  host_request_types [batch_size] int32. 0: context; 1: generation;
+    // 2: none.
     //     4.  last_token_ids [batch_size] int32
     //     5.  state_slot_mapping [batch_size] int32, optional for paged state
-    //     6.  y [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+    //     6.  y [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
     //     7.  y_bias [dim]
-    //     8.  gate [batch_size, seq_len, 2 * dim] or [num_tokens, 2 * dim] for remove_input_padding
+    //     8.  gate [batch_size, seq_len, 2 * dim] or [num_tokens, 2 * dim] for
+    // remove_input_padding
     //     9.  gate_bias [2 * dim]
-    //    10.  gate_x [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-    //    11.  gate_a [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+    //    10.  gate_x [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
+    //    11.  gate_a [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
     //    12.  gate_x_bias [2 * dim]
     //    13.  gate_a_bias [2 * dim]
     // outputs
-    //     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+    //     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
     //     1. state [batch_size, dim]
     auto const batch_size = inputDesc[getHostRequestTypesIdx()].dims.d[0];
     int max_seq_len;

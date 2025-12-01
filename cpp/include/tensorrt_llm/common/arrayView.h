@@ -23,9 +23,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 //!
 //! \brief A very rudimentary implementation of std::span.
 //!
@@ -103,7 +100,5 @@ private:
     T* mData;
     size_type mSize;
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

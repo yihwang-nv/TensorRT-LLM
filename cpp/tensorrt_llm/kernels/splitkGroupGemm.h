@@ -20,10 +20,7 @@
 #include <NvInferRuntime.h>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 int64_t getSplitkGroupedGemmParamsWorkSpaceSize(int64_t problem_count);
 
@@ -32,6 +29,4 @@ void splitkGroupedGemm(std::vector<cutlass::gemm::GemmCoord> const& problem_size
     void* gemmParamsWorkspace, int64_t gemmParamsWorkSpaceSize, void* gemmWorkSpace, int64_t gemmWorkspaceSize,
     bool isLoraIn, nvinfer1::DataType dataType, int splitKSlices, int minKN, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -17,10 +17,7 @@
 #pragma once
 
 #include "tensorrt_llm/common/config.h"
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace detail
 {
@@ -41,7 +38,8 @@ namespace detail
 #define HAS_CUDA_SPECIFIC_MACRO 0
 #endif
 
-// For CUDA < 12.9, we assume that sm90 or newer architectures are always built with arch specific.
+// For CUDA < 12.9, we assume that sm90 or newer architectures are always built
+// with arch specific.
 #if defined(__CUDA_ARCH_SPECIFIC__) || (!HAS_CUDA_SPECIFIC_MACRO && __CUDA_ARCH__ >= 900)
 static constexpr bool isArchSpecific = true;
 #else
@@ -113,6 +111,4 @@ inline constexpr bool is_compatible_v = is_compatible<Arch>::value;
 
 } // namespace arch
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

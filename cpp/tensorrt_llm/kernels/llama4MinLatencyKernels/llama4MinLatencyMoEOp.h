@@ -21,25 +21,31 @@
 #include <cuda_fp8.h>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_moe
+namespace llama4_min_latency::llama4_moe
 {
 
 // Launch moe_mlp_fc13_swiglu_fp8_5120 and moe_fc_fp8_bf16_1024.
 void run_moe_llama4_tp8ep1_min_latency(int num_tokens, int num_experts,
-    void const* __restrict__ input_activations_void,  // Input tensor FP8 [num_tokens][HIDDEN_SIZE]
-    void const* __restrict__ router_logits_void,      // Router logits tensor BF16 [num_tokens][num_experts]
-    void const* __restrict__ fc1_expert_weights_void, // FC13 weight tensor FP8 [num_experts][2*INTER_SIZE][HIDDEN_SIZE]
-    void const* __restrict__ fc2_expert_weights_void, // FC2 weight tensor FP8 [num_experts][HIDDEN_SIZE][INTER_SIZE]
-    float const* __restrict__ dequant_fc1,            // FC1 out scale factor FP32 [num_experts]
-    float const* __restrict__ quant_fc2,              // FC2 input scaling factor FP32 [1]
-    float const* __restrict__ dequant_fc2,            // FC2 out scaling factor FP32 [num_experts]
-    void* __restrict__ fc2_input_activations_void,    // FC2 input tensor FP8 [num_tokens][INTER_SIZE]
-    int* __restrict__ exp_idx,                        // Expert indexes INT [num_tokens]
-    void* __restrict__ output_void,                   // FC2 output tensor BF16 [num_tokens][HIDDEN_SIZE]
+    void const* __restrict__ input_activations_void, // Input tensor FP8
+    // [num_tokens][HIDDEN_SIZE]
+    void const* __restrict__ router_logits_void,      // Router logits tensor BF16
+                                                      // [num_tokens][num_experts]
+    void const* __restrict__ fc1_expert_weights_void, // FC13 weight tensor FP8
+    // [num_experts][2*INTER_SIZE][HIDDEN_SIZE]
+    void const* __restrict__ fc2_expert_weights_void, // FC2 weight tensor FP8
+    // [num_experts][HIDDEN_SIZE][INTER_SIZE]
+    float const* __restrict__ dequant_fc1,         // FC1 out scale factor FP32 [num_experts]
+    float const* __restrict__ quant_fc2,           // FC2 input scaling factor FP32 [1]
+    float const* __restrict__ dequant_fc2,         // FC2 out scaling factor FP32 [num_experts]
+    void* __restrict__ fc2_input_activations_void, // FC2 input tensor FP8
+    // [num_tokens][INTER_SIZE]
+    int* __restrict__ exp_idx,      // Expert indexes INT [num_tokens]
+    void* __restrict__ output_void, // FC2 output tensor BF16
+                                    // [num_tokens][HIDDEN_SIZE]
     cudaStream_t stream);
 
-} // namespace kernels::llama4_min_latency::llama4_moe
+} // namespace llama4_min_latency::llama4_moe
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

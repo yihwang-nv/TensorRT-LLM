@@ -15,17 +15,16 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/mcastDeviceMemory.h"
 #include "tensorrt_llm/runtime/torchUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
-//! \brief Wrapper class for McastDeviceMemory to facilitate PyTorch tensor creation.
-//! It manages a buffer accessible via unicast or multicast for multi-node communication.
+//! \brief Wrapper class for McastDeviceMemory to facilitate PyTorch tensor
+// creation.
+//! It manages a buffer accessible via unicast or multicast for multi-node
+// communication.
 class McastGPUBuffer
 {
 public:
@@ -48,11 +47,13 @@ public:
     {
     }
 
-    //! \brief Returns a PyTorch tensor view of the unicast buffer portion for a specific rank.
+    //! \brief Returns a PyTorch tensor view of the unicast buffer portion for a
+    // specific rank.
     //! \param rank The target rank for the unicast pointer.
     //! \param sizes The desired shape (dimensions) of the tensor.
     //! \param dtype The data type of the tensor elements.
-    //! \param storageOffset The offset in elements from the start of the buffer.
+    //! \param storageOffset The offset in elements from the start of the
+    // buffer.
     //! \return An ATen tensor wrapping the unicast buffer section.
     at::Tensor getUCBuffer(uint32_t rank, std::vector<long int> sizes, torch::ScalarType dtype, int64_t storageOffset)
     {
@@ -73,7 +74,8 @@ public:
     //! \brief Returns a PyTorch tensor view of the multicast buffer portion.
     //! \param sizes The desired shape (dimensions) of the tensor.
     //! \param dtype The data type of the tensor elements.
-    //! \param storageOffset The offset in elements from the start of the buffer.
+    //! \param storageOffset The offset in elements from the start of the
+    // buffer.
     //! \return An ATen tensor wrapping the multicast buffer section.
     at::Tensor getMCBuffer(std::vector<long int> sizes, torch::ScalarType dtype, int64_t storageOffset)
     {
@@ -98,6 +100,4 @@ private:
     at::Device mLocalDevice; //!< The local CUDA device.
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

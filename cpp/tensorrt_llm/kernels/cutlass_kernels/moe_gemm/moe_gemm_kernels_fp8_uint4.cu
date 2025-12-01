@@ -17,9 +17,9 @@
 #include "moe_gemm_template_dispatch.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels
+namespace cutlass_kernels
 {
 #ifdef ENABLE_FP8
 template class MoeGemmRunner<__nv_fp8_e4m3, cutlass::uint4b_t, half>;
@@ -27,6 +27,6 @@ template class MoeGemmRunner<__nv_fp8_e4m3, cutlass::uint4b_t, half>;
 template class MoeGemmRunner<__nv_fp8_e4m3, cutlass::uint4b_t, __nv_bfloat16>;
 #endif
 #endif
-} // namespace kernels::cutlass_kernels
+} // namespace cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

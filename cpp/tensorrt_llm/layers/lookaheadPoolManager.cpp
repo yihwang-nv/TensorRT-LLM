@@ -15,14 +15,11 @@
  */
 
 #include "tensorrt_llm/layers/lookaheadPoolManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/layers/lookaheadDecodingUtils.h"
 #include <cstddef>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 using namespace tensorrt_llm::runtime;
@@ -118,6 +115,4 @@ void LookaheadPoolManager::update(TensorConstPtr const& keyTokens, TensorConstPt
     }
 }
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

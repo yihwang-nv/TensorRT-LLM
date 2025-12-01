@@ -30,10 +30,8 @@ using namespace tensorrt_llm::common;
 
 namespace cg = cooperative_groups;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 static constexpr int WARP_SIZE = 32;
 
 // Utility: warp-level corrected sum
@@ -101,7 +99,7 @@ __global__ void helix_postprocess_kernel(
 
     int lane_idx = threadIdx.x % WARP_SIZE;
     int warp_idx = __shfl_sync(0xffffffff, threadIdx.x / WARP_SIZE, 0);
-    // here we have to wait for memory operations of the previous kernel to complete
+// here we have to wait for memory operations of the previous kernel to complete
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
     cudaGridDependencySynchronize();
 #endif
@@ -132,7 +130,8 @@ __global__ void helix_postprocess_kernel(
     }
     else
     {
-        // all other warps pre-load the gathered_o elements for the current token/head
+        // all other warps pre-load the gathered_o elements for the current
+        // token/head
         auto const* gathered_o_off = gathered_o + tok_idx * num_heads * kv_lora_rank + head_idx * kv_lora_rank;
         // we subtract WARP_SIZE because first warp is not participating here
         gathered_o_off += (threadIdx.x - WARP_SIZE) * NUM_O_PER_THREAD;
@@ -154,7 +153,7 @@ __global__ void helix_postprocess_kernel(
         }
         cg::this_thread_block().sync();
 
-        // here we can trigger the dependent kernels to start
+// here we can trigger the dependent kernels to start
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
         cudaTriggerProgrammaticLaunchCompletion();
 #endif
@@ -240,6 +239,4 @@ void helixPostProcess(HelixPostProcParams<T> const& params, cudaStream_t stream)
 INSTANTIATE_POST_PROC(__half);
 INSTANTIATE_POST_PROC(__nv_bfloat16);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

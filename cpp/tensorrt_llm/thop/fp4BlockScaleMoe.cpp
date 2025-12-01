@@ -22,7 +22,8 @@
 #include <ATen/cuda/EmptyTensor.h>
 #include <ATen/ops/index_select.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -85,7 +86,8 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
     if (topk_ids.has_value() && topk_weights.has_value() && routing_logits.has_value())
     {
         TLLM_LOG_WARNING(
-            "When logits and (topk_ids and topk_weights) are both provided, we only use (topk_ids and topk_weights).");
+            "When logits and (topk_ids and topk_weights) are both "
+            "provided, we only use (topk_ids and topk_weights).");
     }
 
     if (topk_ids.has_value())
@@ -96,7 +98,8 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
     else
     {
         TORCH_CHECK(routing_logits.value().sizes()[0] == hidden_states.sizes()[0],
-            "routing_logits and hidden_states must have the same number of tokens.");
+            "routing_logits and hidden_states must have the same number of "
+            "tokens.");
     }
 
     if (routing_bias.has_value())
@@ -112,11 +115,15 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
             "Routing kernel with groups implies DeepSeekV3 routing method.");
         TORCH_CHECK(topk_group.has_value(), "if n_group is given, topk_group must be given");
         TORCH_CHECK(num_experts % n_group.value() == 0, "num_experts must be divisible by n_group");
-        TORCH_CHECK(top_k <= 8 && top_k > 0, "Current routing kernel (with groups) only supports top_k<=8 && top_k>0.");
+        TORCH_CHECK(top_k <= 8 && top_k > 0,
+            "Current routing kernel (with groups) "
+            "only supports top_k<=8 && top_k>0.");
         TORCH_CHECK(topk_group.value() <= 4 && topk_group.value() > 0,
-            "Current routing kernel only (with groups) supports topk_group<=4 && topk_group > 0.");
+            "Current routing kernel only (with groups) supports "
+            "topk_group<=4 && topk_group > 0.");
         TORCH_CHECK(topk_group.value() <= n_group.value(), "n_group must not be smaller than topk_group.");
-        // This check ensures we have enough experts in the selected groups to handle the top_k routing
+        // This check ensures we have enough experts in the selected groups to
+        // handle the top_k routing
         TORCH_CHECK(top_k < (topk_group.value() * num_experts / n_group.value()),
             "top_k must be less than total number of experts in selected groups");
     }
@@ -124,7 +131,9 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
         || static_cast<RoutingMethodType>(routing_method_type) == RoutingMethodType::RenormalizeNaive)
     {
         TORCH_CHECK(top_k <= 10 && top_k > 0,
-            "Current routing kernel (no groups, renormalize) only supports top_k<=10 && top_k>0.");
+            "Current routing kernel (no groups, "
+            "renormalize) only supports "
+            "top_k<=10 && top_k>0.");
     }
     else if (static_cast<RoutingMethodType>(routing_method_type) == RoutingMethodType::Llama4)
     {
@@ -146,7 +155,8 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
     tensorrt_llm::kernels::trtllmGenFp8BlockScaleMoe::MoE::MoEWorkspace workspace;
 
     // setup args
-    // note: the assumption is that output data type is always Bfloat16 (the default)
+    // note: the assumption is that output data type is always Bfloat16 (the
+    // default)
     auto const routing_bias_dtype
         = routing_bias.has_value() ? routing_bias.value().scalar_type() : at::ScalarType::BFloat16;
     args.mDtypeElt = dtype;
@@ -171,7 +181,8 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
     }
     else // E2m1
     {
-        // * 2 to compensate for the fact that sizeof(hidden_states.dtype) is 1 because we pack 2 e2m1 into 1 byte.
+        // * 2 to compensate for the fact that sizeof(hidden_states.dtype) is 1
+        // because we pack 2 e2m1 into 1 byte.
         args.hidden_size = hidden_states.sizes()[1] * 2;
     }
     args.top_k = top_k;
@@ -291,7 +302,8 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
         TORCH_CHECK(hidden_states_scale.value().sizes()[0]
                 == tensorrt_llm::computeLinearLayoutSFSize(args.num_tokens, args.hidden_size / 16),
             "hidden_states_scale has incorrect size");
-        // This check passes even though the actual shape of the weights[2] and hidden_states[1] is
+        // This check passes even though the actual shape of the weights[2] and
+        // hidden_states[1] is
         // 2 times larger due to the fact that 2 e2m1 are packed into 1 byte.
         TORCH_CHECK(gemm1_weights.sizes()[2] == hidden_states.sizes()[1],
             "the third dimension of weights must be equal to hidden_size.");
@@ -350,11 +362,12 @@ std::vector<torch::Tensor> run_fp4_block_scale_moe_runner(torch::optional<torch:
     workspace.ProjUpTileN = tile_tokens_dim;
     workspace.routing_expert_indexes = expert_indexes.data_ptr<int>();
     workspace.permuted_idx_size = total_num_padded_tokens.data_ptr<int>();
-    workspace.expanded_idx_to_permuted_idx
-        = expanded_idx_to_permuted_idx.data_ptr<int>(); // Needed by permute/finalize kernels
-    workspace.permuted_idx_to_token_idx = permuted_idx_to_token_idx.data_ptr<int>(); // Needed by permuteGemm1 kernel
+    workspace.expanded_idx_to_permuted_idx = expanded_idx_to_permuted_idx.data_ptr<int>(); // Needed by
+                                                                                           // permute/finalize kernels
+    workspace.permuted_idx_to_token_idx = permuted_idx_to_token_idx.data_ptr<int>();       // Needed by permuteGemm1
+                                                                                           // kernel
 
-    workspace.expert_weights = expert_weights_ptr;                                   // Consumed by finalize kernel
+    workspace.expert_weights = expert_weights_ptr; // Consumed by finalize kernel
 
     workspace.cta_idx_xy_to_batch_idx = cta_idx_xy_to_batch_idx.data_ptr<int>();
     workspace.cta_idx_xy_to_mn_limit = cta_idx_xy_to_mn_limit.data_ptr<int>();
@@ -578,7 +591,7 @@ torch::Tensor shuffleMatrix(torch::Tensor matrix, torch::Tensor permuteIndices)
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

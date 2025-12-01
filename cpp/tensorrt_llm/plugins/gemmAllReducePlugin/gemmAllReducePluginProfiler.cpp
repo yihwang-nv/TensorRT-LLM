@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 #include "gemmAllReducePlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/dataType.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/cutlass_type_conversion.h"
 #include "tensorrt_llm/plugins/common/pluginUtils.h"
 
 namespace tc = tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 void GemmAllReducePluginProfiler::serializeToOwnFile(GemmIdCore gemmId)
 {
@@ -119,13 +116,15 @@ void GemmAllReducePluginProfiler::computeTmpSize(size_t maxM, size_t n, size_t k
     TLLM_CHECK(n != 0);
     TLLM_CHECK(k != 0);
     // mType refers to the output data type
-    // WARNING: This code assumes that the output precision is >= to input precision
+    // WARNING: This code assumes that the output precision is >= to input
+    // precision
     const size_t dtype_size = tc::getDTypeSize(mType);
     size_t bytes = 0;
     bytes += maxM * k * dtype_size; // A
     bytes += n * k * dtype_size;    // B
     // No C
-    // Note that D is typically IPC, however, when tuning GEMM we need it to run on single GPU
+    // Note that D is typically IPC, however, when tuning GEMM we need it to run
+    // on single GPU
     bytes += maxM * n * dtype_size; // D
     // scale tensors for A & B - will at most be same size as A/B
     bytes += maxM * k * dtype_size; // A
@@ -140,6 +139,4 @@ std::vector<cutlass_kernels::GemmAllReduceImplInterface::LaunchConfig> GemmAllRe
     TLLM_CHECK(mRunner != nullptr);
     return mRunner->getSupportedLaunchConfigs();
 }
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

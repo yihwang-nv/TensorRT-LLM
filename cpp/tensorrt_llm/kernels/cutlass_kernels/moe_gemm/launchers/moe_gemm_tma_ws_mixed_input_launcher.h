@@ -20,10 +20,8 @@
 #include "tensorrt_llm/common/config.h"
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels_oss
 {
 using tensorrt_llm::kernels::cutlass_kernels::GroupedGemmInput;
@@ -36,6 +34,5 @@ void sm90_generic_mixed_moe_gemm_kernelLauncher(
     TmaWarpSpecializedGroupedGemmInput hopper_inputs, int sm_count_, size_t* workspace_size);
 
 } // namespace cutlass_kernels_oss
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

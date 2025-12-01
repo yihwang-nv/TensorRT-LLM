@@ -20,15 +20,18 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
-/* When running with multiple GPUs, we split the embedding lookup table across multiple GPUs to save the memory
-requirements of embedding lookup table ([vocab_size, hidden]). This operation is equivalent to the single GPU version of
-embedding() (i.e.add_gather() operation in TensorRT). As only a portion of embedding lookup table
-([ceil(vocab_size/world_size), hidden]) is stored in each GPU and the value range of input IDs is [0, vocab_size]. The
-add_gather() operation in TensorRT cannot get the correct results. So, we need to write a plugin to add an offset to
+/* When running with multiple GPUs, we split the embedding lookup table across
+multiple GPUs to save the memory
+requirements of embedding lookup table ([vocab_size, hidden]). This operation is
+equivalent to the single GPU version of
+embedding() (i.e.add_gather() operation in TensorRT). As only a portion of
+embedding lookup table
+([ceil(vocab_size/world_size), hidden]) is stored in each GPU and the value
+range of input IDs is [0, vocab_size]. The
+add_gather() operation in TensorRT cannot get the correct results. So, we need
+to write a plugin to add an offset to
 input IDs and get the correct results.
 
  * Input: Input IDs (input[token_num])
@@ -37,7 +40,8 @@ input IDs and get the correct results.
 
  * The total thread number equals to token_num*hidden
  *
- * If the input ids is out of range it writes zero, otherwise it writes the correct embedding result.
+ * If the input ids is out of range it writes zero, otherwise it writes the
+correct embedding result.
  */
 template <typename Tout, typename Tin, typename Idx>
 __global__ void lookup_kernel(Tout* output, Idx const* input, Tin const* weight, int64_t const token_num,
@@ -92,6 +96,4 @@ INSTANTIATE_LOOK_UP(__nv_bfloat16, __nv_bfloat16, int);
 INSTANTIATE_LOOK_UP(__nv_bfloat16, int8_t, int);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/serialization.h"
@@ -33,9 +33,7 @@
 #include <variant>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor::serialize_utils
+namespace tensorrt_llm::executor::serialize_utils
 {
 
 template <typename CharT, typename TraitsT = std::char_traits<CharT>>
@@ -732,6 +730,4 @@ auto deserializeWithGetterType(std::istream& is)
     return deserialize<method_return_type_t<ObjectMethodT>>(is);
 }
 
-} // namespace executor::serialize_utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor::serialize_utils

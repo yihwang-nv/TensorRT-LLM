@@ -17,16 +17,13 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <curand_kernel.h>
 
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/layers/decodingParams.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 //! \brief Layer applies penalties to the logits. Supports:
@@ -95,6 +92,4 @@ private:
     TensorPtr mLogitsPtrsHost;
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

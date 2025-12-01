@@ -1,5 +1,6 @@
 /*
- * Adapted from https://github.com/state-spaces/mamba/blob/main/csrc/selective_scan/selective_scan.h
+ * Adapted from
+ *https://github.com/state-spaces/mamba/blob/main/csrc/selective_scan/selective_scan.h
  * and https://github.com/Dao-AILab/causal-conv1d/blob/main/csrc/static_switch.h
  * Copyright (c) 2023, Tri Dao.
  *
@@ -25,9 +26,9 @@
 #include <cuda_bf16.h>
 #include <cuda_fp16.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::causal_conv1d
+namespace causal_conv1d
 {
 
 #define TLLM_CUDA_KERNEL_LAUNCH_CHECK() TLLM_CUDA_CHECK(cudaGetLastError())
@@ -217,6 +218,6 @@ void causal_conv1d_fwd_cuda(ConvParamsBase& params, cudaStream_t stream);
 template <typename input_t, typename weight_t>
 void causal_conv1d_update_cuda(ConvParamsBase& params, cudaStream_t stream);
 
-} // namespace kernels::causal_conv1d
+} // namespace causal_conv1d
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

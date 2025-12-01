@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,30 +19,22 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/kvCacheConnector.h"
-#include "tensorrt_llm/common/config.h"
 #include <nanobind/nanobind.h>
 
 namespace nb = nanobind;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 class KVCacheManagerConnectorBindings
 {
 public:
     static void initBindings(nb::module_& m);
 };
-} // namespace batch_manager::kv_cache_manager
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager
 
-TRTLLM_NAMESPACE_END
-TRTLLM_NAMESPACE_BEGIN
-
-namespace pybind::batch_manager::kv_connector
+namespace tensorrt_llm::pybind::batch_manager::kv_connector
 {
 
 using namespace tensorrt_llm::batch_manager::kv_connector;
 
-} // namespace pybind::batch_manager::kv_connector
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::pybind::batch_manager::kv_connector

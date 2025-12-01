@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/config.h"
 #include <cstdio>
 
 #include "cpSplitPlugin.h"
@@ -108,7 +107,8 @@ int32_t CpSplitPlugin::getOutputShapes(DimsExprs const* inputs, int32_t nbInputs
     auto opt = exprBuilder.operation(DimensionOperation::kCEIL_DIV, *upper, *cpSize);
     outputs[0].d[0] = exprBuilder.declareSizeTensor(1, *opt, *upper);
 
-    // We must have such an output size tensor (with dim == 0) to notify the shape of output tensor above
+    // We must have such an output size tensor (with dim == 0) to notify the shape
+    // of output tensor above
     outputs[1].nbDims = 0;
     outputs[2].nbDims = 1;
     outputs[2].d[0] = upper;
@@ -188,7 +188,8 @@ int32_t CpSplitPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc,
     // inputs
     //     @param inputIds  [tokenNum]
     //     @param host_request_types [batchSize]: Tensor = None (On CPU)
-    //          The tensor on the host that indicates if a request is in context or
+    //          The tensor on the host that indicates if a request is in context
+    // or
     //          generation phase. Its shape is [batch_size]. See Inflight Batching
     //          in docs/gpt_attention.md,
     //     @param host_context_lengths [batchSize]: Tensor = None (On CPU)

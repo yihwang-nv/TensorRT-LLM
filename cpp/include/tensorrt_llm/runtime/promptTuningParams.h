@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 template <typename TTensor>
@@ -44,15 +41,19 @@ public:
     // The prompt embedding table
     TensorPtr embeddingTable; // [numTasks * taskVocabSize, hidden_dim], on gpu
     // In GenerationInput, tasks expected shape is [batchSize]
-    // For context requests with non-packed inputs, expected shape is [batchSize, 1]
-    // For generation requests with non-packed inputs, expected shape is [batchSize*beamWidth] for generation requests.
-    // For packed inputs, expected shape is [packedLength] (note that ifb currently doesn't support non-packed
+    // For context requests with non-packed inputs, expected shape is
+    // [batchSize, 1]
+    // For generation requests with non-packed inputs, expected shape is
+    // [batchSize*beamWidth] for generation requests.
+    // For packed inputs, expected shape is [packedLength] (note that ifb
+    // currently doesn't support non-packed
     // inputs)
     TensorPtr tasks;
-    TensorPtr vocabSize; // [1], on gpu
+    TensorPtr vocabSize;                   // [1], on gpu
 
-    std::vector<bool>
-        promptTuningEnabled; // [batchSize] vector of bool that indicates which requests in a batch have ptuning enabled
+    std::vector<bool> promptTuningEnabled; // [batchSize] vector of bool that
+                                           // indicates which requests in a
+                                           // batch have ptuning enabled
 };
 
 class PromptTuningParams : public GenericPromptTuningParams<ITensor::SharedPtr>
@@ -68,12 +69,11 @@ public:
     }
 
     // Fill the tasks tensor for the batch using the provided tasksHost
-    // Function assumes that the first numContextRequests requests in the batch are context requests
+    // Function assumes that the first numContextRequests requests in the batch
+    // are context requests
     void fillTasksTensor(TensorPtr tasksHost, SizeType32 batchSize, SizeType32 numContextRequests,
         std::vector<SizeType32> const& reqBeamWidths, std::vector<SizeType32> const& reqPromptLengths,
         BufferManager const& manager, bool packedInput);
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

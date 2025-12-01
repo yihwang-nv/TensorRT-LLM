@@ -32,10 +32,7 @@
 #include "tensorrt_llm/kernels/kvCacheUtils.h"
 #include "tensorrt_llm/kernels/unfusedAttentionKernels.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 DecoderXQARunner::DecoderXQARunner(
     const XQADataType data_type, int num_heads, int num_kv_heads, int head_size, bool multi_block_mode)
@@ -47,8 +44,10 @@ DecoderXQARunner::DecoderXQARunner(
 {
     mMultiProcessorCount = tensorrt_llm::common::getMultiProcessorCount();
 
-    // TODO: needs both impls because medusa kernels haven't been migrated to JIT yet (which should be).
-    // mJITImpl/mPrecompiledImpl assignments must be the last lines of this constructor. DecoderXQAImpl::create() relies
+    // TODO: needs both impls because medusa kernels haven't been migrated to JIT
+    // yet (which should be).
+    // mJITImpl/mPrecompiledImpl assignments must be the last lines of this
+    // constructor. DecoderXQAImpl::create() relies
     // on *this being fully initialized.
     mJITImpl = DecoderXQAImpl::create(this, DecoderXQAImpl::ImplType::kJIT);
     mPrecompiledImpl = DecoderXQAImpl::create(this, DecoderXQAImpl::ImplType::kPrecompiled);
@@ -88,7 +87,8 @@ DecoderXQAImpl* DecoderXQARunner::getImplFromXQAParams(XQAParams const& xqaParam
         {
             // Some multi_query kernels are not ported to JIT yet.
             auto const grpSize = xqaParams.num_q_heads / xqaParams.num_kv_heads;
-            // Hopper XQA supports spec dec with JIT, but only for E4M3 kv cache data type. Only allow 64%grpSize==0 for
+            // Hopper XQA supports spec dec with JIT, but only for E4M3 kv cache data
+            // type. Only allow 64%grpSize==0 for
             // now.
             bool const supportedByHopperXqa
                 = (smVersion == 90 && xqaParams.kv_cache_data_type == XQADataType::DATA_TYPE_E4M3 && grpSize <= 64);
@@ -180,6 +180,4 @@ void DecoderXQARunnerResource::serialize(void* buffer, size_t buffer_size) const
     mCubinObjRegistry->serialize(buffer, buffer_size);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

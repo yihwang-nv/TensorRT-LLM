@@ -25,11 +25,9 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // namespace tensorrt_llm::kernels
-namespace kernels
-{
 
 // Prepare drafter input
 struct MTPPrepareDrafterInputsParam
@@ -114,6 +112,4 @@ struct MTPRelaxedAcceptanceParam
 template <typename T>
 void invokeMTPRelaxedAcceptance(MTPRelaxedAcceptanceParam& params, cudaStream_t const stream = 0);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

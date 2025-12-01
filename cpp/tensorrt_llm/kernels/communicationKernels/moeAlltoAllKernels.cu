@@ -24,9 +24,9 @@
 #include <cstdint>
 #include <type_traits>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::moe_comm
+namespace moe_comm
 {
 
 #define ENABLE_DEBUG_PRINT 0
@@ -235,7 +235,8 @@ __device__ void vectorized_copy(void* dst, void const* src, int size)
     }
 }
 
-// Vectorized dispatch: load one vec from source and write to up to TOP_K destinations
+// Vectorized dispatch: load one vec from source and write to up to TOP_K
+// destinations
 template <int VEC_SIZE, int TOP_K, typename ThreadingPolicy>
 __device__ void vectorized_dispatch_impl(uint8_t const* src_ptr, int bytes_per_token, int rank_id,
     int max_tokens_per_rank, int payload_idx, DispatchKernelPointers const& ptrs, int const* topk_target_ranks,
@@ -483,14 +484,15 @@ __global__ void moeA2ADispatchKernel(int32_t const* token_selected_experts, // [
                     asm volatile("ld.relaxed.sys.u32 %0, [%1];" : "=r"(flag_value) : "l"(flag_ptr));
 #if ENABLE_DEBUG_PRINT
                     printf(
-                        "combine: ---Rank %d received completion flag from rank %d, flag_value: %d, expected_value: "
+                        "combine: ---Rank %d received completion flag from rank %d, "
+                        "flag_value: %d, expected_value: "
                         "%d, address: %p\n",
                         rank_id, peer_rank, flag_value, expected_value, flag_ptr);
 #endif
                     flag_set = flag_value == expected_value;
                 } while (!flag_set);
             }
-            // asm volatile("fence.acquire.sys;");
+// asm volatile("fence.acquire.sys;");
 #endif
         }
     }
@@ -730,7 +732,8 @@ __device__ void vectorized_combine(
     }
 }
 
-// Copy payload to recv buffer using vectorized copy; supports warp/block token mapping
+// Copy payload to recv buffer using vectorized copy; supports warp/block token
+// mapping
 template <typename ThreadingPolicy>
 __global__ void moeA2APrepareCombineKernel(uint8_t* recv_buffer_bytes, uint8_t const* payload_bytes,
     int bytes_per_token, int ep_size, int max_tokens_per_rank, uint32_t* flag_val_ptr, int const* recv_counters)
@@ -772,8 +775,8 @@ __global__ void moeA2APrepareCombineKernel(uint8_t* recv_buffer_bytes, uint8_t c
 // ============================================================================
 
 template <typename T, typename ThreadingPolicy, int TOP_K>
-__global__ void moeA2ACombineKernel(
-    const CombineKernelPointers ptrs, // Combine-specific struct, src_data_ptrs[0] is output
+__global__ void moeA2ACombineKernel(const CombineKernelPointers ptrs, // Combine-specific struct,
+                                                                      // src_data_ptrs[0] is output
     int max_tokens_per_rank, int elements_per_token, int local_num_tokens, int rank_id, int ep_size)
 {
     int local_token_idx = ThreadingPolicy::token_idx();
@@ -787,7 +790,8 @@ __global__ void moeA2ACombineKernel(
 #if !DISABLE_SYNC_FOR_PROFILING
     // In-kernel readiness synchronization at start of combine:
     // - One warp signals readiness to all peers with current flag_val.
-    // - The first warp of each block waits for all peers' readiness (equality), then __syncthreads.
+    // - The first warp of each block waits for all peers' readiness (equality),
+    // then __syncthreads.
     bool is_first_warp = threadIdx.x / warpSize == 0;
     if (is_first_warp)
     {
@@ -796,7 +800,7 @@ __global__ void moeA2ACombineKernel(
 
         if (blockIdx.x == 0)
         {
-            // asm volatile("fence.release.sys;");
+// asm volatile("fence.release.sys;");
 #pragma unroll 1 // No unroll
             for (int peer_rank = lane_id; peer_rank < ep_size; peer_rank += warpSize)
             {
@@ -821,7 +825,8 @@ __global__ void moeA2ACombineKernel(
                 asm volatile("ld.relaxed.sys.u32 %0, [%1];" : "=r"(flag_value) : "l"(flag_ptr));
 #if ENABLE_DEBUG_PRINT
                 printf(
-                    "combine: ---Rank %d received completion flag from rank %d, flag_value: %d, expected_value: %d, "
+                    "combine: ---Rank %d received completion flag from rank %d, "
+                    "flag_value: %d, expected_value: %d, "
                     "address: %p\n",
                     rank_id, peer_rank, flag_value, expected_value, flag_ptr);
 #endif
@@ -967,6 +972,6 @@ void moe_a2a_sanitize_expert_ids_launch(int32_t* expert_ids, int32_t const* recv
         expert_ids, recv_counters, ep_size, max_tokens_per_rank, top_k, invalid_id);
 }
 
-} // namespace kernels::moe_comm
+} // namespace moe_comm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

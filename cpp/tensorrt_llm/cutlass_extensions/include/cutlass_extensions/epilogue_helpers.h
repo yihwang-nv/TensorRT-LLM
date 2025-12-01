@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +18,10 @@
 /**
  * @file epilogue_helpers.h
  *
- * This file includes types for the epilogues. The empty structs exist so we can signal to template
- * code the type of epilogue we want to run, and let the underlying code specify the details such as
+ * This file includes types for the epilogues. The empty structs exist so we can
+ *signal to template
+ * code the type of epilogue we want to run, and let the underlying code specify
+ *the details such as
  * element types, accumulator type and elements per vector access.
  *
  */
@@ -33,7 +36,7 @@
 #include "tensorrt_llm/common/config.h"
 #include <cutlass/epilogue/fusion/operations.hpp>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace cutlass_extensions
 {
@@ -152,4 +155,4 @@ struct Epilogue<ElementType, ElementsPerVectorAccess, ElementAccumulator, Epilog
 
 } // namespace cutlass_extensions
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -20,7 +20,8 @@
 
 #include <cuda_fp4.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -145,7 +146,8 @@ std::tuple<torch::Tensor, torch::optional<torch::Tensor>> moe_permute(torch::Ten
     TORCH_CHECK(max_num_permuted_tokens == tile_tokens_dim * num_tiles,
         "max_num_permuted_tokens must be equal to tile_tokens_dim * num_tiles.");
     TORCH_CHECK(max_num_permuted_tokens >= num_tokens * top_k,
-        "max_num_permuted_tokens must be greater than or equal to num_tokens * top_k.");
+        "max_num_permuted_tokens must be greater than or equal to "
+        "num_tokens * top_k.");
 
     TORCH_CHECK(num_non_exiting_tiles.numel() == 1, "num_non_exiting_tiles must have 1 element.");
     TORCH_CHECK(num_non_exiting_tiles.scalar_type() == torch::kInt32, "num_non_exiting_tiles must be int32.");
@@ -217,7 +219,8 @@ torch::Tensor moe_unpermute(torch::Tensor const& permuted_input, torch::Tensor c
     TORCH_CHECK(topk_scales.size(1) == top_k, "topk_scales.size(1) must be top_k.");
 
     TORCH_CHECK(max_num_permuted_tokens >= num_tokens * top_k,
-        "max_num_permuted_tokens must be greater than or equal to num_tokens * top_k.");
+        "max_num_permuted_tokens must be greater than or equal to "
+        "num_tokens * top_k.");
 
     auto output
         = torch::empty({num_tokens, hidden_size}, torch::dtype(permuted_input.scalar_type()).device(torch::kCUDA));
@@ -410,29 +413,40 @@ torch::Tensor moe_gelu(torch::Tensor const& input, torch::Tensor const& tile_idx
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_topk_sort(Tensor routing_logits, Tensor? routing_bias, int num_experts, int top_k, int? n_group, "
-        "int? topk_group, int local_expert_offset, int local_num_experts, float? routed_scaling_factor, int "
+        "moe_topk_sort(Tensor routing_logits, Tensor? routing_bias, int "
+        "num_experts, int top_k, int? n_group, "
+        "int? topk_group, int local_expert_offset, int local_num_experts, "
+        "float? routed_scaling_factor, int "
         "tile_tokens_dim, int routing_method_type) -> Tensor[]");
     m.def(
-        "moe_sort(Tensor token_selected_experts, Tensor token_final_scales, int num_experts, int top_k, "
-        "int local_expert_offset, int local_num_experts, int tile_tokens_dim) -> Tensor[]");
+        "moe_sort(Tensor token_selected_experts, Tensor token_final_scales, "
+        "int num_experts, int top_k, "
+        "int local_expert_offset, int local_num_experts, int tile_tokens_dim) "
+        "-> Tensor[]");
     m.def(
-        "moe_permute(Tensor input, Tensor? input_sf, Tensor tile_idx_to_mn_limit, Tensor permuted_idx_to_expanded_idx, "
-        "Tensor num_non_exiting_tiles, int tile_tokens_dim, int top_k) -> (Tensor, Tensor?)");
-    m.def("moe_unpermute(Tensor permuted_input, Tensor expanded_idx_to_permuted_idx, Tensor topk_scales) -> Tensor");
+        "moe_permute(Tensor input, Tensor? input_sf, Tensor "
+        "tile_idx_to_mn_limit, Tensor permuted_idx_to_expanded_idx, "
+        "Tensor num_non_exiting_tiles, int tile_tokens_dim, int top_k) -> "
+        "(Tensor, Tensor?)");
     m.def(
-        "moe_swiglu(Tensor input, Tensor tile_idx_to_mn_limit, Tensor num_non_exiting_tiles, "
+        "moe_unpermute(Tensor permuted_input, Tensor "
+        "expanded_idx_to_permuted_idx, Tensor topk_scales) -> Tensor");
+    m.def(
+        "moe_swiglu(Tensor input, Tensor tile_idx_to_mn_limit, Tensor "
+        "num_non_exiting_tiles, "
         "int tile_tokens_dim) -> Tensor");
     m.def(
-        "moe_swiglu_nvfp4_quantize(Tensor input, Tensor global_sf, Tensor tile_idx_to_mn_limit, Tensor "
+        "moe_swiglu_nvfp4_quantize(Tensor input, Tensor global_sf, Tensor "
+        "tile_idx_to_mn_limit, Tensor "
         "num_non_exiting_tiles, int tile_tokens_dim) -> (Tensor, Tensor)");
     m.def(
-        "moe_gelu(Tensor input, Tensor tile_idx_to_mn_limit, Tensor num_non_exiting_tiles, "
+        "moe_gelu(Tensor input, Tensor tile_idx_to_mn_limit, Tensor "
+        "num_non_exiting_tiles, "
         "int tile_tokens_dim) -> Tensor");
 }
 

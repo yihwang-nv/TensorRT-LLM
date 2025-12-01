@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,18 +16,17 @@
  * limitations under the License.
  */
 
+#include "tensorrt_llm/batch_manager/runtimeBuffers.h"
+
 #include "tensorrt_llm/batch_manager/encoderBuffers.h"
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
-
 #include "tensorrt_llm/batch_manager/loraBuffers.h"
 #include "tensorrt_llm/batch_manager/medusaBuffers.h"
 #include "tensorrt_llm/batch_manager/promptTuningBuffers.h"
 #include "tensorrt_llm/batch_manager/rnnStateBuffers.h"
 #include "tensorrt_llm/batch_manager/rnnStateManager.h"
-#include "tensorrt_llm/batch_manager/runtimeBuffers.h"
 #include "tensorrt_llm/batch_manager/transformerBuffers.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/common/stlUtils.h"
@@ -46,9 +46,7 @@
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 RuntimeBuffers::RuntimeBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth,
@@ -140,7 +138,8 @@ void RuntimeBuffers::create(SizeType32 maxBatchSize, SizeType32 maxBeamWidth,
     mCacheIndirDecoderIOBatchedCopyDstOffsetsSliceDevice = manager.gpu(maxBatchSizeShape, nvinfer1::DataType::kINT64);
     mCacheIndirDecoderIOBatchedCopyCopySizesDevice = manager.gpu(maxBatchSizeShape, nvinfer1::DataType::kINT64);
 
-    // Pre-allocate buffer for saving generation logits for model w/o draft tokens
+    // Pre-allocate buffer for saving generation logits for model w/o draft
+    // tokens
     if (gatherGenerationLogits
         && (modelConfig.getSpeculativeDecodingMode().isDraftTokensExternal()
             || modelConfig.getSpeculativeDecodingMode().isNone())
@@ -231,7 +230,8 @@ void RuntimeBuffers::setMaxBufferSizes(SizeType32 maxBatchSize, SizeType32 maxBe
     auto const maxNumContextTokens = maxBatchSize * modelConfig.getMaxInputLen();
     auto const maxNumGenTokens = numLogits;
     // For pre-allocation
-    numContextTokens = 0; // Set in `setBufferSizes` rather than here for `computeContextLogits`
+    numContextTokens = 0; // Set in `setBufferSizes` rather than here for
+                          // `computeContextLogits`
     numGenTokens
         = maxNumRuntimeTokens.value_or(maxNumModelTokens.value_or(std::max(maxNumContextTokens, maxNumGenTokens)));
 
@@ -300,8 +300,10 @@ void RuntimeBuffers::reshape(TllmRuntime const& runtime, ModelConfig const& mode
 
         if (modelConfig.computeContextLogits() && (numContextRequests > 0))
         {
-            // Only when need to return context logits, and there are new requests will execute context phase,
-            // logits buffer need to be re-allocated with size of [numContextTokens + numGenSequences, vocabSizePadded]
+            // Only when need to return context logits, and there are new requests
+            // will execute context phase,
+            // logits buffer need to be re-allocated with size of [numContextTokens
+            // + numGenSequences, vocabSizePadded]
             auto const& engine = runtime.getEngine();
             auto const& manager = runtime.getBufferManager();
             auto const logitsType = engine.getTensorDataType(kLogitsTensorName);
@@ -309,10 +311,13 @@ void RuntimeBuffers::reshape(TllmRuntime const& runtime, ModelConfig const& mode
         }
         else if (gatherGenerationLogits && modelConfig.getSpeculativeDecodingMode().isNone())
         {
-            // If need to return generation logits, re-point the logit buffer to avoid overwrite,
-            // so we could write back GenerationLogitsCache::kCACHE_LENGTH steps' logits together
+            // If need to return generation logits, re-point the logit buffer to
+            // avoid overwrite,
+            // so we could write back GenerationLogitsCache::kCACHE_LENGTH steps'
+            // logits together
             // logits shape: [1, maxBatchSize * maxBeamWidth, vocabSizePadded]
-            // which is large enough to cover both numContextRequests and numGenSequences
+            // which is large enough to cover both numContextRequests and
+            // numGenSequences
             logits = ITensor::slice(generationLogitsCache.logits, generationLogitsCache.offset, 1);
             generationLogitsCache.offset = (generationLogitsCache.offset + 1) % GenerationLogitsCache::kCACHE_LENGTH;
             logits->squeeze(0);
@@ -431,10 +436,14 @@ void RuntimeBuffers::prepareBuffersForCudaGraph(SizeType32 maxSequenceLength)
 
     if (transformerBuffers)
     {
-        // Set pastKeyValueLength for graph capturing. This way we will capture graph with
-        // maxKvCacheLengthRounded rounded to the next kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE.
-        // MMHA will launch excessive amount of blocks and some of them will exit early during the actual launch.
-        // We can reuse the same graph for the next kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE iterations.
+        // Set pastKeyValueLength for graph capturing. This way we will capture
+        // graph with
+        // maxKvCacheLengthRounded rounded to the next
+        // kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE.
+        // MMHA will launch excessive amount of blocks and some of them will exit
+        // early during the actual launch.
+        // We can reuse the same graph for the next
+        // kKV_CACHE_LEN_CUDA_GRAPH_ROUND_SIZE iterations.
 
         // make sure the size does not overflow the max allowed pastKvCacheLength
         auto const pastKvCacheLength = std::min(maxSequenceLength - 1, maxKvCacheLengthRounded);
@@ -514,7 +523,8 @@ void RuntimeBuffers::setFromInputs(RequestVector const& contextRequests, Request
         for (auto const& llmReq : contextRequests)
         {
             TLLM_CHECK_WITH_INFO(llmReq->isContextInitState() || llmReq->isDisaggGenerationTransmissionComplete(),
-                "The request should be in context phase or disaggregated generation tranmissionComplete phase.");
+                "The request should be in context phase or disaggregated "
+                "generation tranmissionComplete phase.");
             TLLM_CHECK_WITH_INFO(
                 llmReq->getMaxNumGeneratedTokens() == 0, "Context request should not have generated tokens.");
 
@@ -567,7 +577,8 @@ void RuntimeBuffers::setFromInputs(RequestVector const& contextRequests, Request
                 }
                 else if (isGlm)
                 {
-                    // Specialize for GLM-10B with 2D-Position-Embedding and special value of the mask id position
+                    // Specialize for GLM-10B with 2D-Position-Embedding and special
+                    // value of the mask id position
                     auto start = inputHost.begin() + totalInputSize;
                     auto end = start + inputLength;
                     auto it = std::find_if(
@@ -952,7 +963,8 @@ void RuntimeBuffers::fillIOMaps(ModelConfig const& modelConfig, WorldConfig cons
 
     if (worldConfig.isLastPipelineParallelRank())
     {
-        // feed a view to TensorRT runtime so reshaping does not change logits buffer
+        // feed a view to TensorRT runtime so reshaping does not change logits
+        // buffer
         outputMap.insert_or_assign(kLogitsTensorName, ITensor::view(logits));
     }
     else
@@ -1029,6 +1041,4 @@ void RuntimeBuffers::fillIOMaps(ModelConfig const& modelConfig, WorldConfig cons
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

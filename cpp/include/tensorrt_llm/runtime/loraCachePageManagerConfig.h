@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 
@@ -27,9 +27,7 @@
 #include <sstream>
 #include <type_traits>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 /**
  * Configuration for LoraCachePageManager
@@ -138,12 +136,14 @@ private:
 
     /*
      * Number cache pages in the cache.
-     * Generally corresponds to the number of opt sized LoRAs that can be stored in the cache
+     * Generally corresponds to the number of opt sized LoRAs that can be stored
+     * in the cache
      */
     SizeType32 mTotalNumPages;
     // number of pages to allocate in one block
     SizeType32 mMaxPagesPerBlock;
-    // number of slots per page, where a slot corresponds to a adapterSize=1, 1-layer, 1-module set or weights
+    // number of slots per page, where a slot corresponds to a adapterSize=1,
+    // 1-layer, 1-module set or weights
     SizeType32 mSlotsPerPage;
     SizeType32 mPageWidth;
 
@@ -170,6 +170,4 @@ inline std::string to_string(LoraCachePageManagerConfig const& c)
     sstream << c;
     return sstream.str();
 }
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

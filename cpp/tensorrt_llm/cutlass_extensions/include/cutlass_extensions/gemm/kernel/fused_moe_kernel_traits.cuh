@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,30 +76,35 @@ constexpr Activation_Type EpilogueRouting(bool /*is_gate*/)
 }
 
 template <>
-constexpr Activation_Type EpilogueRouting<tensorrt_llm::cutlass_extensions::EpilogueOpDefault>(bool /*is_gate*/)
+constexpr Activation_Type EpilogueRouting<tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefault>(
+    bool /*is_gate*/)
 {
     return Activation_Type::Identity;
 }
 
 template <>
-constexpr Activation_Type EpilogueRouting<tensorrt_llm::cutlass_extensions::EpilogueOpDefaultReLU>(bool /*is_gate*/)
+constexpr Activation_Type EpilogueRouting<tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefaultReLU>(
+    bool /*is_gate*/)
 {
     return Activation_Type::Relu;
 }
 
 template <>
-constexpr Activation_Type EpilogueRouting<tensorrt_llm::cutlass_extensions::EpilogueOpDefaultSilu>(bool is_gate)
+constexpr Activation_Type EpilogueRouting<tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefaultSilu>(
+    bool is_gate)
 {
     return is_gate ? Activation_Type::Swiglu : Activation_Type::Silu;
 }
 
 template <>
-constexpr Activation_Type EpilogueRouting<tensorrt_llm::cutlass_extensions::EpilogueOpDefaultFtGelu>(bool is_gate)
+constexpr Activation_Type EpilogueRouting<tensorrt_llm::kernels::cutlass_extensions::EpilogueOpDefaultFtGelu>(
+    bool is_gate)
 {
     return is_gate ? Activation_Type::Geglu : Activation_Type::Gelu;
 }
 
-/* fusing all three kernels has many limitations. This is the simpler version. Just fuse first two kernels..*/
+/* fusing all three kernels has many limitations. This is the simpler version.
+ * Just fuse first two kernels..*/
 template <typename ElementInput_, typename ElementWeight_, typename ElementOutput_, int TileM_, int TileN_, int TileK_,
     int Stages_, Activation_Type activation_type>
 struct Fused_Moe_Kernel_traits_sm80
@@ -125,14 +131,19 @@ struct Fused_Moe_Kernel_traits_sm80
     // MMA atom arch and layout
     using MMA_Atom_Arch = std::conditional_t<std::is_same_v<ElementInput, cutlass::half_t>,
         cute::MMA_Atom<cute::SM80_16x8x16_F32F16F16F32_TN>, cute::MMA_Atom<cute::SM80_16x8x16_F32BF16BF16F32_TN>>;
-    // using ValLayoutMNK = cute::Layout<cute::Shape<cute::_1, cute::_2, cute::_1>>;
+    // using ValLayoutMNK = cute::Layout<cute::Shape<cute::_1, cute::_2,
+    // cute::_1>>;
     using ThreadLayoutMNK
         = std::conditional_t<kTileM == 16, cute::Layout<cute::Shape<cute::_1, cute::Int<kWarpsCount / 1>, cute::_1>>,
             cute::Layout<cute::Shape<cute::_2, cute::Int<kWarpsCount / 2>, cute::_1>>>;
     using ValLayoutMNK = std::conditional_t<kTileM == 16, cute::Tile<cute::_16, cute::_64, cute::_16>,
         cute::Tile<cute::_32, cute::_32, cute::_16>>;
-    using TiledMma = cute::TiledMMA<MMA_Atom_Arch, ThreadLayoutMNK,
-        ValLayoutMNK>; // 32x32x16 or 16x64x16 MMA for LDSM if kWarp = 4
+    using TiledMma = cute::TiledMMA<MMA_Atom_Arch, ThreadLayoutMNK, ValLayoutMNK>; // 32x32x16
+                                                                                   // or
+                                                                                   // 16x64x16
+                                                                                   // MMA for
+                                                                                   // LDSM if
+                                                                                   // kWarp = 4
     static constexpr int kAlignment = 8;
     static constexpr int kBlcokKSmem = (kTileM == 16) ? 64 : 32;
     // A memory copy operand

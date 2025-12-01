@@ -19,7 +19,8 @@
 
 namespace th = torch;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -27,8 +28,10 @@ void convertSpecDecodingMaskToPackedMask(torch::Tensor specDecodingGenerationLen
     torch::Tensor specDecodingMaskTensor, int64_t maxSpecDecodingTokens, torch::Tensor specDecodingPackedMaskTensor,
     torch::optional<int64_t> stream_ptr = torch::nullopt)
 {
-    TLLM_CHECK_WITH_INFO(
-        at::cuda::is_available(), "convert_spec_decoding_mask_to_packed_mask should be called with cuda enabled.");
+    TLLM_CHECK_WITH_INFO(at::cuda::is_available(),
+        "convert_spec_decoding_mask_"
+        "to_packed_mask should be "
+        "called with cuda enabled.");
     cudaStream_t stream;
     if (stream_ptr.has_value())
     {
@@ -83,7 +86,7 @@ void convertSpecDecodingMaskToPackedMask(torch::Tensor specDecodingGenerationLen
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 static auto convert_spec_decoding_mask_to_packed_mask
     = torch::RegisterOperators("tensorrt_llm::convert_spec_decoding_mask_to_packed_mask",

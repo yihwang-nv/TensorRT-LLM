@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <chrono>
 #include <cstdint>
 #include <optional>
@@ -24,9 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 /// SequenceSlotManager
@@ -63,6 +60,4 @@ private:
     std::vector<std::chrono::steady_clock::time_point> mLastTimepoint;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

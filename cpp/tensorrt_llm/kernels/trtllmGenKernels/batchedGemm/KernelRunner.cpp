@@ -21,17 +21,15 @@
 #include "KernelRunner.h"
 #include "trtllmGen_bmm_export/BatchedGemmInterface.h"
 #include "trtllmGen_bmm_export/trtllm/gen/DtypeDecl.h"
-// DO NOT include cudaUtils.h and logger.h before BatchedGemmInterface.h as it #undef TLLM_LOG_INFO and co.
+// DO NOT include cudaUtils.h and logger.h before BatchedGemmInterface.h as it
+// #undef TLLM_LOG_INFO and co.
 #include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using namespace batchedGemm::batchedGemm;
 using namespace batchedGemm::gemm;
@@ -258,8 +256,10 @@ TrtllmGenBatchedGemmRunner::TrtllmGenBatchedGemmRunner(TrtllmGenBatchedGemmRunne
             }
         }
 
-        // FIXME: Disables a few static scheduler kernels (schedS) that appears to have issues;
-        // found after commit e257cb3533; still under investigation. Offending kernels:
+        // FIXME: Disables a few static scheduler kernels (schedS) that appears to
+        // have issues;
+        // found after commit e257cb3533; still under investigation. Offending
+        // kernels:
         // bmm_E2m1_E2m1E2m1_Fp32_t128x64x256_s6_et128x64_m128x64x64_cga1x1x1_16dp256b_TN_transOut_schedS_bN_ldgsts_tmaOpt_clmp_swiGlu_dynBatch_sm100a
         // bmm_MxE4m3_MxE2m1MxE4m3_Fp32_t128x64x256_s3_et128x64_m128x64x32_cga1x1x1_16dp256b_TN_transOut_schedS_biasM_bN_ldgsts_tmaOpt_clmp_swiGlu_dynBatch_sm100f
         if (!acceptIf(!(options.mTileScheduler == TileScheduler::Static && options.mUseTmaOobOpt == true
@@ -287,8 +287,10 @@ TrtllmGenBatchedGemmRunner::TrtllmGenBatchedGemmRunner(TrtllmGenBatchedGemmRunne
     {
 
         auto errMsg = fmtstr(
-            "No kernel found for the given options: mDtypeA: %s, mDtypeB: %s, mDtypeC: %s, mUseDeepSeekFp8: %d, "
-            "mTransposeMmaOutput: %d, mRouteAct: %d, mFusedAct: %d, mIsStaticBatch: %d, mTileSize: %d",
+            "No kernel found for the given options: mDtypeA: %s, mDtypeB: "
+            "%s, mDtypeC: %s, mUseDeepSeekFp8: %d, "
+            "mTransposeMmaOutput: %d, mRouteAct: %d, mFusedAct: %d, "
+            "mIsStaticBatch: %d, mTileSize: %d",
             tg::dtypeToString(mOptions.dtypeA).c_str(), tg::dtypeToString(mOptions.dtypeB).c_str(),
             tg::dtypeToString(mOptions.dtypeC).c_str(), mOptions.deepSeekFp8, mOptions.transposeMmaOutput,
             mOptions.routeAct, mOptions.fusedAct, mOptions.staticBatch, mOptions.tileSize);
@@ -314,8 +316,8 @@ TrtllmGenBatchedGemmRunner::TrtllmGenBatchedGemmRunner(TrtllmGenBatchedGemmRunne
         }
         else
         {
-            errMsg
-                += "\n\nTo see detailed rejection reasons, set environment variable: TLLM_BATCHED_GEMM_LOG_REJECTION=1";
+            errMsg += "\n\nTo see detailed rejection reasons, set environment "
+                "variable: TLLM_BATCHED_GEMM_LOG_REJECTION=1";
         }
 
         TLLM_CHECK_WITH_INFO(false, errMsg);
@@ -440,7 +442,8 @@ void TrtllmGenBatchedGemmRunner::run(int32_t m, int32_t n, int32_t k, int32_t va
     if (envVarVal && std::atoi(envVarVal) == 1)
     {
         auto msg = fmtstr(
-            "[PID %d] NumBatches %d, MaxNumCtasInBatchDim %d, ShapeMNK %d %d %d, ValidShapeMNK %d %d %d, Kernel %s",
+            "[PID %d] NumBatches %d, MaxNumCtasInBatchDim %d, "
+            "ShapeMNK %d %d %d, ValidShapeMNK %d %d %d, Kernel %s",
             getpid(), numBatches, maxNumCtasInBatchDim, m, n, k, validM, validN, validK, config.mFunctionName);
         if (printedBmmNames.find(msg) == printedBmmNames.end())
         {
@@ -448,7 +451,8 @@ void TrtllmGenBatchedGemmRunner::run(int32_t m, int32_t n, int32_t k, int32_t va
             TLLM_LOG_INFO(msg);
         }
     }
-    // FIXME once we start using all-reduce in the epilogue of the bmm this can be moved elsewhere
+    // FIXME once we start using all-reduce in the epilogue of the bmm this can be
+    // moved elsewhere
     bmm.runInitBeforeWorldSync(config, gemmData, static_cast<void*>(stream));
 
     auto const err = bmm.run(config, workspace, gemmData, static_cast<void*>(stream), multiProcessorCount,
@@ -474,7 +478,8 @@ void TrtllmGenBatchedGemmRunner::run(int32_t m, int32_t n, int32_t k, std::vecto
     run(m, n, k, validM, validN, validK, batchedTokens, /* numTokens */ 0, batchedTokens.size(),
         /* maxNumCtasInBatchDim */ 0, a, sfA, b, sfB,
         /* perTokensSfA */ nullptr, /* perTokensSfB */ nullptr,
-        /* scaleC */ nullptr, /* scaleGateC */ nullptr, /* ptrBias */ nullptr, /* ptrAlpha */ nullptr,
+        /* scaleC */ nullptr, /* scaleGateC */ nullptr, /* ptrBias */ nullptr,
+        /* ptrAlpha */ nullptr,
         /* ptrBeta */ nullptr, /* ptrClampLimit */ nullptr, c, outSfC,
         /* routeMap */ nullptr, /* totalNumPaddedTokens */ nullptr,
         /* ctaIdxXyToBatchIdx */ nullptr, /* ctaIdxXyToMnLimit */ nullptr,
@@ -503,9 +508,10 @@ void TrtllmGenBatchedGemmRunner::run(int32_t m, int32_t n, int32_t k, std::vecto
     // Dispatch with block scaling factors and with static batching.
     run(m, n, k, validM, validN, validK, batchedTokens, /* numTokens */ 0, batchedTokens.size(),
         /* maxNumCtasInBatchDim */ 0, a,
-        /* sfA */ nullptr, b, /* sfB */ nullptr, /* perTokensSfA */ nullptr, /* perTokensSfB */ nullptr, scaleC,
-        scaleGateC, /* ptrBias */ nullptr, /* ptrAlpha */ nullptr, /* ptrBeta */ nullptr, /* ptrClampLimit */ nullptr,
-        c,
+        /* sfA */ nullptr, b, /* sfB */ nullptr, /* perTokensSfA */ nullptr,
+        /* perTokensSfB */ nullptr, scaleC, scaleGateC, /* ptrBias */ nullptr,
+        /* ptrAlpha */ nullptr, /* ptrBeta */ nullptr,
+        /* ptrClampLimit */ nullptr, c,
         /* outSfC */ nullptr,
         /* routeMap */ nullptr, /* totalNumPaddedTokens */ nullptr,
         /* ctaIdxXyToBatchIdx */ nullptr, /* ctaIdxXyToMnLimit */ nullptr,
@@ -591,7 +597,8 @@ std::vector<int64_t> TrtllmGenBatchedGemmRunner::getValidConfigIndices(int32_t m
             return optionsA.mTileN > optionsB.mTileN;
         }
 
-        // Tier 2+: When previous comparators are the same, and when the number of estimated CTAs is on the larger side,
+        // Tier 2+: When previous comparators are the same, and when the number of
+        // estimated CTAs is on the larger side,
         // prefer persistent tile scheduler.
         if (optionsA.mTileScheduler != optionsB.mTileScheduler)
         {
@@ -629,8 +636,9 @@ std::vector<int64_t> TrtllmGenBatchedGemmRunner::getValidConfigIndices(int32_t m
     }
 
     TLLM_CHECK_WITH_INFO(!validConfigIndices.empty(),
-        "No valid config found for the given problem shape MNK %d %d %d and effective MNK range %d %d %d", m, n, k,
-        validM, validN, validK);
+        "No valid config found for the given problem shape MNK "
+        "%d %d %d and effective MNK range %d %d %d",
+        m, n, k, validM, validN, validK);
 
     return validConfigIndices;
 }
@@ -680,6 +688,4 @@ bool TrtllmGenBatchedGemmRunner::isValidConfigIndex(int32_t configIndex, int32_t
     return bmm.isValidConfig(config, gemmData);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

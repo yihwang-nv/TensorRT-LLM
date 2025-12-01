@@ -25,10 +25,7 @@
 #include <cuda_fp16.h>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 constexpr int LP_ALLREDUCE_MAX_BLOCKS = 8;
 constexpr int LP_ALLREDUCE_WARPSIZE = 32;
@@ -107,7 +104,12 @@ struct LowPrecisionAllReduceParams
 
     // for low precision hier handshake ag stage
     uint64_t* ag_send_flags[LP_ALLREDUCE_MAX_BLOCKS];
-    uint64_t* ag_ack_peer_inside_numa_flags[LP_ALLREDUCE_MAX_BLOCKS];        // 3*flags , 3 is other rank inside numa
+    uint64_t* ag_ack_peer_inside_numa_flags[LP_ALLREDUCE_MAX_BLOCKS];        // 3*flags ,
+                                                                             // 3 is
+                                                                             // other
+                                                                             // rank
+                                                                             // inside
+                                                                             // numa
     uint64_t* ag_notify_peer_inside_numa_flags[LP_ALLREDUCE_MAX_BLOCKS * 4]; // 3*flags , 3 is other rank inside numa
 
     static LowPrecisionAllReduceParams deserialize(
@@ -122,6 +124,5 @@ void customLowPrecisionAllReduce(
     kernels::LowPrecisionAllReduceParams& params, nvinfer1::DataType dataType, cudaStream_t stream);
 
 int32_t max_workspace_size_lowprecision(int32_t tp_size);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

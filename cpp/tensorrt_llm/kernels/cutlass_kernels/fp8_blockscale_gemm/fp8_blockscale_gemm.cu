@@ -19,9 +19,9 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::fp8_blockscale_gemm
+namespace fp8_blockscale_gemm
 {
 
 template <typename ElementA, typename ElementB, typename ElementD>
@@ -160,7 +160,9 @@ void CutlassFp8BlockScaleGemmRunner<ElementA, ElementB, ElementD>::moeGemm(void*
     }
     else
     {
-        TLLM_THROW("fp8 blockscale gemm only support __nv_fp8_e4m3 or bfloat16 as dataType.");
+        TLLM_THROW(
+            "fp8 blockscale gemm only support __nv_fp8_e4m3 or bfloat16 as "
+            "dataType.");
     }
 #else
     TLLM_THROW("fp8 blockscale gemm only support Hopper.");
@@ -313,6 +315,6 @@ template class CutlassFp8BlockScaleGemmRunner<__nv_bfloat16, __nv_fp8_e4m3, __nv
 template class CutlassFp8BlockScaleGemmRunner<__nv_fp8_e4m3, __nv_bfloat16, __nv_bfloat16>;
 template class CutlassFp8BlockScaleGemmRunner<__nv_fp8_e4m3, __nv_fp8_e4m3, __nv_bfloat16>;
 
-} // namespace kernels::fp8_blockscale_gemm
+} // namespace fp8_blockscale_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

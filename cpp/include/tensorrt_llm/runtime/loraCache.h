@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/tllmException.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -36,9 +35,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class LoraExpectedException : public std::runtime_error
@@ -56,7 +53,8 @@ public:
 };
 
 /**
- * Holds memory of lora cache pages, and manages allocation and freeing of whole pages.
+ * Holds memory of lora cache pages, and manages allocation and freeing of
+ *whole pages.
  * Memory is pre-allocated either on the host or device
  *
  * Note that this class is not thread safe
@@ -76,7 +74,8 @@ public:
      * \brief claim pages
      *
      * \param[in] numPages number of pages to claim
-     * \returns a tuple, where the first values is a boolean indicating whether pages were claimed.  If the first value
+     * \returns a tuple, where the first values is a boolean indicating whether
+     *pages were claimed.  If the first value
      * is true the second value will have a list of pageIds
      */
     [[nodiscard]] std::optional<std::vector<std::size_t>> claimPages(SizeType32 numPages);
@@ -133,15 +132,19 @@ private:
  *
  * Caches LoRA weights with LRU eviction policy.
  *
- * Tasks put in the cache are marked in progress and can not be evicted, until they are marked done.
+ * Tasks put in the cache are marked in progress and can not be evicted, until
+ *they are marked done.
  *
- * A cache page holds a optimally sized LoRA. A page is of size [numSlots x pageWidth]
+ * A cache page holds a optimally sized LoRA. A page is of size [numSlots x
+ *pageWidth]
  * An optimally size LoRA is on that has the configured optimalAdapterSize.
  *
- * Conceptually a slot corresponds to a r=1, 1-layer, 1-module set of in/out weights.
+ * Conceptually a slot corresponds to a r=1, 1-layer, 1-module set of in/out
+ *weights.
  * Page width is set to the number of weights in smallest module.
  *
- * The number of slots per page is then ceilDiv(num weights in optimally sized LoRA, num weights in smallest module)
+ * The number of slots per page is then ceilDiv(num weights in optimally sized
+ *LoRA, num weights in smallest module)
  *
  * Cache pages are allocated on one or more blocks
  */
@@ -153,7 +156,8 @@ public:
 
     /**
      * Contains information on a single layer / module.
-     * A list of these configs is associated with each task and can be used to populate runtime tensors.
+     * A list of these configs is associated with each task and can be used to
+     * populate runtime tensors.
      */
     struct TaskLayerModuleConfig
     {
@@ -166,7 +170,8 @@ public:
         SizeType32 moduleId;
         SizeType32 layerId;
         SizeType32 adapterSize;
-        SizeType32 numSlots; // number of slots used by this layer / module. Used to avoid copying extra data from page.
+        SizeType32 numSlots; // number of slots used by this layer / module. Used
+                             // to avoid copying extra data from page.
 
         // pointer to inWeights cast to an int64_t
         std::int64_t weightsInPointer;
@@ -186,13 +191,15 @@ public:
      * param[in] pageManagerConfig: a LoraCachePageManagerConfig
      * param[in] modelConfig: a ModelConfig
      * param[in] worldConfig: a WorldConfig
-     * param[in] bufferManager: a BufferManager only used to allocate page blocks
+     * param[in] bufferManager: a BufferManager only used to allocate page
+     * blocks
      */
     LoraCache(LoraCachePageManagerConfig const& pageManagerConfig, ModelConfig const& modelConfig,
         WorldConfig const& worldConfig, BufferManager const& bufferManager);
 
     /**
-     * \brief put a task in the cache, and claim pages for it, and optionally load task weights.
+     * \brief put a task in the cache, and claim pages for it, and optionally
+     *load task weights.
      *
      * \param[in] taskId: the task id
      * \param[in] weights: lora weights tensor
@@ -202,7 +209,8 @@ public:
     void put(TaskIdType taskId, TensorPtr weights, TensorPtr config, bool load = true);
 
     /**
-     * \brief load task weights.  This method must be called after put.  It is designed to be called asynchronously
+     * \brief load task weights.  This method must be called after put.  It is
+     *designed to be called asynchronously
      * after put returns with load = false
      *
      * \param[in] taslId: the task id
@@ -213,7 +221,8 @@ public:
 
     /**
      * \param[in] taskId: the task id
-     * \returns -- true if task is loaded (weights are in place) and false otherwise
+     * \returns -- true if task is loaded (weights are in place) and false
+     * otherwise
      */
     [[nodiscard]] inline bool isLoaded(TaskIdType taskId) const
     {
@@ -229,7 +238,8 @@ public:
 
     /**
      * \param[in] taskId: the task id
-     * \returns -- true if task is in the cache (not necessarily loaded) and false otherwise
+     * \returns -- true if task is in the cache (not necessarily loaded) and
+     * false otherwise
      */
     [[nodiscard]] inline bool has(TaskIdType taskId) const
     {
@@ -269,7 +279,8 @@ public:
 
     /**
      * \param[in] config: lora config tensor
-     * \returns -- number of pages needed to store the task configured with config tensor
+     * \returns -- number of pages needed to store the task configured with
+     * config tensor
      */
     [[nodiscard]] SizeType32 determineNumPages(TensorPtr config) const;
 
@@ -305,7 +316,8 @@ public:
      * \param[in] modelConfig: a ModelConfig
      * \param[in] worldConfig: a WorldConfig
      * \param[in] modelIdToModel: map from lora module id to LoraModule
-     * \param[in] manager: a BufferManager the manager to use to perform the copies
+     * \param[in] manager: a BufferManager the manager to use to perform the
+     * copies
      * \param[out] pages: list of page tensors to copy weights to
      * \param[in] pageIds: page ids for the pages
      * \returns -- list of cache Values objects
@@ -316,7 +328,8 @@ public:
         std::vector<TensorPtr> const& pages, std::vector<std::size_t> const& pageIds);
 
     /**
-     * \brief splits second dim of input into tpSize parts and writes the tpRank split to output
+     * \brief splits second dim of input into tpSize parts and writes the tpRank
+     * split to output
      * \param[out] output: output tensor
      * \param[in] input: input tensor
      * \param[in] tpSize: number of splits
@@ -337,19 +350,23 @@ private:
         // ordered location of this value in either mDoneTasks or mInProgressTasks
         std::list<TaskIdType>::iterator it;
 
-        /* indicates if the task is inProgress (in mInProgress list, not evictable)
+        /* indicates if the task is inProgress (in mInProgress list, not
+         * evictable)
          * if inProgress=false the task is in mDoneTasks list.
          */
         bool inProgress;
         /*
          * indicates the weights have been copied into the cache.
-         * If inProgress=true and loaded=false we are in the middle of adding the task to the cache.
+         * If inProgress=true and loaded=false we are in the middle of adding the
+         * task to the cache.
          * We cannot evict or copyTask tasks in this state.
          */
         bool loaded;
         /**
-         * Marks a task a done.  This is used to mark a task as done during loading.
-         * if done=true at the end of loading (end of put, loadweights, or copyTask) the task will be marked as done
+         * Marks a task a done.  This is used to mark a task as done during
+         * loading.
+         * if done=true at the end of loading (end of put, loadweights, or
+         * copyTask) the task will be marked as done
          */
         bool done;
         /**
@@ -419,8 +436,10 @@ private:
 
     /*
      * Protects mutations of mCacheMap, mInProgressTasks and mDoneTasks
-     * And the state booleans in TaskValue (ie inProgress, loaded, done, loadInProgress)
-     * mCacheMutex does not protect other values within a TaskValue (ie weights, pageIds, etc)
+     * And the state booleans in TaskValue (ie inProgress, loaded, done,
+     * loadInProgress)
+     * mCacheMutex does not protect other values within a TaskValue (ie weights,
+     * pageIds, etc)
      */
     mutable std::mutex mCacheMutex;
     std::unordered_map<TaskIdType, TaskValuePtr> mCacheMap;
@@ -458,6 +477,4 @@ std::string to_string(LoraCache::TaskLayerModuleConfig const& v);
 
 std::ostream& operator<<(std::ostream& os, LoraCache::TaskLayerModuleConfig const& v);
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

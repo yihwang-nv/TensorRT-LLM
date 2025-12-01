@@ -21,10 +21,7 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 size_t invokeComputeTopkLastDimWorkspaceSize(
@@ -35,6 +32,4 @@ void invokeTopkLastDim(runtime::SizeType32 batchSize, runtime::SizeType32 inputL
     bool is_largest, void const* __restrict__ input, void* __restrict__ out_val, void* __restrict__ out_ind,
     void* workspace, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

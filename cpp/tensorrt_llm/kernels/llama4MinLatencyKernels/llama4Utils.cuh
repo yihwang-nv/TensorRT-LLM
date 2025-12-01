@@ -21,9 +21,9 @@
 
 #include "tensorrt_llm/common/envUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency
+namespace llama4_min_latency
 {
 
 namespace llama4_bf16_bf16_gemm
@@ -122,6 +122,6 @@ struct __align__(8) aligned_bfloat16x4
     __align__(8) __nv_bfloat16 data[4];
 };
 
-} // namespace kernels::llama4_min_latency
+} // namespace llama4_min_latency
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

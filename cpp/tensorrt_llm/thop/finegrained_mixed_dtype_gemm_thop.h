@@ -22,7 +22,8 @@
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/fpA_intB_gemm.h"
 #include <torch/extension.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -41,11 +42,11 @@ public:
 
 private:
     std::shared_ptr<tensorrt_llm::kernels::cutlass_kernels::CutlassFpAIntBGemmRunnerInterface> mGemmRunner;
-    std::vector<tensorrt_llm::cutlass_extensions::CutlassGemmConfig> mConfigs;
+    std::vector<tensorrt_llm::kernels::cutlass_extensions::CutlassGemmConfig> mConfigs;
     at::ScalarType mActivationDtype;
     at::ScalarType mOutputDtype;
 };
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

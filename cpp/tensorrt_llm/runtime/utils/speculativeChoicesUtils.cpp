@@ -15,13 +15,10 @@
  */
 
 #include "tensorrt_llm/runtime/utils/speculativeChoicesUtils.h"
-#include "tensorrt_llm/common/config.h"
 #include <stack>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::utils
+namespace tensorrt_llm::runtime::utils
 {
 
 static SizeType32 constexpr PREFIX_CHUNK_SIZE_BITS = 4;
@@ -48,10 +45,13 @@ void setOnePackedMask(
     bufferCast<SizeType32>(*mask)[row * speculativeDecodingModule.getNumPackedMasks() + maskIdx] |= setMask;
 }
 
-//! @brief Traverse constructed tree with DFS and build paths and packed masks.
-//! Paths consists of paths from root to all leaves. Every node in the tree has linearIdx,
+//! @brief Traverse constructed tree with DFS and build paths and packed
+// masks.
+//! Paths consists of paths from root to all leaves. Every node in the tree
+// has linearIdx,
 //! path is given be enumerating of linearIndices of the nodes along the path.
-//! Packed mask is a bitmask of the adjacency matrix. Edges are directed from node to its descendants.
+//! Packed mask is a bitmask of the adjacency matrix. Edges are directed from
+// node to its descendants.
 void computePathsAndMask(SpeculativeDecodingModule const& speculativeDecodingModule, std::vector<TreeNode> const& tree,
     TensorPtr packedMask, TensorPtr paths)
 {
@@ -126,8 +126,10 @@ void computePathsAndMask(SpeculativeDecodingModule const& speculativeDecodingMod
             {
                 // Fill data for root
                 // +0 is for root of the paths
-                // getMaxPathLen() is because paths includes max accepted tokens and root
-                // numPaths - 1 is because numPaths is the size of the paths tensor, but we need an index of the last
+                // getMaxPathLen() is because paths includes max accepted tokens and
+                // root
+                // numPaths - 1 is because numPaths is the size of the paths tensor,
+                // but we need an index of the last
                 // path.
                 pathsPtr[(numPaths - 1 - pathIdx) * speculativeDecodingModule.getMaxPathLen() + 0] = 0;
             }
@@ -156,9 +158,11 @@ uint64_t computePrefix(std::vector<SizeType32> const& vec, SizeType32 len)
     {
         auto val = vec[ci];
         TLLM_CHECK_WITH_INFO(val <= PREFIX_MAX_VALUE,
-            "Provided choices have too large node degree (%d). Larger than Prefix can fit (%d).", val,
-            PREFIX_MAX_VALUE);
-        // Prefix has property that on the same depth, nodes that are more left in the tree have smaller prefix
+            "Provided choices have too large node degree (%d). "
+            "Larger than Prefix can fit (%d).",
+            val, PREFIX_MAX_VALUE);
+        // Prefix has property that on the same depth, nodes that are more left in
+        // the tree have smaller prefix
         prefix |= (vec[ci] << PREFIX_CHUNK_SIZE_BITS * (len - 1 - ci));
     }
     return prefix;
@@ -204,8 +208,9 @@ void checkNumNonLeafNodesPerLayer(std::vector<TreeNode> const& tree, SizeType32 
     for (auto const& [depth, numNodes] : nonLeavesPerLayer)
     {
         TLLM_CHECK_WITH_INFO(numNodes <= maxNonLeafNodesPerLayer,
-            "Choices tree at level %d has %d non leaf nodes, while only %d are allowed.", depth, numNodes,
-            maxNonLeafNodesPerLayer);
+            "Choices tree at level %d has %d non leaf nodes, "
+            "while only %d are allowed.",
+            depth, numNodes, maxNonLeafNodesPerLayer);
     }
 }
 
@@ -227,7 +232,8 @@ SizeType32 initTensorsFromChoices(SpeculativeDecodingModule const& speculativeDe
     }
 
     // Sort indices based on depth and prefix
-    // Prefix has property that on the same depth, nodes that are more left in the tree have smaller prefix
+    // Prefix has property that on the same depth, nodes that are more left in
+    // the tree have smaller prefix
     std::sort(sortedIndices.begin(), sortedIndices.end(),
         [&prefixes, &choices](SizeType32 const& a, SizeType32 const& b)
         {
@@ -297,7 +303,8 @@ SizeType32 initTensorsFromChoices(SpeculativeDecodingModule const& speculativeDe
         {
             TLLM_CHECK(depth + 1 == curDepth);
             TLLM_CHECK_WITH_INFO(curDepth <= speculativeDecodingModule.getMaxDraftPathLen(),
-                "Choices require larger maxPathLen than the engine was built with.");
+                "Choices require larger maxPathLen than the "
+                "engine was built with.");
             // Save TopK
             topKs[depth - 1] = maxTopK;
 
@@ -372,6 +379,4 @@ SizeType32 initTensorsFromChoices(SpeculativeDecodingModule const& speculativeDe
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
     return depth;
 }
-} // namespace runtime::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::utils

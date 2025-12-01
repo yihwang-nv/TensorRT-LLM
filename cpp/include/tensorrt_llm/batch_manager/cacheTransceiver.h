@@ -20,7 +20,6 @@
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/cacheCommunicator.h"
 #include "tensorrt_llm/executor/dataTransceiverState.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
@@ -38,9 +37,7 @@
 
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class ContextProgress;
@@ -57,7 +54,8 @@ class CacheReceiver;
 class CacheTransceiverComm
 {
 public:
-    // Construct from a non-owning raw pointer, won't take ownership of the pointer
+    // Construct from a non-owning raw pointer, won't take ownership of the
+    // pointer
     explicit CacheTransceiverComm(mpi::MpiComm const* mpiComm)
         : mMpiComm(std::shared_ptr<mpi::MpiComm const>(nullptr), mpiComm)
     {
@@ -155,7 +153,10 @@ public:
             return CacheTransceiverComm(std::make_shared<mpi::MpiComm const>(std::move(subgroup)));
         }
         bool const initialized = Py_IsInitialized();
-        TLLM_CHECK_WITH_INFO(initialized, "Trying to use ProcessGroup communicator but Python is not initialized");
+        TLLM_CHECK_WITH_INFO(initialized,
+            "Trying to use ProcessGroup "
+            "communicator but Python is not "
+            "initialized");
         try
         {
             c10::intrusive_ptr<c10d::ProcessGroup> pgSub;
@@ -280,6 +281,4 @@ private:
     void* mWrapperLibHandle{nullptr};
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

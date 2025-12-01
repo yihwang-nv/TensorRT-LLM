@@ -21,10 +21,8 @@
 #include <cutlass/numeric_conversion.h>
 #include <cutlass_extensions/interleaved_numeric_conversion.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace weight_only
 {
 template <typename AType, int WElemBits, bool Interleave>
@@ -79,6 +77,5 @@ struct I2FConverter<AType, WElemBits, false>
 };
 
 } // namespace weight_only
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +16,12 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/batch_manager/kvCacheEventManager.h"
 #include <cstdint>
 
-#include "tensorrt_llm/batch_manager/kvCacheManager.h"
-
 #include "tensorrt_llm/batch_manager/kvCacheTransferManager.h"
-#include "tensorrt_llm/common/config.h"
+
+#include "tensorrt_llm/batch_manager/kvCacheEventManager.h"
+#include "tensorrt_llm/batch_manager/kvCacheManager.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/kernels/kvCachePartialCopy.h"
@@ -33,9 +33,7 @@ namespace tr = tensorrt_llm::runtime;
 namespace tk = tensorrt_llm::kernels;
 namespace kvc = tensorrt_llm::executor::kv_cache;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 static bool gpuToFilePosix(tr::ITensor::SharedPtr const& srcPtr, std::string const& filename)
@@ -117,7 +115,8 @@ void KVCacheTransferManager::copyBlock(BlockPtr const& src, BlockPtr const& dst,
             auto srcPtr = computeBlockPointer(src, pools, poolIdx);
             auto dstPtr = computeBlockPointer(dst, pools, poolIdx);
 
-            // If no partial tokens or if the dataType is not supported for partial copy, copy entire block.
+            // If no partial tokens or if the dataType is not supported for partial
+            // copy, copy entire block.
             if (numTokensToCopy <= 0 || srcPtr->getDataType() == nvinfer1::DataType::kINT4
                 || srcPtr->getDataType() == nvinfer1::DataType::kFP4)
             {
@@ -163,8 +162,10 @@ void KVCacheTransferManager::copyBlock(BlockPtr const& src, BlockPtr const& dst,
         auto ptr = isOffload ? computeBlockPointer(src, pools, poolIdx) : computeBlockPointer(dst, pools, poolIdx);
         auto block_id = src->getBlockId();
 
-        TLLM_CHECK_WITH_INFO(
-            !directory.empty(), "Expected a directory path for KVCache offload, but none was provided.");
+        TLLM_CHECK_WITH_INFO(!directory.empty(),
+            "Expected a directory path for "
+            "KVCache offload, but none was "
+            "provided.");
 
         int size = std::snprintf(nullptr, 0, "%s/block_%d_pool_%zu.bin", directory.c_str(), block_id, poolIdx);
         std::string filename;
@@ -217,7 +218,9 @@ void KVCacheTransferManager::onboard(BlockPtr const& offloadBlock, BlockPtr cons
     if (mode != executor::KvCacheTransferMode::DRAM
         && mPendingOffloads.find(offloadBlock->getBlockId()) == mPendingOffloads.end())
     {
-        TLLM_LOG_DEBUG("Skipping onboard for block %d because it was never previously offloaded to disk",
+        TLLM_LOG_DEBUG(
+            "Skipping onboard for block %d because it was never "
+            "previously offloaded to disk",
             offloadBlock->getBlockId());
         return;
     }
@@ -253,6 +256,4 @@ void KVCacheTransferManager::syncTransfers()
     mPendingOffloads.clear();
 }
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

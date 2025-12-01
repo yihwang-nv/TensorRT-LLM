@@ -34,9 +34,9 @@
 #define ENABLE_PREFETCH 1
 #define ENABLE_PREEXIT 1
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_moe
+namespace llama4_min_latency::llama4_moe
 {
 
 #define TOPK_VEC_SIZE 4
@@ -44,12 +44,15 @@ static_assert(NUM_EXPERTS == TOPK_VEC_SIZE * WARP_SIZE, "NUM_EXPERTS must be equ
 
 // This is the hand-optimized kernel.
 // The computation is:
-//   C = silu(AxB_gated * in_scale * sigmoid(logit)) * (AxB_linear * in_scale * sigmoid(logit)) * out_scale_inv
-// The out_scale_inv cannot be fused with in_scale because silu() is non-linear.
+//   C = silu(AxB_gated * in_scale * sigmoid(logit)) * (AxB_linear * in_scale
+// * sigmoid(logit)) * out_scale_inv
+// The out_scale_inv cannot be fused with in_scale because silu() is
+// non-linear.
 // Also, Llama-4 applies score scaling, which is sigmoid(logit), on tensor A.
 __global__ void llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens,
-    __nv_fp8_e4m3 const* __restrict__ A,      // Input tensor [num_tokens][HIDDEN_SIZE]
-    __nv_fp8_e4m3 const* __restrict__ B,      // Input tensor [num_experts][INTER_SIZE*2][HIDDEN_SIZE]
+    __nv_fp8_e4m3 const* __restrict__ A, // Input tensor [num_tokens][HIDDEN_SIZE]
+    __nv_fp8_e4m3 const* __restrict__ B, // Input tensor
+    // [num_experts][INTER_SIZE*2][HIDDEN_SIZE]
     __nv_bfloat16 const* __restrict__ logits, // Input tensor logits [num_tokens][num_experts]
     __nv_fp8_e4m3* __restrict__ C,            // Output tensor [num_tokens][INTER_SIZE]
     int* __restrict__ exp_idx,                // Output tensor [num_tokens]
@@ -80,7 +83,7 @@ __global__ void llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens,
     __shared__ float in_scales_shared[NUM_EXPERTS];
     in_scales_shared[tid] = in_scales[tid];
 
-    // Logits depends on the previous kernel, so we cannot prefetch anything.
+// Logits depends on the previous kernel, so we cannot prefetch anything.
 #if ENABLE_ACQBULK
     asm volatile("griddepcontrol.wait;" ::: "memory");
 #endif
@@ -104,7 +107,8 @@ __global__ void llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens,
     }
 
     // Perform top1 across threads using Warp reduction.
-    // We pack logit and expert index into an int so that we can use integer max op for reduction.
+    // We pack logit and expert index into an int so that we can use integer max
+    // op for reduction.
     int best_result
         = ((int) (__bfloat16_as_short(best_logit) ^ (best_logit < __nv_bfloat16(0.f) ? 0x7fff : 0)) << 16) | best_exp;
 
@@ -124,7 +128,7 @@ __global__ void llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens,
     // Select the corresponding expert weight.
     int expert_weight_offset = expert_idx * 2 * INTER_SIZE * HIDDEN_SIZE / VEC_SIZE;
 
-    // Process 5 chunks of 8 elements each
+// Process 5 chunks of 8 elements each
 #pragma unroll
     for (int chunk = 0; chunk < HIDDEN_SIZE / BLOCK_SIZE / VEC_SIZE; chunk++)
     {
@@ -199,7 +203,8 @@ __global__ void llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens,
 // Launch llama4_moe_fc13_swiglu_fp8_kernel
 void launch_llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens, int num_experts,
     void const* __restrict__ A,              // Input tensor A [num_tokens][HIDDEN_SIZE]
-    void const* __restrict__ B,              // Input tensor B [num_experts][INTER_SIZE*2][HIDDEN_SIZE]
+    void const* __restrict__ B,              // Input tensor B
+                                             // [num_experts][INTER_SIZE*2][HIDDEN_SIZE]
     void const* __restrict__ logits,         // Input tensor logits [num_tokens][num_experts]
     void* __restrict__ C,                    // Output tensor [num_tokens][INTER_SIZE]
     int* __restrict__ exp_idx,               // Output tensor [num_tokens]
@@ -221,8 +226,9 @@ void launch_llama4_moe_fc13_swiglu_fp8_kernel(int num_tokens, int num_experts,
 
 // This is the hand-optimized kernel.
 __global__ void llama4_moe_fc2_fp8_kernel(int num_tokens,
-    __nv_fp8_e4m3 const* __restrict__ A,      // Input tensor A [num_tokens][INTER_SIZE]
-    __nv_fp8_e4m3 const* __restrict__ B,      // Input tensor B [num_experts][HIDDEN_SIZE][INTER_SIZE]
+    __nv_fp8_e4m3 const* __restrict__ A, // Input tensor A [num_tokens][INTER_SIZE]
+    __nv_fp8_e4m3 const* __restrict__ B, // Input tensor B
+    // [num_experts][HIDDEN_SIZE][INTER_SIZE]
     int const* __restrict__ exp_idx,          // Input tensor exp_idx [num_tokens].
     __nv_bfloat16* __restrict__ C,            // Output tensor [num_tokens][HIDDEN_SIZE]
     float const* __restrict__ scaling_factors // Scaling factors [num_experts]
@@ -261,7 +267,7 @@ __global__ void llama4_moe_fc2_fp8_kernel(int num_tokens,
             B)[row_current * INTER_SIZE / VEC_SIZE + base_idx + expert_weight_offset];
     }
 
-    // Loop over TILE_ROW times to compute the gemm result.
+// Loop over TILE_ROW times to compute the gemm result.
 #pragma unroll
     for (int tile_row_idx = 0; tile_row_idx < TILE_ROW; tile_row_idx++)
     {
@@ -295,7 +301,8 @@ __global__ void llama4_moe_fc2_fp8_kernel(int num_tokens,
 
     __syncthreads();
 
-    // Use the first TILE_ROW threads to do block reduction and writes the result.
+    // Use the first TILE_ROW threads to do block reduction and writes the
+    // result.
     if (tid < TILE_ROW)
     {
         int row_current = tid + row * TILE_ROW;
@@ -317,7 +324,8 @@ __global__ void llama4_moe_fc2_fp8_kernel(int num_tokens,
 
 void launch_llama4_moe_fc2_fp8_kernel(int num_tokens, int num_experts,
     void const* __restrict__ A,                // Input tensor A [num_tokens][INTER_SIZE]
-    void const* __restrict__ B,                // Input tensor B [num_experts][HIDDEN_SIZE][INTER_SIZE]
+    void const* __restrict__ B,                // Input tensor B
+                                               // [num_experts][HIDDEN_SIZE][INTER_SIZE]
     int const* __restrict__ exp_idx,           // Input tensor exp_idx [num_tokens].
     void* __restrict__ C,                      // Output tensor [num_tokens][HIDDEN_SIZE]
     float const* __restrict__ scaling_factors, // Scaling factors [num_experts]
@@ -336,16 +344,22 @@ void launch_llama4_moe_fc2_fp8_kernel(int num_tokens, int num_experts,
 }
 
 void run_moe_llama4_tp8ep1_min_latency(int num_tokens, int num_experts,
-    void const* __restrict__ input_activations_void,  // Input tensor FP8 [num_tokens][HIDDEN_SIZE]
-    void const* __restrict__ router_logits_void,      // Router logits tensor BF16 [num_tokens][num_experts]
-    void const* __restrict__ fc1_expert_weights_void, // FC13 weight tensor FP8 [num_experts][2*INTER_SIZE][HIDDEN_SIZE]
-    void const* __restrict__ fc2_expert_weights_void, // FC2 weight tensor FP8 [num_experts][HIDDEN_SIZE][INTER_SIZE]
-    float const* __restrict__ dequant_fc1,            // FC1 out scale factor FP32 [num_experts]
-    float const* __restrict__ quant_fc2,              // FC2 input scaling factor FP32 [1]
-    float const* __restrict__ dequant_fc2,            // FC2 out scaling factor FP32 [num_experts]
-    void* __restrict__ fc2_input_activations_void,    // FC2 input tensor FP8 [num_tokens][INTER_SIZE]
-    int* __restrict__ exp_idx,                        // Expert indexes INT [num_tokens]
-    void* __restrict__ output_void,                   // FC2 output tensor BF16 [num_tokens][HIDDEN_SIZE]
+    void const* __restrict__ input_activations_void, // Input tensor FP8
+    // [num_tokens][HIDDEN_SIZE]
+    void const* __restrict__ router_logits_void,      // Router logits tensor BF16
+                                                      // [num_tokens][num_experts]
+    void const* __restrict__ fc1_expert_weights_void, // FC13 weight tensor FP8
+    // [num_experts][2*INTER_SIZE][HIDDEN_SIZE]
+    void const* __restrict__ fc2_expert_weights_void, // FC2 weight tensor FP8
+    // [num_experts][HIDDEN_SIZE][INTER_SIZE]
+    float const* __restrict__ dequant_fc1,         // FC1 out scale factor FP32 [num_experts]
+    float const* __restrict__ quant_fc2,           // FC2 input scaling factor FP32 [1]
+    float const* __restrict__ dequant_fc2,         // FC2 out scaling factor FP32 [num_experts]
+    void* __restrict__ fc2_input_activations_void, // FC2 input tensor FP8
+    // [num_tokens][INTER_SIZE]
+    int* __restrict__ exp_idx,      // Expert indexes INT [num_tokens]
+    void* __restrict__ output_void, // FC2 output tensor BF16
+                                    // [num_tokens][HIDDEN_SIZE]
     cudaStream_t stream)
 {
     launch_llama4_moe_fc13_swiglu_fp8_kernel(num_tokens, num_experts, input_activations_void, fc1_expert_weights_void,
@@ -354,6 +368,6 @@ void run_moe_llama4_tp8ep1_min_latency(int num_tokens, int num_experts,
         exp_idx, output_void, dequant_fc2, stream);
 }
 
-} // namespace kernels::llama4_min_latency::llama4_moe
+} // namespace llama4_min_latency::llama4_moe
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

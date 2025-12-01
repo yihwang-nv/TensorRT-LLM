@@ -29,10 +29,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,7 +125,8 @@ void FusedMHARunnerV2::setupKernelParams(MHARunnerParams runnerParams)
     // Set the head size and number of heads.
     mKernelParams.d = mFixedParams.headSize;
     mKernelParams.dv = mFixedParams.headSizeV;
-    // The number of grouped heads (only used by generation-phase MLA kernels) currently.
+    // The number of grouped heads (only used by generation-phase MLA kernels)
+    // currently.
     mKernelParams.num_grouped_heads = runnerParams.numGroupedHeads;
     TLLM_CHECK_WITH_INFO(mFixedParams.numQHeads % mFixedParams.numKvHeads == 0,
         "number of Query heads should be multiple of KV heads !");
@@ -176,13 +174,15 @@ void FusedMHARunnerV2::setupKernelParams(MHARunnerParams runnerParams)
             mKernelParams.k_stride_in_bytes = get_size_in_bytes(
                 runnerParams.pagedKvCache.mTokensPerBlock * mFixedParams.headSize, mFixedParams.dataType);
             // If d == dv, then v_stride_in_bytes == k_stride_in_bytes.
-            // For DeepSeek MLA, which is the only case where d != dv, V is padded to the sizeof K.
+            // For DeepSeek MLA, which is the only case where d != dv, V is padded to
+            // the sizeof K.
             // Thus, v_stride_in_bytes always equals to k_stride_in_bytes so far.
             mKernelParams.v_stride_in_bytes = mKernelParams.k_stride_in_bytes;
         }
         else if (mFixedParams.attentionInputLayout == AttentionInputLayout::SEPARATE_Q_K_V)
         {
-            // Separate QKV input layout, [total_kv_seqlen, H_KV, D] + [total_kv_seqlen, H_KV, DV]
+            // Separate QKV input layout, [total_kv_seqlen, H_KV, D] +
+            // [total_kv_seqlen, H_KV, DV]
             TLLM_CHECK_WITH_INFO(runnerParams.kPtr != nullptr && runnerParams.vPtr != nullptr,
                 "SEPARATE_Q_K_V requires valid K and V pointers.");
             mKernelParams.k_ptr = runnerParams.kPtr;
@@ -192,7 +192,8 @@ void FusedMHARunnerV2::setupKernelParams(MHARunnerParams runnerParams)
                 = get_size_in_bytes(mFixedParams.numKvHeads * mFixedParams.headSize, mFixedParams.dataType);
             if (mFixedParams.headSizeQkNope > 0 && mFixedParams.dataType != DATA_TYPE_E4M3)
             {
-                // Non-FP8 context MLA: tensor V is not contiguous. The token stride is numKvHeads * (headSizeQkNope +
+                // Non-FP8 context MLA: tensor V is not contiguous. The token stride is
+                // numKvHeads * (headSizeQkNope +
                 // headSizeV).
                 mKernelParams.v_stride_in_bytes = get_size_in_bytes(
                     mFixedParams.numKvHeads * (mFixedParams.headSizeQkNope + mFixedParams.headSizeV),
@@ -270,7 +271,8 @@ void FusedMHARunnerV2::setupKernelParams(MHARunnerParams runnerParams)
     mKernelParams.tile_id_counter_ptr = reinterpret_cast<uint32_t*>(runnerParams.tileCounterPtr);
     // TRT doesn't support host scales. Use device scales instead.
     // The scaleBmm1Ptr offset.
-    // 2 scales prepared for scaleBmm1 in the device memory: float scale, float (scale with log2e).
+    // 2 scales prepared for scaleBmm1 in the device memory: float scale, float
+    // (scale with log2e).
     int64_t scaleBmm1PtrOffset = (mLaunchParams.useBase2ExpTrick ? kIdxScaleSoftmaxLog2Ptr : kIdxScaleSoftmaxPtr);
     // Only fp8 kernels need to load scales from the device memory.
     if (mFixedParams.dataType == DATA_TYPE_E4M3)
@@ -306,7 +308,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
     // Do we use attnLogitSoftcappingScale ?
     TLLM_CHECK_WITH_INFO(
         (mFixedParams.headSize == 128 || mFixedParams.headSize == 256) || !mFixedParams.attnLogitSoftcappingScale,
-        "FMHA only supports head_size = 128 or 256 with attention logit softcapping scale currently.");
+        "FMHA only supports head_size = 128 or 256 with attention logit "
+        "softcapping scale currently.");
     mLaunchParams.enableAttnLogitSoftcapping = mFixedParams.attnLogitSoftcappingScale != 0.f;
     // BF16 FMHA only accumulates on FP32.
     // E4M3 FMHA only supports fp32 accumulation currently.
@@ -322,7 +325,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
         = mFixedParams.isSPadded ? runnerParams.b * runnerParams.qSeqLen : runnerParams.totalQSeqLen;
     mLaunchParams.total_kv_seqlen
         = mFixedParams.isSPadded ? runnerParams.b * runnerParams.kvSeqLen : runnerParams.totalKvSeqLen;
-    // Workaround for nvbug 5412456: total_kv_seqlen fallbacks to total_q_seqlen if it's zero.
+    // Workaround for nvbug 5412456: total_kv_seqlen fallbacks to total_q_seqlen
+    // if it's zero.
     if (mLaunchParams.total_kv_seqlen == 0)
     {
         mLaunchParams.total_kv_seqlen = mLaunchParams.total_q_seqlen;
@@ -333,7 +337,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
     int padded_d_next_power_of_2 = (mFixedParams.headSize & (mFixedParams.headSize - 1)) == 0
         ? mFixedParams.headSize
         : pow(2, int(log2(mFixedParams.headSize)) + 1);
-    // In fact, due to 128B swizzle mode of TMA, only 128 bytes alignment is required,
+    // In fact, due to 128B swizzle mode of TMA, only 128 bytes alignment is
+    // required,
     // so we pad head size to next multiply of 128B.
     int d_per_group = 128 / get_size_in_bytes(mFixedParams.dataType);
     int d_groups = (mFixedParams.headSize + d_per_group - 1) / d_per_group;
@@ -356,7 +361,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
     {
         TLLM_CHECK_WITH_INFO(!(runnerParams.kvSeqLen > runnerParams.chunkedAttentionSize
                                  && runnerParams.kvSeqLen > runnerParams.slidingWindowSize),
-            "Chunked attention size and sliding window size should not be used together.");
+            "Chunked attention size and sliding window size should not be used "
+            "together.");
         TLLM_CHECK_WITH_INFO(isSm90 || runnerParams.kvSeqLen <= runnerParams.chunkedAttentionSize,
             "Chunked attention is only supported on Sm90.");
         mLaunchParams.attention_mask_type = ContextAttentionMaskType::SLIDING_OR_CHUNKED_CAUSAL;
@@ -369,7 +375,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
         || mFixedParams.attentionMaskType == ContextAttentionMaskType::CAUSAL;
 
     // Only warp-specialized FMHA kernels support FP8 on Hopper.
-    // Separate Q + KV input layout: enable warp-specialization kernels when s > 512, otherwise use ampere-style flash
+    // Separate Q + KV input layout: enable warp-specialization kernels when s >
+    // 512, otherwise use ampere-style flash
     // attention kernels.
     if (isSm90 && (mFixedParams.dataType == DATA_TYPE_E4M3 || (separateQKvInput && runnerParams.kvSeqLen > 512)))
     {
@@ -380,7 +387,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
     {
         TLLM_CHECK_WITH_INFO(false, "Unsupported architecture");
     }
-    // Hopper: fallback to original fmha_v2 when head_size <= 64 and seq_len <= 256
+    // Hopper: fallback to original fmha_v2 when head_size <= 64 and seq_len <=
+    // 256
     // Only supports packed_qkv input + padding/causal mask.
     else if (isSm90 && !separateQKvInput && paddingOrCausalMask
         && (mFixedParams.headSize == 32 || mFixedParams.headSize == 64) && runnerParams.qSeqLen <= 256
@@ -405,14 +413,18 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
         }
         else if (mLaunchParams.flash_attention && runnerParams.kvSeqLen <= 64)
         {
-            // flash attention tiled kernels allows larger free dim tile size (M, N) with flexibility
-            // in unroll dimension tile size (K). for short sequence length (s<=128), tiled kernels
-            // can suffer from tile quantization loss therefore use flash attention non-tiled instead
+            // flash attention tiled kernels allows larger free dim tile size (M, N)
+            // with flexibility
+            // in unroll dimension tile size (K). for short sequence length (s<=128),
+            // tiled kernels
+            // can suffer from tile quantization loss therefore use flash attention
+            // non-tiled instead
             mLaunchParams.granular_tiling = false;
         }
         else if ((isSm8x || isSm120f) && mFixedParams.headSize < 256)
         {
-            // flash attention tiled kernel is faster on Ada and Ampere derivatives when head_size>=256
+            // flash attention tiled kernel is faster on Ada and Ampere derivatives
+            // when head_size>=256
             mLaunchParams.granular_tiling = false;
         }
         else if (isSm80 || isSm8x || isSm100f || isSm120f)
@@ -422,7 +434,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
         }
     }
 
-    // when flash attention is enabled on Hopper, we need to set the tma descriptors
+    // when flash attention is enabled on Hopper, we need to set the tma
+    // descriptors
     if (isSm90 && mLaunchParams.flash_attention)
     {
         mLaunchParams.warp_specialization = true;
@@ -437,14 +450,16 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
         // Use specialized ws kernels for cases without alibi.
         mLaunchParams.useKernelWithoutAlibi = true;
         // Enable exp2f optimization (which helps improve performance).
-        //    - note that this is not compatible with alibi bias due to the accuracy issues.
+        //    - note that this is not compatible with alibi bias due to the accuracy
+        // issues.
         //    - only hopper warp-specialized kernels have this optimization.
         //    - it doesn't work with attention logit softcapping.
         mLaunchParams.useBase2ExpTrick = !mLaunchParams.enableAttnLogitSoftcapping;
     }
 
     // TODO: Refactor these dirty hacks.
-    // For Deepseek-v2(MLA), all of SM80, SM89 and SM90 kernels use tiled flash attention
+    // For Deepseek-v2(MLA), all of SM80, SM89 and SM90 kernels use tiled flash
+    // attention
     // in both context (192/128 dimensions) and generation (576/512 dimensions)
     if (mFixedParams.headSize == mFixedParams.headSizeV + 64)
     {
@@ -475,7 +490,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
     mLaunchParams.sage_block_size_k = mFixedParams.sageBlockSizeK;
     mLaunchParams.sage_block_size_v = mFixedParams.sageBlockSizeV;
     // for not (sm90 + warp_specialization + flash attention kernel) kernel:
-    //   all kernels enable saving softmaxStatsPtr, just let softmaxStatsPtr != null
+    //   all kernels enable saving softmaxStatsPtr, just let softmaxStatsPtr !=
+    // null
     // for (sm90 + warp_specialization + flash attention) kernel:
     //   we need to explicitly set supportReturnSoftmaxStats to true when
     //  satisfying the following constrains
@@ -498,7 +514,8 @@ void FusedMHARunnerV2::setupLaunchParams(MHARunnerParams runnerParams)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// TMA descriptors are used as grid_constant parameters (remove MemCpyH2D operations)
+// TMA descriptors are used as grid_constant parameters (remove MemCpyH2D
+// operations)
 void FusedMHARunnerV2::setTmaDescriptors(MHARunnerParams runnerParams)
 {
     const uint32_t d = mKernelParams.d;
@@ -575,9 +592,11 @@ void FusedMHARunnerV2::setTmaDescriptors(MHARunnerParams runnerParams)
         // Box size of TMA
         const uint32_t box_size_o[3] = {d_per_group, 1, 16};
 
-        // dataTypeOut may be different with dataType, so desc_format and swizzle_mode
+        // dataTypeOut may be different with dataType, so desc_format and
+        // swizzle_mode
         // may be incorrect. For example, QKV are in bf16 while O is in fp8.
-        // Luckily, this case doesn't exist so far. But we should keep one eye on it.
+        // Luckily, this case doesn't exist so far. But we should keep one eye on
+        // it.
         qo_tma_descriptor.set_tma_desctriptor(o_ptr, desc_format, cudaTmaDescInterleave::INTERLEAVE_DISABLED,
             swizzle_mode, cudaTmaDescPromotion::PROMOTION_DISABLED, tensor_size_o, tensor_stride_o, traversal_stride,
             box_size_o, oob_fill, fp32_to_tf32, &mKernelParams.tma_desc_o);
@@ -594,11 +613,12 @@ void FusedMHARunnerV2::setTmaDescriptors(MHARunnerParams runnerParams)
         const uint64_t tensor_stride_k[3] = {uint64_t(mKernelParams.k_stride_in_bytes / tokens_per_block), // d
             uint64_t(mKernelParams.k_stride_in_bytes),                                                     // d * 64
             uint64_t(mKernelParams.paged_kv_cache.mBytesPerBlock)};
-        const uint64_t tensor_stride_v[3]
-            = {// we cannot use dv * Kernel_traits::ELEMENT_BYTES because V may be padded (MLA)
-                uint64_t(mKernelParams.v_stride_in_bytes / tokens_per_block), // dv
-                uint64_t(mKernelParams.v_stride_in_bytes),                    // dv * 64
-                uint64_t(mKernelParams.paged_kv_cache.mBytesPerBlock)};
+        const uint64_t tensor_stride_v[3] = {                             // we cannot use dv *
+                                                                          // Kernel_traits::ELEMENT_BYTES
+                                                                          // because V may be padded (MLA)
+            uint64_t(mKernelParams.v_stride_in_bytes / tokens_per_block), // dv
+            uint64_t(mKernelParams.v_stride_in_bytes),                    // dv * 64
+            uint64_t(mKernelParams.paged_kv_cache.mBytesPerBlock)};
 
         char const* kv_ptr = reinterpret_cast<char*>(runnerParams.pagedKvCache.mPrimaryPoolPtr);
 
@@ -738,6 +758,4 @@ bool FusedMHARunnerV2::isFmhaSupported()
     return is_supported;
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

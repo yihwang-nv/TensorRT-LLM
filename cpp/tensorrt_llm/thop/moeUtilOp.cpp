@@ -32,7 +32,8 @@ namespace common = tensorrt_llm::common;
 namespace kernels = tensorrt_llm::kernels;
 namespace cutlass_kernels = tensorrt_llm::kernels::cutlass_kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -85,7 +86,8 @@ void runPermute(void const* input_activations_void, void const* input_sf_void, i
         reinterpret_cast<ExpandedActivationsType*>(permuted_data_), token_topk_unpermuted_scales,
         permuted_token_final_scales_, permuted_row_to_unpermuted_row_, num_rows, hidden_size, experts_per_token,
         num_experts_per_node, quant_params, /*use_per_expert_act_scale*/ false, expert_first_token_offset_,
-        /* fc1_fp4_act_scale_ */ nullptr, input_sf, true, /* prequant_scales */ nullptr, stream);
+        /* fc1_fp4_act_scale_ */ nullptr, input_sf, true,
+        /* prequant_scales */ nullptr, stream);
     sync_check_cuda_error(stream);
 }
 
@@ -115,9 +117,11 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
     {
         TORCH_CHECK(token_final_scales.value().dim() == 2, "token_selected_experts_probs must be 2D.");
         TORCH_CHECK(input.sizes()[0] == token_final_scales.value().sizes()[0],
-            "input and token_selected_experts_probs must have the same num tokens.");
+            "input and token_selected_experts_probs must have the same num "
+            "tokens.");
         TORCH_CHECK(token_selected_experts.sizes()[1] == token_final_scales.value().sizes()[1],
-            "token_selected_experts and token_final_scales must have the same number of experts per token.");
+            "token_selected_experts and token_final_scales must have the "
+            "same number of experts per token.");
     }
 
     int experts_per_token = token_selected_experts.sizes()[1];
@@ -165,11 +169,11 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
             reinterpret_cast<int const*>(token_selected_experts.const_data_ptr()),
             token_final_scales.has_value() ? reinterpret_cast<float const*>(token_final_scales.value().const_data_ptr())
                                            : nullptr,
-            /*fc1_expert_weights.const_data_ptr()*/ nullptr, /*fc1_expert_biases.const_data_ptr()*/ nullptr,
-            activation_type,
-            /*fc2_expert_weights.const_data_ptr()*/ nullptr, /*fc2_expert_biases.const_data_ptr()*/ nullptr,
-            quant_params, num_rows, hidden_size, num_experts_total, static_cast<int>(experts_per_token),
-            static_cast<int*>(permuted_row_to_unpermuted_row_tensor.data_ptr()),
+            /*fc1_expert_weights.const_data_ptr()*/ nullptr,
+            /*fc1_expert_biases.const_data_ptr()*/ nullptr, activation_type,
+            /*fc2_expert_weights.const_data_ptr()*/ nullptr,
+            /*fc2_expert_biases.const_data_ptr()*/ nullptr, quant_params, num_rows, hidden_size, num_experts_total,
+            static_cast<int>(experts_per_token), static_cast<int*>(permuted_row_to_unpermuted_row_tensor.data_ptr()),
             static_cast<int*>(permuted_token_selected_experts_tensor.data_ptr()),
             static_cast<float*>(permuted_data_tensor.data_ptr()),
             static_cast<int64_t*>(expert_first_token_offset_tensor.data_ptr()),
@@ -186,11 +190,11 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
             reinterpret_cast<int const*>(token_selected_experts.const_data_ptr()),
             token_final_scales.has_value() ? reinterpret_cast<float const*>(token_final_scales.value().const_data_ptr())
                                            : nullptr,
-            /*fc1_expert_weights.const_data_ptr()*/ nullptr, /*fc1_expert_biases.const_data_ptr()*/ nullptr,
-            activation_type,
-            /*fc2_expert_weights.const_data_ptr()*/ nullptr, /*fc2_expert_biases.const_data_ptr()*/ nullptr,
-            quant_params, num_rows, hidden_size, num_experts_total, static_cast<int>(experts_per_token),
-            static_cast<int*>(permuted_row_to_unpermuted_row_tensor.data_ptr()),
+            /*fc1_expert_weights.const_data_ptr()*/ nullptr,
+            /*fc1_expert_biases.const_data_ptr()*/ nullptr, activation_type,
+            /*fc2_expert_weights.const_data_ptr()*/ nullptr,
+            /*fc2_expert_biases.const_data_ptr()*/ nullptr, quant_params, num_rows, hidden_size, num_experts_total,
+            static_cast<int>(experts_per_token), static_cast<int*>(permuted_row_to_unpermuted_row_tensor.data_ptr()),
             static_cast<int*>(permuted_token_selected_experts_tensor.data_ptr()),
             static_cast<__nv_bfloat16*>(permuted_data_tensor.data_ptr()),
             static_cast<int64_t*>(expert_first_token_offset_tensor.data_ptr()),
@@ -206,11 +210,11 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
             reinterpret_cast<int const*>(token_selected_experts.const_data_ptr()),
             token_final_scales.has_value() ? reinterpret_cast<float const*>(token_final_scales.value().const_data_ptr())
                                            : nullptr,
-            /*fc1_expert_weights.const_data_ptr()*/ nullptr, /*fc1_expert_biases.const_data_ptr()*/ nullptr,
-            activation_type,
-            /*fc2_expert_weights.const_data_ptr()*/ nullptr, /*fc2_expert_biases.const_data_ptr()*/ nullptr,
-            quant_params, num_rows, hidden_size, num_experts_total, static_cast<int>(experts_per_token),
-            static_cast<int*>(permuted_row_to_unpermuted_row_tensor.data_ptr()),
+            /*fc1_expert_weights.const_data_ptr()*/ nullptr,
+            /*fc1_expert_biases.const_data_ptr()*/ nullptr, activation_type,
+            /*fc2_expert_weights.const_data_ptr()*/ nullptr,
+            /*fc2_expert_biases.const_data_ptr()*/ nullptr, quant_params, num_rows, hidden_size, num_experts_total,
+            static_cast<int>(experts_per_token), static_cast<int*>(permuted_row_to_unpermuted_row_tensor.data_ptr()),
             static_cast<int*>(permuted_token_selected_experts_tensor.data_ptr()),
             static_cast<half*>(permuted_data_tensor.data_ptr()),
             static_cast<int64_t*>(expert_first_token_offset_tensor.data_ptr()),
@@ -223,7 +227,8 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
         break;
     default:
         throw std::invalid_argument(
-            "Invalid dtype, only supports input tensor with float32, float16 and bfloat16 dtype");
+            "Invalid dtype, only supports input tensor "
+            "with float32, float16 and bfloat16 dtype");
         break;
     }
     return std::make_tuple(permuted_row_to_unpermuted_row_tensor, permuted_token_selected_experts_tensor,
@@ -273,11 +278,14 @@ torch::Tensor run_moe_finalize_scale_op(torch::Tensor const& gemm2_output, torch
     TORCH_CHECK(token_selected_experts.sizes()[1] == experts_per_token,
         "token_selected_experts[1] should equal to experts_per_token.");
     TORCH_CHECK(gemm2_output.sizes()[0] == unpermuted_row_to_permuted_row.sizes()[0],
-        "gemm2_output and unpermuted_row_to_permuted_row must have the same expanded num tokens.");
+        "gemm2_output and unpermuted_row_to_permuted_row must have the "
+        "same expanded num tokens.");
     TORCH_CHECK(gemm2_output.sizes()[0] == permuted_row_to_unpermuted_row.sizes()[0],
-        "gemm2_output.sizes()[0] should equal to permuted_row_to_unpermuted_row.sizes()[0].");
+        "gemm2_output.sizes()[0] should equal to "
+        "permuted_row_to_unpermuted_row.sizes()[0].");
     TORCH_CHECK(expert_first_token_offset_tensor.sizes()[0] == num_experts_per_node + 1,
-        "expert_first_token_offset_tensor[0] should equal to num_experts_per_node + 1.");
+        "expert_first_token_offset_tensor[0] should equal to "
+        "num_experts_per_node + 1.");
 
     auto parallelism_config = cutlass_kernels::MOEParallelismConfig(tp_size, tp_rank, ep_size, ep_rank);
 
@@ -323,7 +331,8 @@ torch::Tensor run_moe_finalize_scale_op(torch::Tensor const& gemm2_output, torch
         break;
     default:
         throw std::invalid_argument(
-            "Invalid dtype, only supports input tensor with float32, float16 and bfloat16 dtype");
+            "Invalid dtype, only supports input tensor "
+            "with float32, float16 and bfloat16 dtype");
         break;
     }
     return final_output;
@@ -331,21 +340,28 @@ torch::Tensor run_moe_finalize_scale_op(torch::Tensor const& gemm2_output, torch
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_permute_op(Tensor input, Tensor token_selected_experts, Tensor? token_final_scales, Tensor "
-        "fc1_expert_weights, Tensor fc2_expert_weights, Tensor[]? quant_scales, Tensor? input_sf, int "
-        "num_experts_on_rank, int tp_size, int tp_rank, int ep_size, int ep_rank, int cluster_size, int cluster_rank, "
+        "moe_permute_op(Tensor input, Tensor token_selected_experts, Tensor? "
+        "token_final_scales, Tensor "
+        "fc1_expert_weights, Tensor fc2_expert_weights, Tensor[]? "
+        "quant_scales, Tensor? input_sf, int "
+        "num_experts_on_rank, int tp_size, int tp_rank, int ep_size, int "
+        "ep_rank, int cluster_size, int cluster_rank, "
         "bool min_latency_mode, bool use_fp8_block_scaling)"
         "-> (Tensor, Tensor, Tensor, Tensor, Tensor, Tensor)");
     m.def(
-        "moe_finalize_scale_op(Tensor gemm2_output, Tensor? biases, Tensor unpermuted_final_scales, Tensor "
-        "unpermuted_row_to_permuted_row, Tensor permuted_row_to_unpermuted_row, Tensor token_selected_experts, Tensor "
-        "expert_first_token_offset_tensor, bool enable_alltoall, SymInt num_rows, SymInt hidden_size, SymInt "
-        "unpadded_hidden_size, int experts_per_token, int num_experts_per_node, int tp_size, int tp_rank, int ep_size, "
+        "moe_finalize_scale_op(Tensor gemm2_output, Tensor? biases, Tensor "
+        "unpermuted_final_scales, Tensor "
+        "unpermuted_row_to_permuted_row, Tensor "
+        "permuted_row_to_unpermuted_row, Tensor token_selected_experts, Tensor "
+        "expert_first_token_offset_tensor, bool enable_alltoall, SymInt "
+        "num_rows, SymInt hidden_size, SymInt "
+        "unpadded_hidden_size, int experts_per_token, int "
+        "num_experts_per_node, int tp_size, int tp_rank, int ep_size, "
         "int ep_rank) -> (Tensor)");
 }
 

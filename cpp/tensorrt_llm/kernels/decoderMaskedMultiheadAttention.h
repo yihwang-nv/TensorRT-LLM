@@ -27,10 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -111,7 +108,8 @@ struct Multihead_attention_params_base
     // unless each layer has different cyclic kv cache length.
     // Max cache capacity (used to allocate KV cache)
     int max_attention_window_size = 0;
-    // Cyclic kv cache capacity (used to get the cyclic kv cache position for new tokens)
+    // Cyclic kv cache capacity (used to get the cyclic kv cache position for new
+    // tokens)
     int cyclic_attention_window_size = 0;
     // Length of the sink token in KV cache
     int sink_token_length = 0;
@@ -128,7 +126,8 @@ struct Multihead_attention_params_base
     float rotary_embedding_base = 0.0f;
     RotaryScalingType rotary_embedding_scale_type = RotaryScalingType::kNONE;
     float rotary_embedding_scale = 1.0f;
-    // The pre-computed rotary inv freq when building the engines (as constant weights).
+    // The pre-computed rotary inv freq when building the engines (as constant
+    // weights).
     float const* rotary_embedding_inv_freq_cache = nullptr;
     // The pre-computed cos/sin cache.
     float2 const* rotary_embedding_cos_sin_cache = nullptr;
@@ -140,9 +139,11 @@ struct Multihead_attention_params_base
     int rotary_cogvlm_vision_length = -1;
     // Position shift for streamingllm
     bool position_shift_enabled = false;
-    // The current timestep. TODO Check that do we only this param in cross attention?
+    // The current timestep. TODO Check that do we only this param in cross
+    // attention?
     int timestep = 0;
-    // The current timestep of each sentences (support different timestep for different sentences)
+    // The current timestep of each sentences (support different timestep for
+    // different sentences)
 
     // The 1.f / sqrt(Dh). Computed on the host.
     float inv_sqrt_dh = 0.0f;
@@ -199,14 +200,18 @@ struct Multihead_attention_params_base
 
     mutable int min_seq_len_tile = 1;
     mutable int max_seq_len_tile = 1;
-    // The partial output buffer. Dimensions max_seq_len_tile x B x D. (for each timestep only seq_len_tile x B x D is
+    // The partial output buffer. Dimensions max_seq_len_tile x B x D. (for each
+    // timestep only seq_len_tile x B x D is
     // needed)
     T* partial_out = nullptr;
-    // ThreadBlock sum. Dimensions max_seq_len_tile x 1. (for each timestep only seq_len_tile x 1 is needed)
+    // ThreadBlock sum. Dimensions max_seq_len_tile x 1. (for each timestep only
+    // seq_len_tile x 1 is needed)
     float* partial_sum = nullptr;
-    // ThreadBlock max. Dimensions max_seq_len_tile x 1. (for each timestep only seq_len_tile x 1 is needed)
+    // ThreadBlock max. Dimensions max_seq_len_tile x 1. (for each timestep only
+    // seq_len_tile x 1 is needed)
     float* partial_max = nullptr;
-    // threadblock counter to identify the complete of partial attention computations
+    // threadblock counter to identify the complete of partial attention
+    // computations
     int* block_counter = nullptr;
 
     int const* memory_length_per_sample = nullptr;
@@ -230,7 +235,8 @@ struct Multihead_attention_params<T, false> : public Multihead_attention_params_
     // required in case of masked attention with different length
     int const* length_per_sample = nullptr;
 
-    // input lengths to identify the paddings (i.e. input seq < padding < new generated seq).
+    // input lengths to identify the paddings (i.e. input seq < padding < new
+    // generated seq).
     int const* input_lengths = nullptr;
 };
 template <class T>
@@ -250,7 +256,8 @@ struct Multihead_attention_params<T, true> : public Multihead_attention_params_b
     // required in case of masked attention with different length
     int const* length_per_sample = nullptr;
 
-    // input lengths to identify the paddings (i.e. input seq < padding < new generated seq).
+    // input lengths to identify the paddings (i.e. input seq < padding < new
+    // generated seq).
     int const* input_lengths = nullptr;
 };
 template <class T>
@@ -294,6 +301,4 @@ inline int estimate_min_multi_block_count(int max_timesteps, int max_dynamic_shm
     return std::max(1, min_block_count);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

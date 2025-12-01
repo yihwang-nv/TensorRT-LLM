@@ -25,14 +25,12 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// A stateful callback functor that maintains the running sum between consecutive scans.
+// A stateful callback functor that maintains the running sum between
+// consecutive scans.
 struct BlockPrefixCallbackOp
 {
     // Running prefix
@@ -44,7 +42,8 @@ struct BlockPrefixCallbackOp
     {
     }
 
-    // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+    // Thread-0 is responsible for returning a value for seeding the block-wide
+    // scan.
     __device__ int operator()(int blockAggregate)
     {
         int oldPrefix = mRunningTotal;
@@ -60,19 +59,23 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void buildCuQSeqLens(
     int batchSize, int const* qSeqLens, int* cuQSeqLens)
 {
 
-    // The implementation of the parallel scan in the thread block (see CUB for details).
+    // The implementation of the parallel scan in the thread block (see CUB for
+    // details).
     using BlockScan = cub::BlockScan<int, THREADS_PER_BLOCK>;
 
     // Allocate storage in shared memory to do the scan.
     __shared__ typename BlockScan::TempStorage tempStorage;
 
-    // This prefixOp operator keeps a running sum for when we need multiple iterations of the loop.
+    // This prefixOp operator keeps a running sum for when we need multiple
+    // iterations of the loop.
     BlockPrefixCallbackOp prefixOp(0);
 
     // Iterate over the sequences in the batch.
     //
-    // The loop index does not depend on the thread index to make sure all the threads enter the
-    // loop as we have __syncthreads in it (and we need all threads to participate to avoid
+    // The loop index does not depend on the thread index to make sure all the
+    // threads enter the
+    // loop as we have __syncthreads in it (and we need all threads to participate
+    // to avoid
     // deadlocks).
     // Only the last block computes the full sequence offsets.
     bool const storeOffsets = blockIdx.x == (batchSize - 1);
@@ -101,7 +104,8 @@ __global__ __launch_bounds__(THREADS_PER_BLOCK) void buildCuQSeqLens(
                 cuQSeqLens[batchIdx] = qSeqLenOffset;
             }
         }
-        // Make sure the shared memory can be reused for the next iteration of the loop.
+        // Make sure the shared memory can be reused for the next iteration of the
+        // loop.
         __syncthreads();
     }
 }
@@ -231,6 +235,4 @@ template void invokeBuildAttentionMask(AttentionMaskParams<__nv_fp8_e4m3> const&
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

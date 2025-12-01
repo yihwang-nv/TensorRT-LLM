@@ -21,10 +21,8 @@
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 using SizeType32 = tensorrt_llm::runtime::SizeType32;
 
 template <typename T>
@@ -34,6 +32,4 @@ template <typename T>
 void invokeCumsumLastDim(SizeType32 batchSize, SizeType32 inputLength, void const* __restrict__ input,
     void* __restrict__ output, void* workspace, size_t tempStorageBytes, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

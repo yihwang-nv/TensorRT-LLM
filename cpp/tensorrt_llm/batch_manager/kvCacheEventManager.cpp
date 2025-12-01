@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,16 +18,13 @@
 
 #include "tensorrt_llm/batch_manager/kvCacheEventManager.h"
 #include "tensorrt_llm/batch_manager/kvCacheManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/serialization.h"
 #include "tensorrt_llm/runtime/utils/mpiUtils.h"
 
 namespace tle = tensorrt_llm::executor;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 KVCacheEventManager::KVCacheEventManager(size_t maxKVEventEntries, std::optional<SizeType32> attentionDpRank,
@@ -41,8 +39,9 @@ KVCacheEventManager::KVCacheEventManager(size_t maxKVEventEntries, std::optional
     TLLM_CHECK(mMaxSize > 0);
     if (mAttentionDpRank)
     {
-        TLLM_CHECK_WITH_INFO(
-            mAttentionDpSize.has_value(), "If attention DP rank is set, the attention DP size must also be set");
+        TLLM_CHECK_WITH_INFO(mAttentionDpSize.has_value(),
+            "If attention DP rank is set, the attention DP size "
+            "must also be set");
         TLLM_CHECK_WITH_INFO(mAttentionDpRank.value() < mAttentionDpSize.value(),
             "Attention DP rank must be less than attention DP size");
         if (mAttentionDpRank.value() == 0)
@@ -56,8 +55,9 @@ KVCacheEventManager::KVCacheEventManager(size_t maxKVEventEntries, std::optional
     }
     else
     {
-        TLLM_CHECK_WITH_INFO(
-            !mAttentionDpSize.has_value(), "If attention DP rank is not set, the attention DP size must not be set");
+        TLLM_CHECK_WITH_INFO(!mAttentionDpSize.has_value(),
+            "If attention DP rank is not set, the attention DP "
+            "size must not be set");
     }
     mWorkerThread = std::thread([this]() { this->worker(); });
 #if ENABLE_MULTI_DEVICE
@@ -113,7 +113,8 @@ void KVCacheEventManager::enqueueStoredEvent(std::vector<BlockPtr> const& blocks
 
 void KVCacheEventManager::enqueueRemovedEvent(BlockPtr const& block, SizeType32 windowSize)
 {
-    // We can only batch the removed block events if the same sliding window size is used.
+    // We can only batch the removed block events if the same sliding window
+    // size is used.
     if (!mEventQueue.empty() && mEventQueue.back().windowSize == windowSize
         && std::holds_alternative<tle::KVCacheRemovedData>(mEventQueue.back().data))
     {
@@ -260,10 +261,14 @@ void KVCacheEventManager::worker()
             SizeType32 numRemoved = std::min(static_cast<SizeType32>(mEvents.size()), elementsToRemove);
             mEvents.erase(mEvents.begin(), mEvents.begin() + numRemoved);
             elementsToRemove -= numRemoved;
-            TLLM_LOG_WARNING("The event queue has reached the max size of %d. Events have been discarded.", mMaxSize);
+            TLLM_LOG_WARNING(
+                "The event queue has reached the max size of %d. "
+                "Events have been discarded.",
+                mMaxSize);
         }
 
-        // If there's still too many events, take from the front of the events queue.
+        // If there's still too many events, take from the front of the events
+        // queue.
         mEvents.insert(mEvents.end(), events.begin() + std::max(0, elementsToRemove), events.end());
 
         // Notify the empty condition variable to wake up any waiting threads
@@ -271,6 +276,4 @@ void KVCacheEventManager::worker()
     }
 }
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

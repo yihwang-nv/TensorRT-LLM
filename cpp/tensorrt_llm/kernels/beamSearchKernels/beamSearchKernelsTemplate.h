@@ -33,10 +33,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 #pragma nv_diag_suppress static_var_with_dynamic_init
 
@@ -80,7 +77,8 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage1Kernel(T const* __restri
     }
     __syncthreads();
 
-    // Search the top 2K elements among `nVLocal` elements of this ThreadBlock and write into smemOutput
+    // Search the top 2K elements among `nVLocal` elements of this ThreadBlock and
+    // write into smemOutput
     for (int i = 0; i < 2 * nBM; ++i)
     {
         // Pop the element with largest value to "smemOutput" per iteration
@@ -165,7 +163,8 @@ __launch_bounds__(BLOCK_SIZE) __global__
         KVPair kv = BlockReduceTopK(smemReduceBuffer).Reduce(kvLocal, argmax);
         if (tid == 0)
         {
-            // Replace local offset into global offset and store kv pairs in shared memory
+            // Replace local offset into global offset and store kv pairs in shared
+            // memory
             int const offsetLocal = kv.key;
             kv.key = reinterpret_cast<int*>(pStage2Temp)[offsetLocal];
             smemOutput[k] = kv;
@@ -224,7 +223,8 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
             // 1. In EarlyStopping mode, and we have got enough beams
             // 2. In NonEarlyStopping mode, and this batch has been marked as done
             // TODO: improve the condition like below
-            // earlyStopping == 1 && bh.numBeamsCBA[slot] == nBM || earlyStopping != 1 && bh.batchDones[slot]
+            // earlyStopping == 1 && bh.numBeamsCBA[slot] == nBM || earlyStopping != 1
+            // && bh.batchDones[slot]
             return;
         }
     }
@@ -276,7 +276,8 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
                 threadToUpdate = kv.key % BLOCK_SIZE;
             }
             __syncthreads();
-            // Only one thread needs to update the old partial before the next block reduce.
+            // Only one thread needs to update the old partial before the next block
+            // reduce.
             // No need to do this in the last iteration.
             if (tid == threadToUpdate && i < 2 * nBM - 1)
             {
@@ -299,7 +300,8 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
     if (tid == 0)
     {
         int nBeamForNextStep{0};
-        // Select finished beams into CBA or select tokens for next step sequentially
+        // Select finished beams into CBA or select tokens for next step
+        // sequentially
         // Reference (might be changed along HF in the future):
         // https://github.com/huggingface/transformers/blob/main/src/transformers/generation/beam_search.py#L272
         for (int i = 0; i < 2 * nBMOut; ++i)
@@ -308,7 +310,8 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
             T topLogProb;
             if constexpr (IS_V2)
             {
-                // Get top token and correspongding logProb sequentially from pStage2Ids / pStage2LogProbs
+                // Get top token and correspongding logProb sequentially from
+                // pStage2Ids / pStage2LogProbs
                 topId = pStage2Ids[i];
                 topLogProb = pStage2LogProbs[i];
             }
@@ -323,7 +326,8 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
             if (i < nBM && bh.numBeamsCBA != nullptr && isEndToken)
             {
                 // Condition of this branch:
-                // This token is end-token and belongs to top nBM range in Beam search mode
+                // This token is end-token and belongs to top nBM range in Beam search
+                // mode
                 int const nSeqLen = bh.sequenceLengths[slot * nBM + i] + 1 - bh.inputLengths[slot * nBM + i];
                 float const score = applyLengthPenalty(topLogProb, nSeqLen, lengthPenalty);
                 int nCBA = bh.numBeamsCBA[slot];
@@ -403,9 +407,12 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
             else if (i < nBM || bh.numBeamsCBA != nullptr && !isEndToken)
             {
                 // Condition of this branch
-                // 1. bh.numBeamsCBA == nullptr && i <  nBM, i.e., beam search is disable
-                // 2. bh.numBeamsCBA != nullptr && i <  nBM && isEndToken == false, i.e., add token at the end
-                // 3. bh.numBeamsCBA != nullptr && i >= nBM && isEndToken == false, i.e., add token at the end
+                // 1. bh.numBeamsCBA == nullptr && i <  nBM, i.e., beam search is
+                // disable
+                // 2. bh.numBeamsCBA != nullptr && i <  nBM && isEndToken == false,
+                // i.e., add token at the end
+                // 3. bh.numBeamsCBA != nullptr && i >= nBM && isEndToken == false,
+                // i.e., add token at the end
                 int const step = bh.sequenceLengths[slot * nBM + nBeamForNextStep];
                 // Copy the selected token to work tree
                 bh.outputIdsPtr[slot][nBeamForNextStep * nMSL + step] = topId;
@@ -421,18 +428,23 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
             else
             {
                 // Condition of this branch, which we do nothing for it
-                // 1. bh.numBeamsCBA == nullptr && i >= nBM, i.e., beam search is disable
-                // 2. bh.numBeamsCBA != nullptr && i >= nBM && isEndToken == true, i.e., ignore the worse beams
+                // 1. bh.numBeamsCBA == nullptr && i >= nBM, i.e., beam search is
+                // disable
+                // 2. bh.numBeamsCBA != nullptr && i >= nBM && isEndToken == true, i.e.,
+                // ignore the worse beams
             }
 
             if (nBeamForNextStep >= nBMOut)
             {
                 // Condition of this branch
                 // 1. In EarlyStopping mode, and get enough candidate beams
-                // 2. In EarlyStopping mode, and get enough tokens for the next generation step
-                // 3. In NonEarlyStopping mode, and get enough tokens for the next generation step
+                // 2. In EarlyStopping mode, and get enough tokens for the next
+                // generation step
+                // 3. In NonEarlyStopping mode, and get enough tokens for the next
+                // generation step
                 // TODO: improve the condition like below
-                // earlyStopping == 1 && bh.numBeamsCBA[slot] >= nBM || nBeamForNextStep >= nBM
+                // earlyStopping == 1 && bh.numBeamsCBA[slot] >= nBM || nBeamForNextStep
+                // >= nBM
                 break;
             }
         }
@@ -456,12 +468,14 @@ __launch_bounds__(BLOCK_SIZE) __global__ void beamStage3Kernel(
             // enough beams in NonEarlyStopping mode
             int nSeqLen = bh.sequenceLengths[slot * nBM] + 1 - bh.inputLengths[slot * nBM];
             float const bestCumLogProbs = (IS_V2) ? pStage2LogProbs[0] : smemTopKV[0].value;
-            // According to semantics of HF, smemTopKV[0].value is used as bestCumLogProbs
+            // According to semantics of HF, smemTopKV[0].value is used as
+            // bestCumLogProbs
             // But maybe bh.cumLogProbs[slot * nBM + i] is more suitable?
             // https://github.com/huggingface/transformers/blob/main/src/transformers/generation/beam_search.py#L307
             if (earlyStopping != 0 && lengthPenalty > 0.0f)
             {
-                // Specialization for earlyStopping == "never" and lengthPenalty > 0 in HF
+                // Specialization for earlyStopping == "never" and lengthPenalty > 0 in
+                // HF
                 nSeqLen = nMSL - bh.inputLengths[slot * nBM];
             }
             float const bestAttainableScore = applyLengthPenalty(bestCumLogProbs, nSeqLen, lengthPenalty);
@@ -510,82 +524,126 @@ void beamSearchKernelLauncher(
     T const* logProbs, T const* bias, void* workspace, BeamHypotheses& bh, cudaStream_t stream)
 {
     // clang-format off
-    /*
-    V1 Workflow (reference: https://github.com/NVIDIA/online-softmax):
-    logProbs.shape = [nBS, nBM, nV]
-             nV               |<- nVChunk ->|<- nVChunk ->| <- ... ->|          |<- nBM*4 ->|<- nBM*4 ->|<- ... ->| ■
-        ┏━━━━━━━━━━┓          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃nBM       ┃          ┃nBM                                   ┃          ┃nBM                              ┃
-        ┣━━━━━━━━━━┫          ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫  A       ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫  B
-    nBS ┃nBM       ┃ ---> nBS ┃nBM                                   ┃ ---> nBS ┃nBM                              ┃ --->
-        ┣━━━━━━━━━━┫          ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫          ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
-        ┃nBM       ┃          ┃nBM                                   ┃          ┃nBM                              ┃
-        ┗━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-          logProbs            divide `nV` elements into `nVPart` parts          pStage3 with `nVPart` tiles per row
+  /*
+  V1 Workflow (reference: https://github.com/NVIDIA/online-softmax):
+  logProbs.shape = [nBS, nBM, nV]
+           nV               |<- nVChunk ->|<- nVChunk ->| <- ... ->|
+  |<- nBM*4 ->|<- nBM*4 ->|<- ... ->| ■
+      ┏━━━━━━━━━━┓          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+      ┃nBM       ┃          ┃nBM                                   ┃
+  ┃nBM                              ┃
+      ┣━━━━━━━━━━┫          ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫  A
+  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫  B
+  nBS ┃nBM       ┃ ---> nBS ┃nBM                                   ┃ ---> nBS
+  ┃nBM                              ┃ --->
+      ┣━━━━━━━━━━┫          ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+      ┃nBM       ┃          ┃nBM                                   ┃
+  ┃nBM                              ┃
+      ┗━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        logProbs            divide `nV` elements into `nVPart` parts
+  pStage3 with `nVPart` tiles per row
 
-             |<- nBm*2 ->|  |<- nBm*2 ->|
-             ┏━━━━━━━━━━━┓  ┏━━━━━━━━━━━┓
-             ┃nBM        ┃  ┃nBM        ┃
-     B       ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫  C
-    ---> nBS ┃nBM        ┃  ┃nBM        ┃ --->
-             ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫
-             ┃nBM        ┃  ┃nBM        ┃
-             ┗━━━━━━━━━━━┛  ┗━━━━━━━━━━━┛
-               pStage2Ids  pStage2LogProbs
+           |<- nBm*2 ->|  |<- nBm*2 ->|
+           ┏━━━━━━━━━━━┓  ┏━━━━━━━━━━━┓
+           ┃nBM        ┃  ┃nBM        ┃
+   B       ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫  C
+  ---> nBS ┃nBM        ┃  ┃nBM        ┃ --->
+           ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫
+           ┃nBM        ┃  ┃nBM        ┃
+           ┗━━━━━━━━━━━┛  ┗━━━━━━━━━━━┛
+             pStage2Ids  pStage2LogProbs
 
-    ■: Each "tile" in pStage3 with shape [`nBM*4`] contains `nBM*2` top ids and corresponding `nBM*2` log probs.
-        |<- nBm*2 ->|<- nBm*2 ->|
-        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
-      1 ┃  top ids  | log probs ┃
-        ┗━━━━━━━━━━━━━━━━━━━━━━━┛
+  ■: Each "tile" in pStage3 with shape [`nBM*4`] contains `nBM*2` top ids and
+  corresponding `nBM*2` log probs.
+      |<- nBm*2 ->|<- nBm*2 ->|
+      ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+    1 ┃  top ids  | log probs ┃
+      ┗━━━━━━━━━━━━━━━━━━━━━━━┛
 
-    A: beamStage1Kernel: gridDim(BS,BM,nVPart), blockDim(nThreadStage1,1,1)
-                         Each Block takes `nVChunk` contiguous elements from `logProbs`, does TopK and writes output to `pStage3`
-    B: beamStage2Kernel: gridDim(BS,BM,1), blockDim(32/64/128,1,1)
-                         Each Block takes `nVPart` contiguous tiles from pStage3, add `cumLogProbs`, does TopK` and writes output to `pStage2Ids` and `pStage2LogProbs`
-    C: beamStage3Kernel: gridDim(BS,1,1), blockDim(128,1,1)
-                         Main logic of Beam-Search, each Block is responsible for one batch, doing work below:
-                             + moves one beam into candidate-beam-array if it is finished (gemerated end_id in this step).
-                             + selects BM elements for the next generation step if not.
-                             + maintains related score array, min_normed_score / batchDones / finished, etc..
+  A: beamStage1Kernel: gridDim(BS,BM,nVPart), blockDim(nThreadStage1,1,1)
+                       Each Block takes `nVChunk` contiguous elements from
+  `logProbs`, does TopK and writes output to `pStage3`
+  B: beamStage2Kernel: gridDim(BS,BM,1), blockDim(32/64/128,1,1)
+                       Each Block takes `nVPart` contiguous tiles from pStage3,
+  add `cumLogProbs`, does TopK` and writes output to `pStage2Ids` and
+  `pStage2LogProbs`
+  C: beamStage3Kernel: gridDim(BS,1,1), blockDim(128,1,1)
+                       Main logic of Beam-Search, each Block is responsible for
+  one batch, doing work below:
+                           + moves one beam into candidate-beam-array if it is
+  finished (gemerated end_id in this step).
+                           + selects BM elements for the next generation step if
+  not.
+                           + maintains related score array, min_normed_score /
+  batchDones / finished, etc..
 
-    ===================================================================================================================================
+  ===================================================================================================================================
 
-    V2 Workflow (use Air-TopK for better performance, https://dl.acm.org/doi/pdf/10.1145/3581784.3607062)
-    logProbs.shape = [nBS, nBM, nV]
-        |<- nV ->|          |<- nBM*2 ->|  |<- nBM*2 ->|          |<- nBM*2 ->|          |<- nBM*2 ->|          |<- nBM*2 ->|
-        ┏━━━━━━━━┓          ┏━━━━━━━━━━━┓  ┏━━━━━━━━━━━┓          ┏━━━━━━━━━━━┓          ┏━━━━━━━━━━━┓  D       ┏━━━━━━━━━━━┓
-        ┃nBM     ┃          ┃nBM        ┃  ┃nBM        ┃          ┃nBM        ┃      nBS ┃           ┃ ---> nBS ┃           ┃ ---\
-        ┣━━━━━━━━┫  A       ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫  B       ┣━━━━━━━━━━━┫  C       ┗━━━━━━━━━━━┛          ┗━━━━━━━━━━━┛    | E
-    nBS ┃nBM     ┃ ---> nBS ┃nBM        ┃  ┃nBM        ┃ ---> nBS ┃nBM        ┃ --->       pStage2Id              pStage2Id      |--->
-        ┣━━━━━━━━┫          ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫          ┣━━━━━━━━━━━┫          ┏━━━━━━━━━━━┓                           |
-        ┃nBM     ┃          ┃nBM        ┃  ┃nBM        ┃          ┃nBM        ┃      nBS ┃           ┃ --------------------------/
-        ┗━━━━━━━━┛          ┗━━━━━━━━━━━┛  ┗━━━━━━━━━━━┛          ┗━━━━━━━━━━━┛          ┗━━━━━━━━━━━┛
-         logProbs             pStage1Id   pStage1LogProbs        pStage1LogProbs        pStage2LogProbs
+  V2 Workflow (use Air-TopK for better performance,
+  https://dl.acm.org/doi/pdf/10.1145/3581784.3607062)
+  logProbs.shape = [nBS, nBM, nV]
+      |<- nV ->|          |<- nBM*2 ->|  |<- nBM*2 ->|          |<- nBM*2 ->|
+  |<- nBM*2 ->|          |<- nBM*2 ->|
+      ┏━━━━━━━━┓          ┏━━━━━━━━━━━┓  ┏━━━━━━━━━━━┓          ┏━━━━━━━━━━━┓
+  ┏━━━━━━━━━━━┓  D       ┏━━━━━━━━━━━┓
+      ┃nBM     ┃          ┃nBM        ┃  ┃nBM        ┃          ┃nBM        ┃
+  nBS ┃           ┃ ---> nBS ┃           ┃ ---\
+      ┣━━━━━━━━┫  A       ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫  B       ┣━━━━━━━━━━━┫  C
+  ┗━━━━━━━━━━━┛          ┗━━━━━━━━━━━┛    | E
+  nBS ┃nBM     ┃ ---> nBS ┃nBM        ┃  ┃nBM        ┃ ---> nBS ┃nBM        ┃
+  --->       pStage2Id              pStage2Id      |--->
+      ┣━━━━━━━━┫          ┣━━━━━━━━━━━┫  ┣━━━━━━━━━━━┫          ┣━━━━━━━━━━━┫
+  ┏━━━━━━━━━━━┓                           |
+      ┃nBM     ┃          ┃nBM        ┃  ┃nBM        ┃          ┃nBM        ┃
+  nBS ┃           ┃ --------------------------/
+      ┗━━━━━━━━┛          ┗━━━━━━━━━━━┛  ┗━━━━━━━━━━━┛          ┗━━━━━━━━━━━┛
+  ┗━━━━━━━━━━━┛
+       logProbs             pStage1Id   pStage1LogProbs        pStage1LogProbs
+  pStage2LogProbs
 
-    A: TopK            : Get top `nBM*2` elements in `nBS*nBM` groups (`nV` elements per group)
-    B: addCumLogProbs  : Add `cumLogProbs` to the elements in each beam
-    C: TopK            : Get top `nBM*2` elements in `nBS` group (`nBM*nBM*2` elements per group)
-    D: gatherIds       : Combine stage1Id and stage2Id to get ids of the top `nBM*2` elements in input logProbs
-    E: beamStage3Kernel: Main logic of Beam-Search, each Block is responsible for one batch, doing work below:
-                             + moves one beam into candidate-beam-array if it is finished (gemerated end_id in this step).
-                             + selects BM elements for the next generation step if not.
-                             + maintains related score array, min_normed_score / batchDones / finished, etc..
+  A: TopK            : Get top `nBM*2` elements in `nBS*nBM` groups (`nV`
+  elements per group)
+  B: addCumLogProbs  : Add `cumLogProbs` to the elements in each beam
+  C: TopK            : Get top `nBM*2` elements in `nBS` group (`nBM*nBM*2`
+  elements per group)
+  D: gatherIds       : Combine stage1Id and stage2Id to get ids of the top
+  `nBM*2` elements in input logProbs
+  E: beamStage3Kernel: Main logic of Beam-Search, each Block is responsible for
+  one batch, doing work below:
+                           + moves one beam into candidate-beam-array if it is
+  finished (gemerated end_id in this step).
+                           + selects BM elements for the next generation step if
+  not.
+                           + maintains related score array, min_normed_score /
+  batchDones / finished, etc..
 
-    ===================================================================================================================================
+  ===================================================================================================================================
 
-    V2 Workflow for VBWS, similar to V2 workflow above, but `nBMIn` and `nBMOut` might be different from `nBM`
-    logProbs.shape = [nBS, nBMIn, nV]
-        |<- nV ->|          |<- nBMOut*2 ->|  |<- nBMOut*2 ->|          |<- nBMOut*2 ->|          |<- nBMOut*2 ->|          |<- nBMOut*2 ->|
-        ┏━━━━━━━━┓          ┏━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━┓          ┏━━━━━━━━━━━━━━┓          ┏━━━━━━━━━━━━━━┓  D       ┏━━━━━━━━━━━━━━┓
-        ┃nBMIn   ┃          ┃nBMIn         ┃  ┃nBMIn         ┃          ┃nBMIn         ┃      nBS ┃              ┃ ---> nBS ┃              ┃ ---\
-        ┣━━━━━━━━┫  A       ┣━━━━━━━━━━━━━━┫  ┣━━━━━━━━━━━━━━┫  B       ┣━━━━━━━━━━━━━━┫  C       ┗━━━━━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛    | E
-    nBS ┃nBMIn   ┃ ---> nBS ┃nBMIn         ┃  ┃nBMIn         ┃ ---> nBS ┃nBMIn         ┃ --->         pStage2Id                 pStage2Id       |--->
-        ┣━━━━━━━━┫          ┣━━━━━━━━━━━━━━┫  ┣━━━━━━━━━━━━━━┫          ┣━━━━━━━━━━━━━━┫          ┏━━━━━━━━━━━━━━┓                              |
-        ┃nBMIn   ┃          ┃nBMIn         ┃  ┃nBMIn         ┃          ┃nBMIn         ┃      nBS ┃              ┃ -----------------------------/
-        ┗━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛  ┗━━━━━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛
-         logProbs               pStage1Id      pStage1LogProbs           pStage1LogProbs           pStage2LogProbs
-    */
+  V2 Workflow for VBWS, similar to V2 workflow above, but `nBMIn` and `nBMOut`
+  might be different from `nBM`
+  logProbs.shape = [nBS, nBMIn, nV]
+      |<- nV ->|          |<- nBMOut*2 ->|  |<- nBMOut*2 ->|          |<-
+  nBMOut*2 ->|          |<- nBMOut*2 ->|          |<- nBMOut*2 ->|
+      ┏━━━━━━━━┓          ┏━━━━━━━━━━━━━━┓  ┏━━━━━━━━━━━━━━┓
+  ┏━━━━━━━━━━━━━━┓          ┏━━━━━━━━━━━━━━┓  D       ┏━━━━━━━━━━━━━━┓
+      ┃nBMIn   ┃          ┃nBMIn         ┃  ┃nBMIn         ┃          ┃nBMIn
+  ┃      nBS ┃              ┃ ---> nBS ┃              ┃ ---\
+      ┣━━━━━━━━┫  A       ┣━━━━━━━━━━━━━━┫  ┣━━━━━━━━━━━━━━┫  B
+  ┣━━━━━━━━━━━━━━┫  C       ┗━━━━━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛    | E
+  nBS ┃nBMIn   ┃ ---> nBS ┃nBMIn         ┃  ┃nBMIn         ┃ ---> nBS ┃nBMIn
+  ┃ --->         pStage2Id                 pStage2Id       |--->
+      ┣━━━━━━━━┫          ┣━━━━━━━━━━━━━━┫  ┣━━━━━━━━━━━━━━┫
+  ┣━━━━━━━━━━━━━━┫          ┏━━━━━━━━━━━━━━┓                              |
+      ┃nBMIn   ┃          ┃nBMIn         ┃  ┃nBMIn         ┃          ┃nBMIn
+  ┃      nBS ┃              ┃ -----------------------------/
+      ┗━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛  ┗━━━━━━━━━━━━━━┛
+  ┗━━━━━━━━━━━━━━┛          ┗━━━━━━━━━━━━━━┛
+       logProbs               pStage1Id      pStage1LogProbs
+  pStage1LogProbs           pStage2LogProbs
+  */
     // clang-format on
 
     size_t const nBS{bh.nBatchSize};
@@ -598,8 +656,10 @@ void beamSearchKernelLauncher(
     float* pStage3{nullptr};
 
     // VBWS:
-    //     + `nBMIn` / `nBMOut` is the beam width in the last / next network forward computation respectively
-    //     + `nBM` is the max value of the beam width array, which is used for memory allocatation
+    //     + `nBMIn` / `nBMOut` is the beam width in the last / next network
+    // forward computation respectively
+    //     + `nBM` is the max value of the beam width array, which is used for
+    // memory allocatation
     // Normal Beam Search:
     //     + `nBMIn` / `nBMOut` / `nBM` share the same value
     // TODO: now `nBMIn` and `nBMOut` of request 0 is used for the whole batch,
@@ -611,7 +671,8 @@ void beamSearchKernelLauncher(
 
     if constexpr (IS_V2)
     {
-        // see `BeamSearchLayer<T>::configureBeamSearchLayer()` for the workspace structure
+        // see `BeamSearchLayer<T>::configureBeamSearchLayer()` for the workspace
+        // structure
         size_t const offsetStage1 = roundUp(nBS * nBM * nBM * 2, 4);
         size_t const offsetStage2 = roundUp(nBS * nBM * 2, 4);
         pStage2Ids = reinterpret_cast<int*>(workspace);
@@ -645,7 +706,8 @@ void beamSearchKernelLauncher(
     }
     else // V1
     {
-        // see `BeamSearchLayer<T>::configureBeamSearchLayer()` for the workspace structure
+        // see `BeamSearchLayer<T>::configureBeamSearchLayer()` for the workspace
+        // structure
         int const offset = roundUp(nBS * nBM * nBM * 2, 4);
         pStage2Ids = reinterpret_cast<int*>(workspace);
         pStage2LogProbs = reinterpret_cast<T*>(pStage2Ids + offset);
@@ -670,7 +732,8 @@ void beamSearchKernelLauncher(
             <<<dim3(nBS, nBM), N_VOCAB_PART, IS_FAST * nByteRuntimeSharedMemory, stream>>>(                            \
                 pStage2Ids, pStage2LogProbs, pStage3, bh.cumLogProbs, bh.batchSlots, nV, nVPart);                      \
     }
-        // TODO: rewrite kernel to remove dependence of constant block size to reduce compilation time
+        // TODO: rewrite kernel to remove dependence of constant block size to
+        // reduce compilation time
         size_t nByteRuntimeSharedMemory
             = sizeof(float) * nVPart * (PBM * 4) + sizeof(cub::KeyValuePair<int, T>) * PBM * 2;
         if (nByteRuntimeSharedMemory <= nByteMaxSharedMemoryPerBlock && nVPart <= 32)
@@ -684,11 +747,14 @@ void beamSearchKernelLauncher(
         else if (nByteRuntimeSharedMemory <= nByteMaxSharedMemoryPerBlock)
         {
             BEAM_STAGE2_KERNEL(128, true)
-            // No branch with larger `N_VOCAB_PART` since nVPart <= kMaxVPartStage1 == 128
+            // No branch with larger `N_VOCAB_PART` since nVPart <= kMaxVPartStage1 ==
+            // 128
         }
         else
         {
-            TLLM_LOG_TRACE("Use slow Beam Search stage 2 kernel due to large beam_width or vocab_size");
+            TLLM_LOG_TRACE(
+                "Use slow Beam Search stage 2 kernel due to large "
+                "beam_width or vocab_size");
             BEAM_STAGE2_KERNEL(128, false)
         }
         sync_check_cuda_error(stream);
@@ -732,6 +798,4 @@ void beamSearchKernelLauncher(
     template void beamSearchKernelLauncher<T, PBM, IS_V2>(                                                             \
         T const* logProbs, T const* bias, void* workspace, BeamHypotheses& bh, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

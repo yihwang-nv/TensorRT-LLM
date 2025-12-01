@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (out) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (out) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +36,8 @@ using tensorrt_llm::kernels::internal_cutlass_kernels::CutlassLowLatencyFp8GemmR
 using tensorrt_llm::kernels::internal_cutlass_kernels::LowLatencyCutlassGemmConfig;
 using tensorrt_llm::kernels::internal_cutlass_kernels::KernelScheduleType;
 #endif
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -43,7 +45,7 @@ namespace torch_ext
 namespace
 {
 
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 using LowLatencyGemmRunnerPtr = std::shared_ptr<CutlassLowLatencyFp8GemmRunnerInterface>;
 using FP8Type = __nv_fp8_e4m3;
 
@@ -99,7 +101,8 @@ void cutlass_gemm_caller(torch::Tensor& out, torch::Tensor const& a, torch::Tens
     auto* b_ptr = static_cast<FP8Type*>(b.data_ptr());
     auto* c_ptr = static_cast<FP8Type*>(out.data_ptr());
     auto* ws_ptr = static_cast<char*>(workspace.data_ptr());
-    // TODO(zhenhuan): this will invoke D2H, will fix this when CutlassLowLatencyFp8GemmRunner support scale_a/b
+    // TODO(zhenhuan): this will invoke D2H, will fix this when
+    // CutlassLowLatencyFp8GemmRunner support scale_a/b
     auto a_scale = scale_a.item().toFloat();
     auto b_scale = scale_b.item().toFloat();
 
@@ -108,7 +111,8 @@ void cutlass_gemm_caller(torch::Tensor& out, torch::Tensor const& a, torch::Tens
 
     if (mp2 <= 64)
     {
-        // TODO(zhenhuan): ClusterShape_1x8x1 from vLLM is not support for Prefetch KernelScheduleType
+        // TODO(zhenhuan): ClusterShape_1x8x1 from vLLM is not support for Prefetch
+        // KernelScheduleType
         config = tkc::CutlassGemmConfig(tkc::CutlassTileConfigSM90::CtaShape64x64x128B, tkc::MainloopScheduleType::AUTO,
             tkc::EpilogueScheduleType::AUTO, tkc::ClusterShape::ClusterShape_8x1x1);
     }
@@ -173,12 +177,13 @@ Tensor cutlass_scaled_mm(Tensor const& mat_a, Tensor const& mat_b, Tensor const&
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "cutlass_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor scale_b, Tensor? bias,"
+        "cutlass_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor "
+        "scale_b, Tensor? bias,"
         " ScalarType? out_dtype) -> (Tensor out)");
 }
 

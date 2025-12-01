@@ -23,14 +23,14 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
+namespace llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
 {
 
 void llama4_fp8_fp8_gemm_swiglu_op(int num_tokens, int hidden_in, int hidden_out, void const* A, void const* B, void* C,
     void const* in_scale, void const* out_scale_inv, cudaStream_t stream);
 
-} // namespace kernels::llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
+} // namespace llama4_min_latency::llama4_fp8_fp8_gemm_swiglu
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

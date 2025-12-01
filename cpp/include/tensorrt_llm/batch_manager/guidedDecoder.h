@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
@@ -28,9 +27,7 @@ class GrammarMatcher;
 class GrammarCompiler;
 } // namespace xgrammar
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class DecoderInputBuffers;
 
@@ -58,15 +55,16 @@ private:
 
     TensorPtr mLogitsBitmask;           // [mMaxNumRequests, mBitmaskSize]
     TensorPtr mLogitsBitmaskHost;       // [mMaxNumRequests, mBitmaskSize]
-    TensorPtr mLogitsBitmaskPtrVec;     // [mMaxNumRequests], pointers to the logitsBitmask in a batch
+    TensorPtr mLogitsBitmaskPtrVec;     // [mMaxNumRequests], pointers to the
+                                        // logitsBitmask in a batch
     TensorPtr mLogitsBitmaskPtrVecHost; // [mMaxNumRequests]
-    TensorPtr mLogitsPtrVec;            // [mMaxNumRequests], pointers to the logits in a batch
+    TensorPtr mLogitsPtrVec;            // [mMaxNumRequests], pointers to the logits in a
+                                        // batch
     TensorPtr mLogitsPtrVecHost;        // [mMaxNumRequests]
 
-    // BufferManager with a dedicated stream for async copy of buffers for guided decoding.
+    // BufferManager with a dedicated stream for async copy of buffers for
+    // guided decoding.
     runtime::BufferManager mCopyBufferManager;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

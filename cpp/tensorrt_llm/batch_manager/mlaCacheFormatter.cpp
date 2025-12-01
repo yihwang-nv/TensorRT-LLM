@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "mlaCacheFormatter.h"
 #include "tensorrt_llm/batch_manager/cacheFormatter.h"
-#include "tensorrt_llm/common/config.h"
 
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/dataType.h"
@@ -35,9 +35,7 @@
 #include <cstdint>
 #include <future>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 // some context rank in connection
@@ -46,7 +44,8 @@ std::vector<size_t> MLACacheFormatter::pickRecvConnections(
 {
 
     auto targetInfo = executor::kv_cache::targetIRanks(destConfig, selfConfig, selfIdx);
-    // This function is called only by gen side and we only support CPSize=1 on context size.
+    // This function is called only by gen side and we only support CPSize=1 on
+    // context size.
     TLLM_CHECK(targetInfo.mDomainCPSize == 1);
     TLLM_CHECK(numConnections == targetInfo.mIRanks.size());
     std::vector<size_t> ret;
@@ -213,7 +212,8 @@ void MLACacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& ses
                 for (size_t cpDomainIdx = 0; cpDomainIdx < cPDomainSize; cpDomainIdx++)
                 {
                     auto const idx = cpDomainIdx * pPDomainSize + ppDomainIdx;
-                    // Note: contextCP is always 1. So, cpDomainSize == genCPSize and cpDomainIdx == genCPRank.
+                    // Note: contextCP is always 1. So, cpDomainSize == genCPSize and
+                    // cpDomainIdx == genCPRank.
                     auto const peerBlockNum
                         = executor::kv_cache::getBlockNumAccountingForCP(cpDomainIdx, cPDomainSize, blockNum);
                     bufferSizeForTarget[idx] = blockSizePerLayer * peerAttentionLayerNum * peerBlockNum;
@@ -236,7 +236,8 @@ void MLACacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& ses
             TLLM_CHECK(onlyUseDynamicBuffer == false);
         }
 
-        // The size of outputSplitCaches should be equal to pPDomainSize * cPDomainSize.
+        // The size of outputSplitCaches should be equal to pPDomainSize *
+        // cPDomainSize.
         SizeType32 window = mCacheManager->getBlockManager().getPoolWindowSize(0);
         std::map<SizeType32, std::vector<runtime::ITensor::SharedPtr>> inputKvCacheBlocksPerWindow;
         inputKvCacheBlocksPerWindow.emplace(window, inputKvCacheBlocks);
@@ -265,10 +266,13 @@ void MLACacheFormatter::format(tensorrt_llm::batch_manager::TransferSession& ses
             }
             else
             {
-                // If cacheIdx< bufferCoverTargetNum, the ouputSplitCaches.at(cacheIdx) is allocated by cudaMallocAsync,
-                // which is unable to be transferred by UCX GPU-direct RDMA. We need copy the data to pre-allocated
+                // If cacheIdx< bufferCoverTargetNum, the
+                // ouputSplitCaches.at(cacheIdx) is allocated by cudaMallocAsync,
+                // which is unable to be transferred by UCX GPU-direct RDMA. We need
+                // copy the data to pre-allocated
                 // cudaMalloc buffer,and then start send.
-                // bufferCoverTargetNum=0, mSendBuffer size < one outputSlice send multiple times
+                // bufferCoverTargetNum=0, mSendBuffer size < one outputSlice send
+                // multiple times
                 size_t remainSendSize = outputSplitCaches.at(cacheIdx)->getSize();
                 size_t needSendSize = outputSplitCaches.at(cacheIdx)->getSize();
                 auto sendBufferIdx = bufferCoverTargetNum == 0 ? 0 : cacheIdx % bufferCoverTargetNum;
@@ -351,7 +355,10 @@ void MLACacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& s
     TLLM_CHECK_WITH_INFO(llmRequest.mSamplingConfig.beamWidth == 1, "Currently only supports beam width 1.");
     auto const ctxReqId = llmRequest.getContextPhaseParams().value().getReqId();
     TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-        "Start receiving KV cache for request ID: %ld, context request ID: %ld.", llmRequest.mRequestId, ctxReqId);
+        "Start receiving KV cache "
+        "for request ID: %ld, "
+        "context request ID: %ld.",
+        llmRequest.mRequestId, ctxReqId);
     auto const& selfConfig = session.getSelfState().getCacheState().value();
     auto const& destConfig = session.getOtherState().getCacheState().value();
     auto const selfIdx = session.getSelfState().getCommState().value().getSelfIdx();
@@ -366,7 +373,8 @@ void MLACacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& s
     auto const& windowSizes = blockRange.getWindowSizes();
     TLLM_CHECK_WITH_INFO(
         static_cast<int>(windowSizes.size()) == numPools, "window sizes should be the same as numPools");
-    // TODO(oargov): are we sure the other side has the same number of pools? this might not hold for pp_size>1...
+    // TODO(oargov): are we sure the other side has the same number of pools?
+    // this might not hold for pp_size>1...
     bool hasIndexerKCache = mCacheManager->getIndexerKCachePool() != nullptr;
     std::vector<bool> transferringIndexerKCache;
     transferringIndexerKCache.push_back(false);
@@ -423,8 +431,9 @@ void MLACacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& s
                 }
             }
             TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-                "End receiving KV cache for request ID: %ld, context request ID: %ld.", llmRequest.mRequestId,
-                llmRequest.getContextPhaseParams().value().getReqId());
+                "End receiving KV cache for request ID: %ld, context "
+                "request ID: %ld.",
+                llmRequest.mRequestId, llmRequest.getContextPhaseParams().value().getReqId());
             return;
         }
         else
@@ -623,7 +632,9 @@ void MLACacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& s
 
     if (setVecSelf.size() != 1)
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: only support equal number of heads per layer");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: only support equal "
+            "number of heads per layer");
         return false;
     }
     std::unordered_set<int> setVecDest{
@@ -631,18 +642,24 @@ void MLACacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& s
 
     if (setVecDest.size() != 1)
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: only support equal number of heads per layer");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: only support equal "
+            "number of heads per layer");
         return false;
     }
     if (selfConfig.getModelConfig().mTokensPerBlock != destConfig.getModelConfig().mTokensPerBlock
         || selfConfig.getModelConfig().mSizePerHead != destConfig.getModelConfig().mSizePerHead)
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: only support same tokens per block and size per head");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: only support same "
+            "tokens per block and size per head");
         return false;
     }
     if (selfConfig.getModelConfig().mNbKvHeadsPerLayer.size() != destConfig.getModelConfig().mNbKvHeadsPerLayer.size())
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: only support same number of layers");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: only support same "
+            "number of layers");
         return false;
     }
     if ((selfConfig.getModelConfig().mNbKvHeadsPerLayer.at(0) != 1)
@@ -654,24 +671,28 @@ void MLACacheFormatter::unformat(tensorrt_llm::batch_manager::TransferSession& s
     if (selfConfig.getParallelConfig().mEnableAttentionDP
         && (selfConfig.getParallelConfig().mTensorParallelism % selfConfig.getParallelConfig().mDPsize != 0))
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: TP size must be divisible by DP size");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: TP size must be "
+            "divisible by DP size");
         return false;
     }
     if (destConfig.getParallelConfig().mEnableAttentionDP
         && (destConfig.getParallelConfig().mTensorParallelism % destConfig.getParallelConfig().mDPsize != 0))
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: TP size must be divisible by DP size");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: TP size must be "
+            "divisible by DP size");
         return false;
     }
     if ((destConfig.getParallelConfig().mEnableAttentionDP)
         && (destConfig.getParallelConfig().mTensorParallelism != destConfig.getParallelConfig().mDPsize))
     {
-        TLLM_LOG_WARNING("MLACacheFormatter::inquireSupport: TP size must be equal to DP size");
+        TLLM_LOG_WARNING(
+            "MLACacheFormatter::inquireSupport: TP size must be "
+            "equal to DP size");
         return false;
     }
 
     return true;
 }
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

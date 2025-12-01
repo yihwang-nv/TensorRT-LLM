@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,25 +20,22 @@
 
 #include "common.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class BufferManager;
-} // namespace runtime
+} // namespace tensorrt_llm::runtime
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class DecoderInputBuffers;
 class RuntimeBuffers;
 class MedusaBuffers;
 
-class HandleGenerationLogits : Algorithm
+class HandleGenerationLogits : tensorrt_llm::common::Algorithm
 {
 public:
     template <typename T>
@@ -53,6 +51,4 @@ public:
         OptionalRef<RuntimeBuffers> genRuntimeBuffers, OptionalRef<MedusaBuffers> medusaBuffers) const;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

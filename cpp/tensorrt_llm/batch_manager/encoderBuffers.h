@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,16 +19,13 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/tllmRuntime.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class EncoderBuffers
@@ -52,21 +50,29 @@ public:
     TensorPtr hiddenStates; // [numTokens, hiddenSize]
 
     // features for multimodal encoders (audio, image, etc.)
-    TensorPtr
-        inputFeatures; // [totalNumOfFeatures, featureDim] if remove_padding else [batchSize, featureDim, featureLength]
+    TensorPtr inputFeatures; // [totalNumOfFeatures, featureDim] if
+                             // remove_padding else [batchSize, featureDim,
+                             // featureLength]
 
-    // language adapter routing information for encoders if language adapter is presented.
+    // language adapter routing information for encoders if language adapter is
+    // presented.
     TensorPtr languageAdapterRoutings; // [numTokens, numLanguages]
 
     // encoder output
     TensorPtr encoderOutput; // [numEncoderTokens, hiddenSize]
 
-    // output buffer owned by llmRequest, such that it's per-request output buffer
-    // encoderBuffers class can init and reshape each buffer, without maintaining a list/set of inflight buffers
-    // TODO in progress: to support BS>1 encoder, need (1) internal scratch space tensors to save the contiguous
-    // batched output (2) copy from CONTIGUOUS scratch tensor to individual request's DISCRETE output tensor after
-    // execution To standardize the implementation, for both BS=1 and BS>1, we use internal buffer to store BS=1/BS>1
-    // results, and copy to request's external buffers. For BS=1, this introduces a redundancy copy, but ok for now.
+    // output buffer owned by llmRequest, such that it's per-request output
+    // buffer
+    // encoderBuffers class can init and reshape each buffer, without
+    // maintaining a list/set of inflight buffers
+    // TODO in progress: to support BS>1 encoder, need (1) internal scratch
+    // space tensors to save the contiguous
+    // batched output (2) copy from CONTIGUOUS scratch tensor to individual
+    // request's DISCRETE output tensor after
+    // execution To standardize the implementation, for both BS=1 and BS>1, we
+    // use internal buffer to store BS=1/BS>1
+    // results, and copy to request's external buffers. For BS=1, this
+    // introduces a redundancy copy, but ok for now.
 
     EncoderBuffers() = default;
     EncoderBuffers(SizeType32 maxBatchSize, ModelConfig const& modelConfig, WorldConfig const& worldConfig,
@@ -78,7 +84,8 @@ public:
     void rearrangeOutputs(RequestVector const& requests, ModelConfig const& modelConfig, WorldConfig const& worldConfig,
         TllmRuntime const& runtime);
 
-    //! @brief set shape of individual request's encoder output (Ptuning embedding table if multimodal)
+    //! @brief set shape of individual request's encoder output (Ptuning
+    // embedding table if multimodal)
     void updateReqOutputShape(RequestVector const& requests, TllmRuntime const& runtime, WorldConfig const& worldConfig,
         ModelConfig const& modelConfig);
 
@@ -116,9 +123,11 @@ private:
 
     // additional members that are Encoder-Decoder specific
 private:
-    TensorPtr encoderOutputReserved; // [1, hiddenSize], dummy tensor for gen phase
+    TensorPtr encoderOutputReserved; // [1, hiddenSize], dummy tensor for gen
+                                     // phase
     TensorPtr crossKvCacheGen;       // [1]
-    SizeType32 hiddenSize;           // full hidden size (after multiplying tensor parallelism)
+    SizeType32 hiddenSize;           // full hidden size (after multiplying tensor
+                                     // parallelism)
 
 public:
     void create(SizeType32 maxBatchSize, ModelConfig const& modelConfig, TllmRuntime const& runtime);
@@ -140,6 +149,4 @@ public:
     void insertInputTensors(TensorMap& inputMap);
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

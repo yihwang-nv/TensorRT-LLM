@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +17,11 @@
  */
 
 #include "dataTransceiver.h"
-#include "tensorrt_llm/batch_manager/cacheFormatter.h"
 
+#include "tensorrt_llm/batch_manager/cacheFormatter.h"
 #include "tensorrt_llm/batch_manager/common.h"
 #include "tensorrt_llm/batch_manager/kvCacheUtils.h"
 #include "tensorrt_llm/batch_manager/runtimeBuffers.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/tllmException.h"
@@ -35,9 +35,7 @@
 #include <memory>
 #include <unordered_map>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using BlockRange = tensorrt_llm::batch_manager::kv_cache_manager::BlockRange;
@@ -134,7 +132,8 @@ void TransferSession::exportMeasure(std::ofstream& outFile, bool isContext) cons
     // write header if not exist
     if (outFile.tellp() == 0)
     {
-        outFile << "RequestID,RequestInfo,Preparation,Preprocess,Transmissions,Postprocess";
+        outFile << "RequestID,RequestInfo,Preparation,Preprocess,Transmissions,"
+                   "Postprocess";
         for (size_t i = 0; i < mTimes->measures.size(); i++)
         {
             outFile << ",Delay,Duration,Bandwidth(Gbps)";
@@ -378,7 +377,9 @@ public:
         auto requestId = info.getRequestId();
         TLLM_CHECK_WITH_INFO(mFormatter->inquireSupport(
                                  mSelfState.getCacheState().value(), info.getTransState().getCacheState().value()),
-            "Disagg server does not currently support these cacheState, please check the cacheState of the context and "
+            "Disagg server does not currently support these "
+            "cacheState, please check the cacheState of the "
+            "context and "
             "gen executors");
         auto peerRelativeRanks = executor::kv_cache::targetIRanks(info.getTransState().getCacheState().value(),
             mSelfState.getCacheState().value(), mSelfState.getCommState().value().getSelfIdx())
@@ -422,7 +423,8 @@ public:
         bool isCancelled = false;
         std::scoped_lock lkResp(mSenderMutex);
         auto it = mReadyResponses.find(llmRequest.mRequestId);
-        // If the request is not the current request and already in the ready queue, we can cancel it.
+        // If the request is not the current request and already in the ready
+        // queue, we can cancel it.
         if (it != mReadyResponses.end()
             && (!mCurrentRequest.has_value() || getCurrentRequestId() != llmRequest.mRequestId))
         {
@@ -498,7 +500,9 @@ private:
                 {
                     if (!resource.mSendQueue.empty())
                     {
-                        TLLM_LOG_WARNING("There are still %zu requests in the mSendQueue, but encountered terminate.",
+                        TLLM_LOG_WARNING(
+                            "There are still %zu requests in the "
+                            "mSendQueue, but encountered terminate.",
                             resource.mSendQueue.size());
                     }
                     break;
@@ -569,7 +573,8 @@ private:
                 }
                 else
                 {
-                    // if we send data in another thread, multiple rank may send data for different requests at the same
+                    // if we send data in another thread, multiple rank may send data
+                    // for different requests at the same
                     // time with gen DP case.
                     asyncSendAndRemoveResponse(it->first, std::move(it->second));
                 }
@@ -577,8 +582,10 @@ private:
             }
             else
             {
-                // TODO: if the generation does not require the kv cache, the request will
-                // not be removed from mCancelledRequests. This should be handled by timeout.
+                // TODO: if the generation does not require the kv cache, the request
+                // will
+                // not be removed from mCancelledRequests. This should be handled by
+                // timeout.
                 auto it = mReadyResponses.find(mCurrentRequest.value());
                 TLLM_CHECK(it != mReadyResponses.end());
                 {
@@ -669,7 +676,8 @@ private:
             std::unique_lock lk(mCondMutex);
             mTerminate = true;
         }
-        // We don't have to wait for the future. If another thread is sending data, it won't pay attention
+        // We don't have to wait for the future. If another thread is sending
+        // data, it won't pay attention
         // to the terminate flag.
         mSenderCv.notify_all();
         mAsyncSendResource.mTerminate = true;
@@ -987,8 +995,9 @@ private:
     void requestSync(LlmRequest& llmRequest)
     {
         TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-            "Start calling requestSync for request ID: %zu, context request ID: %zu.", llmRequest.mRequestId,
-            llmRequest.getContextPhaseParams().value().getReqId());
+            "Start calling requestSync for request ID: %zu, context "
+            "request ID: %zu.",
+            llmRequest.mRequestId, llmRequest.getContextPhaseParams().value().getReqId());
         llmRequest.setKvCacheTransferStart(std::chrono::steady_clock::now());
         TLLM_CUDA_CHECK(cudaSetDevice(mDeviceId));
         auto session = sendRequestInfo(llmRequest);
@@ -1005,8 +1014,9 @@ private:
         llmRequest.setKvCacheTransferEnd(std::chrono::steady_clock::now());
 
         TLLM_LOG_DEBUG(mpi::MpiComm::world().getRank(),
-            "End calling requestSync for request ID: %zu, context request ID: %zu.", llmRequest.mRequestId,
-            llmRequest.getContextPhaseParams().value().getReqId());
+            "End calling requestSync for request ID: %zu, context "
+            "request ID: %zu.",
+            llmRequest.mRequestId, llmRequest.getContextPhaseParams().value().getReqId());
     }
 
     struct RequestAndPromise
@@ -1080,7 +1090,8 @@ private:
                     if (!resource.mRequestsQueue.empty())
                     {
                         TLLM_LOG_WARNING(
-                            "There are still %zu requests in the mRequestsQueue, but encountered terminate.",
+                            "There are still %zu requests in the "
+                            "mRequestsQueue, but encountered terminate.",
                             resource.mRequestsQueue.size());
                     }
                     break;
@@ -1097,7 +1108,9 @@ private:
                 }
                 catch (tensorrt_llm::common::RequestSpecificException const& err)
                 {
-                    TLLM_LOG_ERROR("Exception in DataRequester request(): request id:%zu , request context id:%zu : %s",
+                    TLLM_LOG_ERROR(
+                        "Exception in DataRequester request(): request "
+                        "id:%zu , request context id:%zu : %s",
                         requestAndPromise.mRequest->mRequestId,
                         requestAndPromise.mRequest->getContextPhaseParams().value().getReqId(), err.what());
                     auto new_exception = TLLM_REQUEST_EXCEPTION(
@@ -1106,7 +1119,9 @@ private:
                 }
                 catch (std::exception const& err)
                 {
-                    TLLM_LOG_ERROR("Exception in CacheReceiver request(): request id:%ld , request context id:%ld : %s",
+                    TLLM_LOG_ERROR(
+                        "Exception in CacheReceiver request(): request "
+                        "id:%ld , request context id:%ld : %s",
                         requestAndPromise.mRequest->mRequestId,
                         requestAndPromise.mRequest->getContextPhaseParams().value().getReqId(), err.what());
                     requestAndPromise.mPromise->set_exception(std::current_exception());
@@ -1215,6 +1230,4 @@ bool CacheReceiver::receiveReadySignal(TransferSession& session)
     return mImpl->receiveReadySignal(session);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

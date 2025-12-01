@@ -26,10 +26,8 @@
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <typename _Param, typename _InputType, typename _OutputType, typename _AccumulatorType, bool _RMS_NORM,
     int _M_BLOCK, int _N_BLOCK, int _STAGES = 3, bool _PERSISTENT_MODE = true, bool _LOW_LATENCY_MODE = false>
 struct FP4AddBiasResidualPreLayerNormTraits
@@ -80,7 +78,9 @@ void invokeWSLayerNormImpl(
         {
             int waves = ((param.m + Traits::M_BLOCK - 1) / Traits::M_BLOCK + ctas - 1) / ctas;
             TLLM_LOG_DEBUG(
-                "Selected TILE_M = %d, N = %d, STAGE = %d, PERSISTENT_MODE = %d, LOW_LATENCY_MODE = %d for param M = "
+                "Selected TILE_M = %d, N = %d, STAGE = %d, "
+                "PERSISTENT_MODE = %d, LOW_LATENCY_MODE = %d for param M "
+                "= "
                 "%d, N = %d, num_sms = %d. (waves = %d)\n",
                 Traits::M_BLOCK, Traits::N_BLOCK, Traits::STAGES, Traits::PERSISTENT_MODE, Traits::LOW_LATENCY_MODE,
                 param.m, param.n, ctas, waves);
@@ -320,6 +320,4 @@ void invokeWSLayerNorm<GeneralFP4AddBiasResidualPreLayerNormParam<__nv_bfloat16>
     invokeWSLayerNormImpl(param, use_rms_norm, ctas);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

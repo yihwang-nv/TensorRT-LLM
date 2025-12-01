@@ -18,14 +18,11 @@
 
 #include "decodingInput.h"
 #include "decodingOutput.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/speculativeDecodingMode.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::decoder
+namespace tensorrt_llm::runtime::decoder
 {
 
 class BeamSearchBuffers
@@ -59,7 +56,8 @@ public:
         ModelConfig const& modelConfig, WorldConfig const& worldConfig, BufferManager const& bufferManager);
 
     //! @brief Setup buffers for the cache indirection.
-    //! @details This is used for beam search on pipeline parallel ranks without a decoder.
+    //! @details This is used for beam search on pipeline parallel ranks without
+    // a decoder.
     void setupCacheIndirection(SizeType32 maxNumSequences, SizeType32 maxBeamWidth, SizeType32 maxAttentionWindow,
         BufferManager const& bufferManager);
 
@@ -74,41 +72,52 @@ public:
     //! @returns [batchSize], number of finished sequences per request, on gpu
     [[nodiscard]] TensorPtr getFinishedSum() const;
 
-    //! @returns [batchSize, beamWidth], finished states of type FinishedState, on gpu
+    //! @returns [batchSize, beamWidth], finished states of type FinishedState,
+    // on gpu
     [[nodiscard]] TensorPtr getFinishReasons() const;
 
-    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens], contains input token ids and generated token
-    //! ids without padding, on gpu. In case of beam search, contains the ungathered data.
+    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens],
+    // contains input token ids and generated token
+    //! ids without padding, on gpu. In case of beam search, contains the
+    // ungathered data.
     [[nodiscard]] TensorPtr getIds() const;
 
     //! @param batchIdx index of the batch
-    //! @returns [maxBeamWidth, maxInputLength + maxNewTokens], contains input token ids and generated token ids without
-    //! padding for request `batchIdx`, on gpu. In case of beam search, contains the ungathered data.
+    //! @returns [maxBeamWidth, maxInputLength + maxNewTokens], contains input
+    // token ids and generated token ids without
+    //! padding for request `batchIdx`, on gpu. In case of beam search, contains
+    // the ungathered data.
     [[nodiscard]] TensorPtr getIds(SizeType32 batchIdx) const;
 
-    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens], only used for beam search. It contains
+    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens], only
+    // used for beam search. It contains
     //! gathered token ids without padding, on gpu.
     [[nodiscard]] TensorPtr getGatheredIds() const;
 
     //! @param batchIdx index of the batch
-    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens], only used for beam search. It contains
+    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens], only
+    // used for beam search. It contains
     //! gathered token ids without padding for request `batchIdx`, on gpu.
     [[nodiscard]] TensorPtr getGatheredIds(SizeType32 batchIdx) const;
 
-    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens], contains parent ids collected during beam
+    //! @returns [batchSize, maxBeamWidth, maxInputLength + maxNewTokens],
+    // contains parent ids collected during beam
     //! search without padding, on gpu
     [[nodiscard]] TensorPtr getParentIds() const;
 
-    //! @returns [batchSize, maxBeamWidth], cumulative log probabilities (per beam), on gpu
+    //! @returns [batchSize, maxBeamWidth], cumulative log probabilities (per
+    // beam), on gpu
     [[nodiscard]] TensorPtr getCumLogProbs() const;
 
     //! @returns [maxBeamWidth], cumulative log probabilities (per beam), on gpu
     [[nodiscard]] TensorPtr getCumLogProbs(SizeType32 batchIdx) const;
 
-    //! @returns [batchSize, maxBeamWidth, maxSequenceLength], log probabilities (per beam), on gpu
+    //! @returns [batchSize, maxBeamWidth, maxSequenceLength], log probabilities
+    //(per beam), on gpu
     [[nodiscard]] TensorPtr getLogProbs() const;
 
-    //! @returns [maxBeamWidth, maxSequenceLength], log probabilities (per beam), on gpu
+    //! @returns [maxBeamWidth, maxSequenceLength], log probabilities (per
+    // beam), on gpu
     [[nodiscard]] TensorPtr getLogProbs(SizeType32 batchIdx) const;
 
     //! @returns [batchSize, maxBeamWidth], sequence lengths, on gpu
@@ -119,22 +128,28 @@ public:
     [[nodiscard]] TensorPtr getSequenceLengths(SizeType32 batchIdx) const;
 
     //! @brief Get maxTokensPerStep tokens generated in the last forward pass
-    //! @returns [maxTokensPerStep, batchSize, maxBeamWidth], tokens generated in last forward pass, on gpu
+    //! @returns [maxTokensPerStep, batchSize, maxBeamWidth], tokens generated
+    // in last forward pass, on gpu
     [[nodiscard]] TensorPtr getAllNewTokens() const;
 
-    //! @returns [batchSize, maxDraftTokens], predicted draft tokens for next step, on gpu
+    //! @returns [batchSize, maxDraftTokens], predicted draft tokens for next
+    // step, on gpu
     [[nodiscard]] TensorPtr getNextDraftTokens() const;
 
-    //! @returns [batchSize], predicted draft tokens lengths for previous step, on gpu
+    //! @returns [batchSize], predicted draft tokens lengths for previous step,
+    // on gpu
     [[nodiscard]] TensorPtr getPrevDraftTokensLengths() const;
 
-    //! @returns [batchSize], predicted draft tokens lengths for next step, on gpu
+    //! @returns [batchSize], predicted draft tokens lengths for next step, on
+    // gpu
     [[nodiscard]] TensorPtr getNextDraftTokensLengths() const;
 
-    //! @returns [batchSize + 1], exclusive sum of accepted draft token lengths, on gpu
+    //! @returns [batchSize + 1], exclusive sum of accepted draft token lengths,
+    // on gpu
     [[nodiscard]] TensorPtr getAcceptedLengthsCumSum() const;
 
-    //! @returns [batchSize, maxAcceptedDraftTokensPerStep], accepted paths packed into continuous tensor, on gpu
+    //! @returns [batchSize, maxAcceptedDraftTokensPerStep], accepted paths
+    // packed into continuous tensor, on gpu
     [[nodiscard]] TensorPtr getAcceptedPackedPaths() const;
 
     [[nodiscard]] SizeType32 getMaxNumSequences() const;
@@ -192,13 +207,16 @@ public:
     [[nodiscard]] std::optional<std::vector<SizeType32>> const& getGenerationSteps() const;
 
     //! @brief Set the generation steps for all requests in the batch.
-    //! @param generationSteps The generation steps for all requests in the batch.
+    //! @param generationSteps The generation steps for all requests in the
+    // batch.
     void setGenerationSteps(std::vector<SizeType32> const& generationSteps);
 
-    //! @brief Stateful inputs for the decoder. Allocated for maxNumSequences slots.
+    //! @brief Stateful inputs for the decoder. Allocated for maxNumSequences
+    // slots.
     [[nodiscard]] DecodingInput& getJointDecodingInput() const;
 
-    //! @brief Stateful outputs for the decoder. Allocated for maxNumSequences slots.
+    //! @brief Stateful outputs for the decoder. Allocated for maxNumSequences
+    // slots.
     [[nodiscard]] DecodingOutput& getJointDecodingOutput() const;
 
 private:
@@ -221,20 +239,24 @@ private:
     SizeType32 mMaxBeamWidth{};
     SizeType32 mMaxSequenceLength{};
 
-    //! @brief Stateful inputs for the decoder. Allocated for maxNumSequences slots.
+    //! @brief Stateful inputs for the decoder. Allocated for maxNumSequences
+    // slots.
     DecodingInputPtr mJointDecodingInput;
-    //! @brief Stateful outputs for the decoder. Allocated for maxNumSequences slots.
+    //! @brief Stateful outputs for the decoder. Allocated for maxNumSequences
+    // slots.
     DecodingOutputPtr mJointDecodingOutput;
 
     //! @brief Workspace for beam search in streaming mode.
     std::unique_ptr<BeamSearchBuffers> mBeamSearchBuffers;
 
     // How many tokens for one request can be processed per mDecoders call.
-    // It is maxDecodingTokens for non speculative decoding and Draft model approach.
+    // It is maxDecodingTokens for non speculative decoding and Draft model
+    // approach.
     // Otherwise it is 1.
     SizeType32 mMaxDecodingDecoderTokens{1};
     // How many tokens predicted by the engine for one request.
-    // It is maxDecodingTokens. >= 1 for speculative decoding and == 1 for non speculative decoding.
+    // It is maxDecodingTokens. >= 1 for speculative decoding and == 1 for non
+    // speculative decoding.
     SizeType32 mMaxDecodingEngineTokens{1};
 
     //! @brief [batchSize], the num tokens of each request.
@@ -243,6 +265,4 @@ private:
     SpeculativeDecodingMode mSpeculativeDecodingMode{SpeculativeDecodingMode::None()};
 };
 
-} // namespace runtime::decoder
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::decoder

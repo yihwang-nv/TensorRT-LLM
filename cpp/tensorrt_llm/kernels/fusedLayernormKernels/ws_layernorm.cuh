@@ -26,10 +26,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct DummyFusedOperator
 {
@@ -77,8 +74,9 @@ struct WarpSpecializedLayerNorm
     struct Shared
     {
 
-        __align__(128) typename Traits::AccumulatorType wg_reduce[Traits::MATH_WARPGROUPS][4][Traits::M_BLOCK
-            * (Traits::RMS_NORM ? 1 : 2)]; // Only var is needed for RMSNorm.
+        __align__(128) typename Traits::AccumulatorType
+            wg_reduce[Traits::MATH_WARPGROUPS][4][Traits::M_BLOCK * (Traits::RMS_NORM ? 1 : 2)]; // Only var is needed
+                                                                                                 // for RMSNorm.
         __align__(128) typename Traits::InputType
             input_vec[Traits::STAGES][Traits::RESIDUAL ? 2 : 1][Traits::M_BLOCK * Traits::N_BLOCK];
         __align__(128)
@@ -207,7 +205,8 @@ struct WarpSpecializedLayerNorm
 
                 auto vec_buffer_ptr = input_vec_fifo_w.tmaReserve(tx);
 
-                // if (blockIdx.x == 0) printf("SMEM buffer ready, start loading tile %d.\n", m_base);
+                // if (blockIdx.x == 0) printf("SMEM buffer ready, start loading tile
+                // %d.\n", m_base);
 
                 if constexpr (FIRST_RUN)
                 {
@@ -222,8 +221,10 @@ struct WarpSpecializedLayerNorm
                         __nvvm_get_smem_pointer(input_vec_fifo_w.barrier_ptr(vec_buffer_ptr)));
                 }
 
-                // Use templated lambdas to defer resolving the symbols like "param.residual".
-                // Otherwise compiler will complain about symbols, like param.residual, doesn't exist even if
+                // Use templated lambdas to defer resolving the symbols like
+                // "param.residual".
+                // Otherwise compiler will complain about symbols, like param.residual,
+                // doesn't exist even if
                 // corresponding traits, like Traits::RESIDUAL, are false.
                 if constexpr (Traits::RESIDUAL)
                 {
@@ -446,7 +447,8 @@ struct WarpSpecializedLayerNorm
             {
                 m_base = block_id;
             }
-            // if (blockIdx.x == 0 && thread_id == 0) printf("MATH got tile %d.\n", m_base);
+            // if (blockIdx.x == 0 && thread_id == 0) printf("MATH got tile %d.\n",
+            // m_base);
 
             // Peek for data ready.
             auto data_ready = input_vec_fifo_r.peek();
@@ -457,12 +459,15 @@ struct WarpSpecializedLayerNorm
 
             constexpr auto PACKED_PER_N_BLOCK = Traits::N_BLOCK / 128 / Traits::PACKED_ELEMS_PER_COMPUTE;
 
-            // Accumulators. threadX holds vec[X*PACKED_ELEMS_PER_COMP...(X+1)*PACKED_ELEMS_PER_COMP),
-            // vec[(128+X)*PACKED_ELEMS_PER_COMP, (129+X)*PACKED_ELEMS_PER_COMP), ... for every M.
+            // Accumulators. threadX holds
+            // vec[X*PACKED_ELEMS_PER_COMP...(X+1)*PACKED_ELEMS_PER_COMP),
+            // vec[(128+X)*PACKED_ELEMS_PER_COMP, (129+X)*PACKED_ELEMS_PER_COMP), ...
+            // for every M.
             typename Traits::AccumulatorType data[Traits::M_BLOCK][PACKED_PER_N_BLOCK]
                                                  [Traits::PACKED_ELEMS_PER_COMPUTE];
             typename Traits::AccumulatorType
-                mean_and_var[Traits::M_BLOCK * (Traits::RMS_NORM ? 1 : 2)]; // Only var is needed for RMSNorm.
+                mean_and_var[Traits::M_BLOCK * (Traits::RMS_NORM ? 1 : 2)]; // Only var is needed
+                                                                            // for RMSNorm.
             typename Traits::AccumulatorType *variance = &mean_and_var[0],
                                              *mean = Traits::RMS_NORM ? nullptr : &mean_and_var[Traits::M_BLOCK];
 
@@ -841,6 +846,4 @@ __global__ void __launch_bounds__(TARGET_THREADS, 1) warpSpecializedInvoker(type
     T::run(param);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -19,7 +19,8 @@
 #include "tensorrt_llm/kernels/contextFusedMultiHeadAttention/fmhaPackedMask.h"
 #include "tensorrt_llm/thop/thUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -81,7 +82,8 @@ Tensor pack_fmha_mask_by_input_helper(
     CHECK_TH_CUDA(actual_q_seqlens);
     TORCH_CHECK(mask_input.numel() != 0 && actual_q_seqlens.numel() != 0, "input should not be empty tensor");
     TORCH_CHECK(mask_input.dim() == 2 || mask_input.dim() == 3,
-        "Invalid dim. The dim of mask_input should either be [num_tokens, max_kv_seqlen] or [batch_size, max_q_seqlen, "
+        "Invalid dim. The dim of mask_input should either be "
+        "[num_tokens, max_kv_seqlen] or [batch_size, max_q_seqlen, "
         "max_kv_seqlen]");
 
     auto maskDataType = mask_input.scalar_type();
@@ -120,7 +122,8 @@ Tensor pack_fmha_mask_by_input_helper(
     // Set the parameters for creating packed mask.
     PackedMaskParams<T> maskParams{};
     maskParams.maskInput = get_ptr<T const>(mask_input);
-    // It assumes the mask input shape is [batchSize, maxQSeqLen, maxKvSeqLen] when nullptr is given, otherwise
+    // It assumes the mask input shape is [batchSize, maxQSeqLen, maxKvSeqLen]
+    // when nullptr is given, otherwise
     // [batchSize, maxQSeqLen] is packed.
     maskParams.cuQSeqLens = packed_mask_input ? get_ptr<int>(cu_q_seqlens) : nullptr;
     maskParams.packedMask = get_ptr<uint32_t>(packed_mask);
@@ -180,7 +183,7 @@ Tensor pack_fmha_mask_by_input(
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

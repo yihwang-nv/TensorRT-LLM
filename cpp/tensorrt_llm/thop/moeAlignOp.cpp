@@ -21,7 +21,8 @@
 
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -49,13 +50,14 @@ void moeAlignBlockSizeOp(torch::Tensor topk_ids, int64_t num_experts, int64_t bl
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
         "moe_align_block_size(Tensor topk_ids, int num_experts, int block_size, "
-        "Tensor(a!) sorted_token_ids, Tensor(a!) expert_ids, Tensor(a!) num_tokens_post_pad) -> ()");
+        "Tensor(a!) sorted_token_ids, Tensor(a!) expert_ids, Tensor(a!) "
+        "num_tokens_post_pad) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

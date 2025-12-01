@@ -27,12 +27,15 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
-// Given the rowIdx and colIdx in the unswizzled SFMatrix, compute the 1D offset in the swizzled SFMatrix.
-// colIdx and totalCloumn should be in SFMatrix, not activation Matrix, so no sfVecSize needed.
+// Given the rowIdx and colIdx in the unswizzled SFMatrix, compute the 1D offset
+// in the swizzled SFMatrix.
+// colIdx and totalCloumn should be in SFMatrix, not activation Matrix, so no
+// sfVecSize needed.
 inline int computeSFIndex(int rowIdx, int colIdx, int totalRow, int totalColumn,
     tensorrt_llm::QuantizationSFLayout layout, bool useUE8M0 = false)
 {
@@ -87,4 +90,4 @@ torch::Tensor symmetric_dequantize_per_tensor(torch::Tensor input, torch::Tensor
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

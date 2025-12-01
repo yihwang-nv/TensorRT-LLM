@@ -24,10 +24,7 @@
 #include <limits.h>
 #include <stdint.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -77,13 +74,17 @@ enum class AttentionInputLayout
 {
     // QKV are packed into [B, S, 3, H, D] layout.
     PACKED_QKV = 0,
-    // Q has contiguous [B, S, H, D] layout, while KV has contiguous [B, 2, H, S, D] layout.
+    // Q has contiguous [B, S, H, D] layout, while KV has contiguous [B, 2, H, S,
+    // D] layout.
     Q_CONTIGUOUS_KV,
-    // Q has contiguous [B, S, H, D] layout, while paged KV has [B, 2, Max_blocks_per_seq] layout
-    // that contains paged block indices. The indices indicate the block offset to the pool ptr in
+    // Q has contiguous [B, S, H, D] layout, while paged KV has [B, 2,
+    // Max_blocks_per_seq] layout
+    // that contains paged block indices. The indices indicate the block offset to
+    // the pool ptr in
     // global memory
     Q_PAGED_KV,
-    // Q has contiguous [B, S, H, D] layout, while K has contiguous [B, S, H_kv, D] layout, and V has
+    // Q has contiguous [B, S, H, D] layout, while K has contiguous [B, S, H_kv,
+    // D] layout, and V has
     // contiguous [B, S, H_kv, D_v] layout. Only used for context MLA now.
     SEPARATE_Q_K_V,
 };
@@ -100,8 +101,10 @@ struct MHARunnerFixedParams
     Data_type dataTypeOut;
 
     // Do we use fp32 accumulation ?
-    // TODO: remove forceFp32Acc from MHARunnerFixedParams after adding host_runtime_perf_knobs to
-    // bertAttentionPlugin input tensors, so that we can change mLaunchParams.force_fp32_acc value in runtime.
+    // TODO: remove forceFp32Acc from MHARunnerFixedParams after adding
+    // host_runtime_perf_knobs to
+    // bertAttentionPlugin input tensors, so that we can change
+    // mLaunchParams.force_fp32_acc value in runtime.
     bool forceFp32Acc;
     // The attention mask type.
     ContextAttentionMaskType attentionMaskType;
@@ -216,7 +219,8 @@ struct MHARunnerFixedParams
         case 2: // tensorrt_llm::kernels::AttentionMaskType::SLIDING_OR_CHUNKED_CAUSAL
             attentionMaskType = ContextAttentionMaskType::SLIDING_OR_CHUNKED_CAUSAL;
             break;
-        // NOTE: For BIDIRECTIONAL, BIDIRECTIONALGLM, BLOCKSPARSE context phase, CAUSAL mask is used
+        // NOTE: For BIDIRECTIONAL, BIDIRECTIONALGLM, BLOCKSPARSE context phase,
+        // CAUSAL mask is used
         case 3: // tensorrt_llm::kernels::AttentionMaskType::BIDIRECTIONAL
             attentionMaskType = ContextAttentionMaskType::CAUSAL;
             break;
@@ -346,9 +350,11 @@ struct AlibiParams
     int h_pow_2{};
     float alibi_neg4_div_h{};
     float scale_after_alibi{};
-    // Could be simplified to `int rank` derive the others as `num_heads * rank, s * rank` at
+    // Could be simplified to `int rank` derive the others as `num_heads * rank, s
+    // * rank` at
     // runtime, but this makes assumptions about the layout downstream
-    // (e.g. downstream may only split across the head dimension, so s would be the full sequence)
+    // (e.g. downstream may only split across the head dimension, so s would be
+    // the full sequence)
     int head_idx_offset = 0;
     int sequence_pos_offset = 0;
 };
@@ -375,7 +381,8 @@ struct Fused_multihead_attention_params_v2
     float const* attention_sinks_ptr;
     // The O matrix (output).
     void* o_ptr;
-    // The Softmax stats vector of layout [2, B, S, H], including softmax_sum and softmax_max
+    // The Softmax stats vector of layout [2, B, S, H], including softmax_sum and
+    // softmax_max
     void* softmax_stats_ptr;
 
     // The stride between rows of Q.
@@ -407,7 +414,8 @@ struct Fused_multihead_attention_params_v2
     int blocks_per_tma_load;
     int blocks_per_tma_load_log2;
 
-    // The dimensions. In ordinary multi-head attention (MHA), there are equal number of QKV heads
+    // The dimensions. In ordinary multi-head attention (MHA), there are equal
+    // number of QKV heads
     int b, h, h_kv, h_q_per_kv, s, d;
     // The dimension of V. If unset, dv = d.
     int dv = 0;
@@ -430,7 +438,8 @@ struct Fused_multihead_attention_params_v2
     // array of length b+1 holding prefix sum of actual kv sequence lengths.
     int const* cu_kv_seqlens;
     // array of length b+1 holding prefix sum of actual mask sequence lengths.
-    // it might not be the same as cu_q_seqlens as the mask seqlens will be padded.
+    // it might not be the same as cu_q_seqlens as the mask seqlens will be
+    // padded.
     int const* cu_mask_rows;
 
     // If the kernel is using alibi or not
@@ -498,7 +507,8 @@ struct Launch_params
     // use specialized kernels without alibi support.
     bool useKernelWithoutAlibi = false;
     // enable exp2 optimization (which helps improve performance).
-    // note that this is not compatible with alibi bias due to the accuracy issues.
+    // note that this is not compatible with alibi bias due to the accuracy
+    // issues.
     bool useBase2ExpTrick = false;
     // enable attention logit softcapping scale.
     bool enableAttnLogitSoftcapping = false;
@@ -517,6 +527,4 @@ struct Launch_params
     bool supportReturnSoftmaxStats;
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +17,15 @@
  */
 
 #include "tensorrt_llm/batch_manager/evictionPolicy.h"
-#include "tensorrt_llm/common/config.h"
 
 using namespace tensorrt_llm::batch_manager::kv_cache_manager;
 
 // This implements priority-based eviction.
-// Blocks are assigned priority levels, with blocks at a lower priority evicted before blocks at a higher priority.
+// Blocks are assigned priority levels, with blocks at a lower priority evicted
+// before blocks at a higher priority.
 // New priority values always override the previous value.
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::eviction_policy
+namespace tensorrt_llm::batch_manager::eviction_policy
 {
 
 auto const kMinPriority = executor::KvCacheRetentionConfig::kMinRetentionPriority;
@@ -115,9 +114,12 @@ std::tuple<BlockPtr, bool> LRUEvictionPolicy::getFreeBlock(SizeType32 cacheLevel
         {
             auto block = mFreeQueues[cacheLevel][level].front();
 
-            // mFreeQueues only contains leaf blocks, so no need to iterate through the next block pointers.
-            // It's possible to have a primary block with children in secondary memory. We handle this
-            // by freeing all descendants in WindowBlockManager::getFreeBlock. This is done either by
+            // mFreeQueues only contains leaf blocks, so no need to iterate through
+            // the next block pointers.
+            // It's possible to have a primary block with children in secondary
+            // memory. We handle this
+            // by freeing all descendants in WindowBlockManager::getFreeBlock. This
+            // is done either by
             // offloading (preferred method) or explicitly.
             return std::make_tuple(block, cacheLevel == 0 && level >= mSecondaryOffloadMinPriority);
         }
@@ -212,7 +214,8 @@ void LRUEvictionPolicy::refresh()
 
         if (mFreeBlockIterators[id] != std::nullopt)
         {
-            // This is already in another queue. Delete it, and bring it down to the default queue
+            // This is already in another queue. Delete it, and bring it down to the
+            // default queue
             mFreeQueues[level][getPriorityIdx(block->getPriority())].erase(*mFreeBlockIterators[id]);
             auto& q = mFreeQueues[level][getPriorityIdx(kDefaultPriority)];
             mFreeBlockIterators[id] = q.insert(q.end(), block);
@@ -221,6 +224,4 @@ void LRUEvictionPolicy::refresh()
     }
 }
 
-} // namespace batch_manager::eviction_policy
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::eviction_policy

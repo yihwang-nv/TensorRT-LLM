@@ -89,16 +89,13 @@ cpp_file_prefix_text = R"""/*
 
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 // clang-format off
 """
 
 cpp_file_suffex_text = R"""
 // clang-format on
-} // namespace kernels
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END
 """
 
 cubin_meta_info_struct_prefix_text = R"""

@@ -25,20 +25,19 @@
 #include <cuda_runtime.h>
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/beamSearchKernels.h"
 #include "tensorrt_llm/layers/decodingParams.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
-// Using a local lambda in beam search layers to fill buffers causes an internal compiler error on nvcc windows.
-// As a workaround and to promote DRY, the fill logic is refactored into FillBuffers below.
+// Using a local lambda in beam search layers to fill buffers causes an
+// internal compiler error on nvcc windows.
+// As a workaround and to promote DRY, the fill logic is refactored into
+// FillBuffers below.
 struct FillBuffers
 {
     using BufferPtr = runtime::IBuffer::SharedPtr;
@@ -183,6 +182,4 @@ size_t expandMatchElements(size_t expandSize, std::vector<T>&... vector)
     return expandSize;
 }
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

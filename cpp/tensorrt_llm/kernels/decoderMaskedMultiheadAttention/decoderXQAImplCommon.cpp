@@ -18,10 +18,7 @@
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/decoderXQAImplCommon.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 uint32_t getKernelMTileSize(
     uint32_t headGrpSize, bool isSpecDec, uint32_t qSeqLen, bool isXqaJit, bool supportQGMMA, bool supportMLA)
@@ -48,7 +45,8 @@ XQAKernelRuntimeHashKey getRuntimeHashKeyFromXQAParams(XQAParams const& xqaParam
     unsigned int beam_width = xqaParams.beam_width;
 
     unsigned int qSeqLen = static_cast<unsigned int>(xqaParams.generation_input_length);
-    // MultiQueryToken kernels can support any num_q_heads_over_kv that is power of 2.
+    // MultiQueryToken kernels can support any num_q_heads_over_kv that is power
+    // of 2.
     unsigned int kernel_num_q_heads_over_kv = xqaParams.multi_query_tokens ? 0 : num_q_heads_over_kv;
     bool supportQGMMA = jit::supportConfigQGMMA(xqaParams, SM, true);
     bool supportMLA = jit::supportConfigMLA(xqaParams, SM, true);
@@ -62,6 +60,4 @@ XQAKernelRuntimeHashKey getRuntimeHashKeyFromXQAParams(XQAParams const& xqaParam
         isXqaJit ? std::optional(xqaParams.position_embedding_type) : std::nullopt};
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

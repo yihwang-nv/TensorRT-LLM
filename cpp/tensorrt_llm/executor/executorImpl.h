@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/arrayView.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/dynamicBatchTuner.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/intervalSet.h"
@@ -43,9 +43,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 class RequestWithIdAsyncSend;
@@ -77,7 +75,6 @@ private:
 };
 
 class Executor::Impl
-
 {
     using LlmRequestPtr = std::shared_ptr<batch_manager::LlmRequest>;
     using RequestList = std::list<LlmRequestPtr>;
@@ -225,7 +222,8 @@ private:
     void appendNewResponses(std::vector<Response>&& newResponses);
 
     /// @brief Populates new responses from active requests.
-    ///        Active requests that have completed are erased from activeRequests
+    ///        Active requests that have completed are erased from
+    /// activeRequests
     ///        and returned for bookkeeping.
     /// @return A list of requests that have completed.
     RequestList populateNewResponses(
@@ -253,11 +251,13 @@ private:
     // These functions wait for MPI async sends on separate threads
     void requestWithIdWaitThread();
     void cancelledRequestsWaitThread();
-    // These functions send data from leader to pipeline leader on separate threads
+    // These functions send data from leader to pipeline leader on separate
+    // threads
     void requestWithIdLeaderThread();
     void cancelledRequestsLeaderThread();
 
-    /// @brief mark requests that have timed out before ever being executed as finished.
+    /// @brief mark requests that have timed out before ever being executed as
+    /// finished.
     ///        uses cancellation based on communication mode.
     ///
     /// @param activeRequests [in] List of active requests to check for timeouts
@@ -295,8 +295,10 @@ private:
     mutable std::mutex mResponsesMtx;
     std::condition_variable mResponsesCv;
 
-    // Since the request IDs are generated sequentially, IntervalSet is preferred over unordered_set for its efficient
-    // memory usage to stores request ID intervals rather than individual request ID numbers.
+    // Since the request IDs are generated sequentially, IntervalSet is
+    // preferred over unordered_set for its efficient
+    // memory usage to stores request ID intervals rather than individual
+    // request ID numbers.
     IntervalSet<IdType> mTerminatedReqIds;
 
     std::unordered_map<IdType, std::vector<IdType>> mChildReqIdsMap;
@@ -371,6 +373,4 @@ private:
     std::shared_ptr<DynamicBatchTuner> mDynamicBatchTuner;
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

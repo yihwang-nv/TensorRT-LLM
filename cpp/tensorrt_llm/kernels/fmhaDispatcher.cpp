@@ -18,10 +18,7 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +48,8 @@ FmhaDispatcher::FmhaDispatcher(MHARunnerFixedParams fixedParams)
     : mFixedParams(fixedParams)
     // TRTLLM-GEN only supports power of 2 head sizes.
     // The exception will fall back to fmha v2.
-    // Please update fmha_v2/setup.py if you want to add more supported head sizes.
+    // Please update fmha_v2/setup.py if you want to add more supported head
+    // sizes.
     , mUseTllmGen(tensorrt_llm::common::isSM100Family() && fixedParams.headSize != 80)
 {
     if (mUseTllmGen)
@@ -69,7 +67,8 @@ FmhaDispatcher::FmhaDispatcher(MHARunnerFixedParams fixedParams)
             "KV cache data type %s is not the same as input data type %s.",
             data_type_to_string(mFixedParams.dataTypeKv).c_str(), data_type_to_string(mFixedParams.dataType).c_str());
 
-        // For FP8 MLA generation, the output type is BF16, which could be different from the input type.
+        // For FP8 MLA generation, the output type is BF16, which could be different
+        // from the input type.
         // So we shouldn't do this check anymore.
         // TLLM_CHECK_WITH_INFO(mFixedParams.dataType == mFixedParams.dataTypeOut,
         //     "Output data type should be the same as input data type.");
@@ -102,7 +101,8 @@ bool FmhaDispatcher::isSupported()
         }
 
         auto qkvLayout = AttentionInputLayoutToQkvLayout(mFixedParams.attentionInputLayout);
-        // Create TllmGenFmhaRunnerParams based on MHARunnerFixedParams. Only fill necessary
+        // Create TllmGenFmhaRunnerParams based on MHARunnerFixedParams. Only fill
+        // necessary
         // attributes for kernel selection.
         TllmGenFmhaRunnerParams tllmRunnerParams;
         memset(&tllmRunnerParams, 0, sizeof(tllmRunnerParams));
@@ -116,7 +116,8 @@ bool FmhaDispatcher::isSupported()
         tllmRunnerParams.mHeadDimV = mFixedParams.headSizeV;
         tllmRunnerParams.mNumTokensPerPage = mFixedParams.numTokensPerBlock;
         tllmRunnerParams.mNumHeadsQPerKv = mFixedParams.numQHeads / mFixedParams.numKvHeads;
-        // Set the chunked attention size and sliding window size to INT_MAX to disable them when checking if
+        // Set the chunked attention size and sliding window size to INT_MAX to
+        // disable them when checking if
         // the kernel is supported.
         tllmRunnerParams.mChunkedAttentionSize = INT_MAX;
         tllmRunnerParams.mAttentionWindowSize = INT_MAX;
@@ -221,7 +222,8 @@ void FmhaDispatcher::run(MHARunnerParams runnerParams)
         tllmRunnerParams.mMaxNumPagesPerSeqKv = maxBlocksPerSeq;
         tllmRunnerParams.mNumTokensPerPage = numTokensPerBlock;
         tllmRunnerParams.mScaleQ = mFixedParams.qScaling;
-        // Set it to INT_MAX as the kv cache pageOffsets will ensure that there is no out-of-bounds access.
+        // Set it to INT_MAX as the kv cache pageOffsets will ensure that there is
+        // no out-of-bounds access.
         tllmRunnerParams.mNumPagesInMemPool = INT_MAX;
         tllmRunnerParams.mSfStartTokenIdx = 0;
         // For mla chunked prefill
@@ -249,6 +251,4 @@ void FmhaDispatcher::run(MHARunnerParams runnerParams)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

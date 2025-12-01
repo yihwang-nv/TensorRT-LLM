@@ -43,12 +43,10 @@
 #include "tensorrt_llm/kernels/cutlass_kernels/fpA_intB_gemm/fpA_intB_gemm_template_sm90.h"
 
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 using namespace cute;
@@ -83,14 +81,16 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
             || cutlass::platform::is_same<WeightType, cutlass::uint4b_t>::value,
         "");
 
-    // The cutlass type for the input elements. This is needed to convert to cutlass::half_t if necessary.
+    // The cutlass type for the input elements. This is needed to convert to
+    // cutlass::half_t if necessary.
     using CutlassActivationType = typename TllmToCutlassTypeAdapter<ActivationType>::type;
     using CutlassWeightType = typename TllmToCutlassTypeAdapter<WeightType>::type;
     using CutlassScaleZeroType = typename TllmToCutlassTypeAdapter<ScaleZeroType>::type;
     using CutlassBiasType = typename TllmToCutlassTypeAdapter<BiasType>::type;
     using CutlassOutputType = typename TllmToCutlassTypeAdapter<OutputType>::type;
 
-    // We need separate config for each architecture since we will target different tensorcore instructions. For float,
+    // We need separate config for each architecture since we will target
+    // different tensorcore instructions. For float,
     // we do not target TCs.
     using MixedGemmArchTraits
         = cutlass::gemm::kernel::MixedGemmArchTraits<CutlassActivationType, CutlassWeightType, arch>;
@@ -118,7 +118,7 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
 
     if (occupancy != nullptr)
     {
-        *occupancy = tensorrt_llm::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel>();
+        *occupancy = tensorrt_llm::kernels::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel>();
         return;
     }
 
@@ -139,7 +139,9 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
         {
             if (group_size != 128)
             {
-                throw std::runtime_error("Only group size 128 supported for fine grained W4A(fp)8 kernels.");
+                throw std::runtime_error(
+                    "Only group size 128 supported for fine "
+                    "grained W4A(fp)8 kernels.");
             }
         }
         if (group_size != 64 && group_size != 128)
@@ -151,14 +153,18 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
         {
             if (weight_zero_points != nullptr)
             {
-                throw std::runtime_error("Weight zero pointer must be a nullptr for scale only fine grained");
+                throw std::runtime_error(
+                    "Weight zero pointer must be a nullptr "
+                    "for scale only fine grained");
             }
         }
         else if constexpr (QuantOp == cutlass::WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS)
         {
             if (weight_zero_points == nullptr)
             {
-                throw std::runtime_error("Weight zero pointer must be valid for scale and bias fine grained");
+                throw std::runtime_error(
+                    "Weight zero pointer must be valid for "
+                    "scale and bias fine grained");
             }
         }
     }
@@ -186,9 +192,12 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
         {reinterpret_cast<CutlassOutputType*>(C), n}, gemm_config.split_k_factor,
         {ElementAccumulator(alpha), output_op_beta});
 
-    // This assertion is enabled because because for the column interleaved layout, K MUST be a multiple of
-    // threadblockK. The reason for this is that the default pitchlinear iterators are used to handle walking over the
-    // interleaved matrix. The way masking in handled in these do not map to the interleaved layout. We need to write
+    // This assertion is enabled because because for the column interleaved
+    // layout, K MUST be a multiple of
+    // threadblockK. The reason for this is that the default pitchlinear iterators
+    // are used to handle walking over the
+    // interleaved matrix. The way masking in handled in these do not map to the
+    // interleaved layout. We need to write
     // our own predicated iterator in order to relax this limitation.
     if (GemmKernel::kInterleave > 1
         && ((k % MixedGemmArchTraits::ThreadblockK)
@@ -201,8 +210,10 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
     if (gemm.get_workspace_size(args) > workspace_bytes)
     {
         TLLM_LOG_WARNING(
-            "Requested split-k but workspace size insufficient. Falling back to non-split-k implementation.");
-        // If requested split-k factor will require more workspace bytes, revert to standard gemm.
+            "Requested split-k but workspace size insufficient. "
+            "Falling back to non-split-k implementation.");
+        // If requested split-k factor will require more workspace bytes, revert to
+        // standard gemm.
         args.batch_count = 1;
     }
 
@@ -231,9 +242,12 @@ void generic_mixed_gemm_kernelLauncher(ActivationType const* A, WeightType const
     }
 }
 
-// This filters out invalid template combinations that we DON'T want instantiated in CUTLASS. For example,
-// instantiating SM=75, Stages=3 is invalid so we would need to filter that out. Fine grained
-// quanitzation is only supported on Ampere+ GPUs. FP8 GEMM is only supported on Ada+ GPUs.
+// This filters out invalid template combinations that we DON'T want
+// instantiated in CUTLASS. For example,
+// instantiating SM=75, Stages=3 is invalid so we would need to filter that out.
+// Fine grained
+// quanitzation is only supported on Ampere+ GPUs. FP8 GEMM is only supported on
+// Ada+ GPUs.
 template <typename ActivationType, typename WeightType, typename ScaleZeroType, typename BiasType, typename OutputType,
     typename arch, cutlass::WeightOnlyQuantOp QuantOp, typename EpilogueTag, typename ThreadblockShape,
     typename WarpShape, int Stages>
@@ -324,7 +338,8 @@ void dispatch_gemm_to_cutlass(ActivationType const* A, WeightType const* B, Scal
 
     TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
 
-    // Don't instantiate configs that are not supported pre-hopper. Produce a sensible error instead.
+    // Don't instantiate configs that are not supported pre-hopper. Produce a
+    // sensible error instead.
     constexpr bool any_is_fp8 = is_fp8<ActivationType>() || is_fp8<WeightType>() || is_fp8<ScaleZeroType>()
         || is_fp8<BiasType>() || is_fp8<OutputType>();
 
@@ -335,8 +350,10 @@ void dispatch_gemm_to_cutlass(ActivationType const* A, WeightType const* B, Scal
 
     if constexpr (is_valid_pre_hopper)
     {
-        // Note that SIMT configs are omitted here since they are not supported for fpA_intB.
-        // We also only instantiate configs here where threadblockShapeM == warpShapeM since those usually perform the
+        // Note that SIMT configs are omitted here since they are not supported
+        // for fpA_intB.
+        // We also only instantiate configs here where threadblockShapeM ==
+        // warpShapeM since those usually perform the
         // best for mixed type gemms.
         constexpr int tile_shape_k = 128 * 8 / cutlass::sizeof_bits<ActivationType>::value;
         switch (gemm_config.tile_config_sm80)
@@ -372,23 +389,33 @@ void dispatch_gemm_to_cutlass(ActivationType const* A, WeightType const* B, Scal
                 C, m, n, k, group_size, gemm_config, workspace, workspace_bytes, stream, occupancy);
             break;
         case tkc::CutlassTileConfig::Undefined:
-            throw std::runtime_error("[TensorRT LLM Error][fpA_intB][dispatch_gemm_to_cutlass] gemm config undefined.");
+            throw std::runtime_error(
+                "[TensorRT LLM "
+                "Error][fpA_intB][dispatch_gemm_to_cutlass] "
+                "gemm config undefined.");
             break;
         case tkc::CutlassTileConfig::ChooseWithHeuristic:
             throw std::runtime_error(
-                "[TensorRT LLM Error][fpA_intB][dispatch_gemm_to_cutlass] gemm config should have already been set by "
+                "[TensorRT LLM "
+                "Error][fpA_intB][dispatch_gemm_to_cutlass] "
+                "gemm config should have already been set by "
                 "heuristic.");
             break;
         default:
             throw std::runtime_error(
-                "[TensorRT LLM Error][fpA_intB][dispatch_gemm_to_cutlass] Config is invalid for mixed type GEMM.");
+                "[TensorRT LLM "
+                "Error][fpA_intB][dispatch_gemm_to_cutlass] "
+                "Config is invalid for mixed type GEMM.");
             break;
         }
     }
     else
     {
-        // This is not a limitation in CUTLASS. We just do not need to support this case.
-        std::string err_msg = "The activation type must equal the scale, bias and output types on Ampere and earlier.";
+        // This is not a limitation in CUTLASS. We just do not need to support this
+        // case.
+        std::string err_msg
+            = "The activation type must equal the scale, bias and "
+              "output types on Ampere and earlier.";
         throw std::runtime_error("[TensorRT LLM Error][dispatch_gemm_to_cutlass] " + err_msg);
     }
 }
@@ -441,7 +468,9 @@ void CutlassFpAIntBGemmRunner<ActivationType, WeightType, QuantOp, ScaleZeroType
         if constexpr (cutlass::platform::is_same<ActivationType, __nv_fp8_e4m3>::value)
         {
             throw std::runtime_error(
-                "[TensorRT LLM Error][CutlassFpAIntBGemmRunner][dispatch_to_arch] INT4xFP8 GEMM for Ada needs "
+                "[TensorRT LLM "
+                "Error][CutlassFpAIntBGemmRunner][dispatch_to_"
+                "arch] INT4xFP8 GEMM for Ada needs "
                 "CUDA>=12.4");
         }
 #endif
@@ -461,7 +490,9 @@ void CutlassFpAIntBGemmRunner<ActivationType, WeightType, QuantOp, ScaleZeroType
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFpAIntBGemmRunner][dispatch_to_arch] Arch unsupported for CUTLASS mixed type "
+            "[TensorRT LLM "
+            "Error][CutlassFpAIntBGemmRunner][dispatch_to_"
+            "arch] Arch unsupported for CUTLASS mixed type "
             "GEMM");
     }
 }
@@ -484,7 +515,8 @@ void CutlassFpAIntBGemmRunner<ActivationType, WeightType, QuantOp, ScaleZeroType
     else
     {
         throw std::runtime_error(
-            "Overload with scale, zero and group size only supported for fine grained bias template.");
+            "Overload with scale, zero and group size only "
+            "supported for fine grained bias template.");
     }
 }
 
@@ -516,7 +548,9 @@ void CutlassFpAIntBGemmRunner<ActivationType, WeightType, QuantOp, ScaleZeroType
     }
     else
     {
-        throw std::runtime_error("Overload with scale only (and no group size) only supported for per column scaling.");
+        throw std::runtime_error(
+            "Overload with scale only (and no group size) "
+            "only supported for per column scaling.");
     }
 }
 
@@ -559,31 +593,37 @@ CutlassFpAIntBGemmRunner<ActivationType, WeightType, QuantOp, ScaleZeroType, Bia
     if (sm_ == 90)
     {
         // https://github.com/NVIDIA/cutlass/blob/19b4c5e065e7e5bbc8082dfc7dbd792bdac850fc/include/cutlass/gemm/kernel/tile_scheduler_params.h#L878-L892
-        // The above lines says sk_tiles = output_tiles - (static_cast<uint32_t>(output_tiles / ctas_per_wave) - 1) *
-        // ctas_per_wave This means sk_tiles is at most 2 * ctas_per_wave, which is 2 * multi_processor_count_
+        // The above lines says sk_tiles = output_tiles -
+        // (static_cast<uint32_t>(output_tiles / ctas_per_wave) - 1) *
+        // ctas_per_wave This means sk_tiles is at most 2 * ctas_per_wave, which is
+        // 2 * multi_processor_count_
         int const max_sk_tiles = 2 * multi_processor_count_;
 
         // https://github.com/NVIDIA/cutlass/blob/19b4c5e065e7e5bbc8082dfc7dbd792bdac850fc/include/cutlass/gemm/kernel/tile_scheduler_params.h#L939
-        // The above line says uint64_t sk_units = platform::min(ctas_per_sk_wave, min_sized_sk_units);
-        // That means sk_units is at most ctas_per_sk_wave, which is multi_processor_count_
+        // The above line says uint64_t sk_units = platform::min(ctas_per_sk_wave,
+        // min_sized_sk_units);
+        // That means sk_units is at most ctas_per_sk_wave, which is
+        // multi_processor_count_
         int const max_sk_units = multi_processor_count_;
 
         // https://github.com/NVIDIA/cutlass/blob/19b4c5e065e7e5bbc8082dfc7dbd792bdac850fc/include/cutlass/gemm/kernel/tile_scheduler_params.h#L505
-        // The above lines scales sk_tiles by the factor of static_cast<uint32_t>(sk_units / sk_tiles + 2)
+        // The above lines scales sk_tiles by the factor of
+        // static_cast<uint32_t>(sk_units / sk_tiles + 2)
         // That means the final sk_tiles is at most 2 * max_sk_tiles + max_sk_units;
         int const max_sk_tiles_with_seperate_reduction = 2 * max_sk_tiles + max_sk_units;
 
         return static_cast<size_t>(
             max_sk_tiles_with_seperate_reduction * MAX_M_TILE_SM90 * MAX_N_TILE_SM90 * sizeof(float));
     }
-    // These are the min tile sizes for each config, which would launch the maximum number of blocks
+    // These are the min tile sizes for each config, which would launch the
+    // maximum number of blocks
     int const max_grid_m = cutlass::ceil_div(m, MIN_M_TILE);
     int const max_grid_n = cutlass::ceil_div(n, MIN_N_TILE);
-    // We need 4 bytes per block in the worst case. We launch split_k_limit in z dim.
+    // We need 4 bytes per block in the worst case. We launch split_k_limit in z
+    // dim.
     return static_cast<size_t>(max_grid_m * max_grid_n * SPLIT_K_LIMIT * 4);
 }
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

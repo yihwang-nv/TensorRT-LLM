@@ -19,12 +19,9 @@
 #include "common.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 namespace batch_scheduler
@@ -44,8 +41,9 @@ struct ContextChunkingConfig
 
 } // namespace batch_scheduler
 
-/// @brief This scheduler takes into account the desired batch size and limits of the TRT engine to schedule requests.
-class MicroBatchScheduler : Algorithm
+/// @brief This scheduler takes into account the desired batch size and limits
+/// of the TRT engine to schedule requests.
+class MicroBatchScheduler : tensorrt_llm::common::Algorithm
 {
 public:
     constexpr static auto name{"MicroBatchScheduler"};
@@ -88,6 +86,4 @@ private:
     LlmRequestState mNoScheduleAfterState;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

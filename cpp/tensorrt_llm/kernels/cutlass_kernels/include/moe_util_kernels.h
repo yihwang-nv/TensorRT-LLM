@@ -33,10 +33,7 @@
 #include <random>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace cutlass_kernels
 {
@@ -74,6 +71,5 @@ void finalizeMoeRoutingKernelLauncher(GemmOutputType const* expanded_permuted_ro
     cudaStream_t stream);
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

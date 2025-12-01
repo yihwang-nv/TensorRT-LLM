@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "executor.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/tensor.h"
 #include "tensorrt_llm/nanobind/common/customCasters.h"
@@ -111,9 +111,7 @@ tle::Tensor numpyToTensor(nb::object const& object)
 
 } // namespace
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::executor
+namespace tensorrt_llm::nanobind::executor
 {
 
 Executor::Executor(
@@ -175,9 +173,12 @@ void Executor::exit(
 
 void Executor::shutdown()
 {
-    // NOTE: we must release the GIL here. Executor has spawned a thread for the execution loop. That thread must be
-    // able to do forward progress for the shutdown process to succeed. It takes the GIL during its callbacks, so
-    // we release it now. Note that we shouldn't do anything related to python objects after that.
+    // NOTE: we must release the GIL here. Executor has spawned a thread for the
+    // execution loop. That thread must be
+    // able to do forward progress for the shutdown process to succeed. It takes
+    // the GIL during its callbacks, so
+    // we release it now. Note that we shouldn't do anything related to python
+    // objects after that.
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
     nb::gil_scoped_release release;
     mExecutor->shutdown();
@@ -225,6 +226,4 @@ void Executor::initBindings(nb::module_& m)
         .def("get_kv_cache_event_manager", &Executor::getKVCacheEventManager);
 }
 
-} // namespace nanobind::executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::executor

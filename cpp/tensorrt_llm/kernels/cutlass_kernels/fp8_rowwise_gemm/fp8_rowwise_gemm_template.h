@@ -30,7 +30,8 @@
 
 #include "cute/tensor.hpp"
 #include "cutlass/conv/convolution.h"
-// Order matters here, packed_stride.hpp is missing cute and convolution includes
+// Order matters here, packed_stride.hpp is missing cute and convolution
+// includes
 #include "cutlass/util/packed_stride.hpp"
 #include "cutlass_extensions/gemm_configs.h"
 
@@ -50,14 +51,12 @@
 #include <algorithm>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
 using namespace cute;
 
@@ -96,7 +95,9 @@ size_t typedFp8RowwiseGemmKernelLauncher(Gemm gemm, typename Gemm::Arguments arg
     auto can_implement = gemm.can_implement(args);
     if (can_implement != cutlass::Status::kSuccess)
     {
-        std::string errMsg = "fp8RowwiseGemm cutlass kernel not implemented given the params. Error: "
+        std::string errMsg
+            = "fp8RowwiseGemm cutlass kernel not implemented given "
+              "the params. Error: "
             + std::string(cutlassGetStatusString(can_implement));
         throw std::runtime_error("[TensorRT LLM Error][fp8RowwiseGemm Runner] " + errMsg);
     }
@@ -212,7 +213,9 @@ size_t dispatchGemmConfigSm89(void* D, void const* A, void const* B, void const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmConfigSm89] Config is invalid for "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmConfigSm89] Config is invalid for "
             "Fp8 Rowwise GEMM.");
         break;
     }
@@ -301,16 +304,24 @@ size_t dispatchGemmToCutlassSm89(void* D, void const* A, void const* B, void con
 
     case tkc::CutlassTileConfig::Undefined:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm89] gemm config undefined.");
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm89] gemm config "
+            "undefined.");
         break;
     case tkc::CutlassTileConfig::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm89] gemm config should have "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm89] gemm config should "
+            "have "
             "already been set by heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm89] Config is invalid for "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm89] Config is invalid for "
             "Fp8 Rowwise GEMM.");
         break;
     }
@@ -381,7 +392,9 @@ size_t genericFp8RowwiseGemmKernelLauncherSm90(void* D, void const* A, void cons
         Gemm{}, args, D, A, B, C_bias, workspace, workspaceBytes, stream, occupancy);
 #else  // COMPILE_HOPPER_TMA_GEMMS
     throw std::runtime_error(
-        "[TensorRT LLM Error][Fp8RowwiseGemmKernelLauncherSm90] Please recompile with support for hopper by passing "
+        "[TensorRT LLM "
+        "Error][Fp8RowwiseGemmKernelLauncherSm90] Please "
+        "recompile with support for hopper by passing "
         "90-real as an arch to build_wheel.py.");
 #endif // COMPILE_HOPPER_TMA_GEMMS
 }
@@ -420,7 +433,9 @@ size_t dispatchGemmConfigSm90(void* D, void const* A, void const* B, void const*
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmConfigSm90] Config is invalid for "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmConfigSm90] Config is invalid for "
             "Fp8 Rowwise GEMM.");
         break;
     }
@@ -470,16 +485,24 @@ size_t dispatchGemmToCutlassSm90(void* D, void const* A, void const* B, void con
         break;
     case tkc::CutlassTileConfigSM90::Undefined:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm90] gemm config undefined.");
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm90] gemm config "
+            "undefined.");
         break;
     case tkc::CutlassTileConfigSM90::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm90] gemm config should have "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm90] gemm config should "
+            "have "
             "already been set by heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm90] Config is invalid for "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm90] Config is invalid for "
             "Fp8 Rowwise GEMM.");
         break;
     }
@@ -583,7 +606,9 @@ size_t dispatchGemmConfigSm100(void* D, void const* A, void const* B, void const
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmConfigSm100] Config is invalid for "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmConfigSm100] Config is invalid for "
             "Fp8 Rowwise GEMM.");
         break;
     }
@@ -647,16 +672,25 @@ size_t dispatchGemmToCutlassSm100(void* D, void const* A, void const* B, void co
         break;
     case tkc::CutlassTileConfigSM100::Undefined:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm100] Gemm config undefined.");
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm100] Gemm config "
+            "undefined.");
         break;
     case tkc::CutlassTileConfigSM100::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm100] Gemm config should have "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm100] Gemm config should "
+            "have "
             "already been set by heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][dispatchGemmToCutlassSm100] Config is invalid for "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner]["
+            "dispatchGemmToCutlassSm100] Config is invalid "
+            "for "
             "Fp8 Rowwise GEMM.");
         break;
     }
@@ -701,7 +735,9 @@ size_t CutlassFp8RowwiseGemmRunner<T>::dispatchToArch(void* D, void const* A, vo
 #endif
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner][GEMM "
+            "Dispatch] Arch unsupported for CUTLASS "
             "Fp8 Rowwise GEMM");
     }
     return 0;
@@ -799,7 +835,9 @@ std::vector<tkc::CutlassGemmConfig> CutlassFp8RowwiseGemmRunner<T>::getConfigs()
     else
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassFp8RowwiseGemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS "
+            "[TensorRT LLM "
+            "Error][CutlassFp8RowwiseGemmRunner][GEMM "
+            "Dispatch] Arch unsupported for CUTLASS "
             "Fp8 Rowwise GEMM");
     }
     return candidateConfigs;
@@ -865,6 +903,5 @@ size_t CutlassFp8RowwiseGemmRunner<T>::getWorkspaceSize(int const m, int const n
 }
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

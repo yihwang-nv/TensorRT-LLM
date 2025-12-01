@@ -16,7 +16,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
@@ -31,9 +30,7 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 class TllmRuntime
 {
@@ -58,9 +55,12 @@ public:
         return static_cast<SizeType32>(mEngine->getNbOptimizationProfiles());
     }
 
-    /// @brief If multiple TensorRT optimization profiles are built in the engine, this function selects the
-    /// corresponding profile that is going to be used based on the runtime shape, for now, TensorRT LLM only split
-    /// multiple profiles on the num_tokens dimension, hence the profile index is selected based on which profile
+    /// @brief If multiple TensorRT optimization profiles are built in the
+    /// engine, this function selects the
+    /// corresponding profile that is going to be used based on the runtime
+    /// shape, for now, TensorRT LLM only split
+    /// multiple profiles on the num_tokens dimension, hence the profile index
+    /// is selected based on which profile
     /// handles the actual num_tokens
     /// @return The index of the selected TensorRT optimization profile
     [[nodiscard]] SizeType32 getOptProfileId(int numTokens, std::vector<SizeType32> const& splitPoints) const
@@ -79,18 +79,23 @@ public:
     void clearContexts();
 
     /// @brief Set input tensors from tensorMap for all contexts.
-    /// @details The function can be used to set static input tensors for all iterations. If a tensor was set this way,
+    /// @details The function can be used to set static input tensors for all
+    /// iterations. If a tensor was set this way,
     /// it doesn't need to included in calls to setInputTensors anymore.
     void setStaticInputTensors(TensorMap const& tensorMap);
 
     /// @brief Set input tensors from tensorMap for context at contextIndex.
-    /// @details The function expects that all input tensors (excluding the ones set by setStaticInputTensors) are
-    /// contained in the tensorMap. If a tensor is missing, has a bad shape or type, it will throw.
+    /// @details The function expects that all input tensors (excluding the ones
+    /// set by setStaticInputTensors) are
+    /// contained in the tensorMap. If a tensor is missing, has a bad shape or
+    /// type, it will throw.
     void setInputTensors(SizeType32 contextIndex, TensorMap const& tensorMap);
 
     /// @brief Set output tensors from tensorMap for context at contextIndex.
-    /// @details The function expects that all output tensors are contained in the tensorMap. If a tensor is missing and
-    /// shape inference is enabled, it will allocate the tensor on GPU and insert it into the tensorMap. Otherwise it
+    /// @details The function expects that all output tensors are contained in
+    /// the tensorMap. If a tensor is missing and
+    /// shape inference is enabled, it will allocate the tensor on GPU and
+    /// insert it into the tensorMap. Otherwise it
     /// will throw.
     void setOutputTensors(SizeType32 contextIndex, TensorMap& tensorMap);
 
@@ -154,9 +159,12 @@ public:
 
     [[nodiscard]] SizeType32 const& getCurrentBeamWidth() const noexcept
     {
-        // At present, all requests of a batch must have the same beam width in one generation step (or they will not
-        // be batched together). So, the beam widths in `mCurrentBeamWidths` are the same.
-        // Corresponding changes must be done if Diverse-Beam-Width-Search (DBWS, requests with diverse beam width in
+        // At present, all requests of a batch must have the same beam width in
+        // one generation step (or they will not
+        // be batched together). So, the beam widths in `mCurrentBeamWidths` are
+        // the same.
+        // Corresponding changes must be done if Diverse-Beam-Width-Search (DBWS,
+        // requests with diverse beam width in
         // a batch in one generation step) is supported in the future.
         TLLM_CHECK_WITH_INFO(mCurrentBeamWidths.size() > 0, "`mCurrentBeamWidths` is empty.");
         bool const isEqual = std::all_of(mCurrentBeamWidths.begin(), mCurrentBeamWidths.end(),
@@ -235,7 +243,8 @@ private:
     bool mUseShapeInference;
     TensorMap mManagedWeightsMap;
     // List of input tensor names.
-    // Names of static tensors are removed from this list when setStaticInputTensors is called.
+    // Names of static tensors are removed from this list when
+    // setStaticInputTensors is called.
     std::vector<std::string> mInputTensorNames;
     std::vector<std::string> mOutputTensorNames;
 
@@ -243,6 +252,4 @@ private:
     // For Variable-Beam-Width-Search
     std::vector<SizeType32> mCurrentBeamWidths;
 };
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

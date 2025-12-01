@@ -24,9 +24,9 @@
 #include <vector>
 
 // non-persistent-cooperative GEMM
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::fp8_blockscale_gemm
+namespace fp8_blockscale_gemm
 {
 
 class CutlassFp8BlockScaleGemmRunnerInterface
@@ -151,6 +151,6 @@ private:
     int64_t expected_m_ = 0;
 };
 
-} // namespace kernels::fp8_blockscale_gemm
+} // namespace fp8_blockscale_gemm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -17,19 +17,17 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/layers/decodingParams.h"
 
 #include <curand_kernel.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
-//! \brief Layer performs token decoding using sampling (beamWidth=1), beam search (beamWidth>1) or Medusa.
+//! \brief Layer performs token decoding using sampling (beamWidth=1), beam
+// search (beamWidth>1) or Medusa.
 template <typename T>
 class DecodingLayer : public BaseLayer
 {
@@ -41,7 +39,8 @@ public:
         std::shared_ptr<BaseSetupParams> const& setupParams,
         std::shared_ptr<runtime::DecodingLayerWorkspace> const& workspace) override;
 
-    //! \brief Calls single SamplingLayer::forwardAsync or MedusaDecodingLayer::forwardAsync in batched mode
+    //! \brief Calls single SamplingLayer::forwardAsync or
+    // MedusaDecodingLayer::forwardAsync in batched mode
     //! or runs BeamSearchLayer::forwardAsync in the loop for each request.
     //! Modifies outputs->logits in-place.
     void forwardAsync(std::shared_ptr<BaseDecodingOutputs> const& outputs,
@@ -68,6 +67,4 @@ private:
     std::unique_ptr<BaseLayer> mDecodingLayer;
 };
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

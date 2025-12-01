@@ -28,7 +28,8 @@ namespace tk = tensorrt_llm::kernels;
 namespace tc = tensorrt_llm::common;
 using tk::KVBlockArray;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -470,7 +471,7 @@ void mergeChunkedAttentionForMLA(torch::Tensor& merged_attn, torch::Tensor const
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

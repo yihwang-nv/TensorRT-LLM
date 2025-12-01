@@ -28,7 +28,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -65,4 +66,4 @@ ipcSocketResult_t ipcSocketRecvFd(IpcSocketHandle* handle, int* fd);
 ipcSocketResult_t ipcSocketSendFd(IpcSocketHandle* handle, int const fd, int rank, uint64_t hash);
 } // namespace runtime::ub
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

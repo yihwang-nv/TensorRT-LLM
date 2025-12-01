@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 #include "tensorrt_llm/batch_manager/trtEncoderModel.h"
 #include "tensorrt_llm/batch_manager/trtGptModelFactory.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaProfilerUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
@@ -47,9 +47,7 @@
 #include <optional>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 namespace
@@ -80,8 +78,10 @@ namespace
         {
             fixedExecutorConfig.setEnableChunkedContext(false);
             TLLM_LOG_WARNING(
-                "Chunked context is not supported for this configuration and will be disabled. "
-                "Related configs: RNNBased: %d, KVCacheEnabled: %d, PagedContextFMHA: %d",
+                "Chunked context is not supported for this "
+                "configuration and will be disabled. "
+                "Related configs: RNNBased: %d, KVCacheEnabled: %d, "
+                "PagedContextFMHA: %d",
                 modelConfig.isRnnBased(), modelConfig.isKVCacheEnabled(), modelConfig.getPagedContextFMHA());
         }
     }
@@ -255,7 +255,8 @@ void Executor::Impl::loadModel(std::optional<std::filesystem::path> const& model
     auto worldConfig = runtime::WorldConfig::mpi(gpusPerNode, tp, pp, cp, parallelConfig.getDeviceIds());
 
     TLLM_CHECK_WITH_INFO(modelPathOpt.has_value() || engineBufferOpt.has_value(),
-        "Either engine path or deserialized engine buffer should be given to load the model properly.");
+        "Either engine path or deserialized engine buffer "
+        "should be given to load the model properly.");
     auto rawEngine = engineBufferOpt.has_value()
         ? runtime::RawEngine(engineBufferOpt.value().data(), engineBufferOpt.value().size())
         : runtime::RawEngine(modelPathOpt.value() / jsonConfig.engineFilename(worldConfig));
@@ -268,7 +269,9 @@ void Executor::Impl::loadModel(std::optional<std::filesystem::path> const& model
             if (managedWeightsOpt.has_value())
             {
                 TLLM_LOG_WARNING(
-                    "Executor::Impl::loadModel: managedWeightsOpt argument is ignored when loading engine from file.");
+                    "Executor::Impl::loadModel: managedWeightsOpt "
+                    "argument is ignored when loading engine from "
+                    "file.");
             }
         }
         else if (managedWeightsOpt.has_value())
@@ -311,9 +314,11 @@ Executor::Impl::Impl(std::filesystem::path const& modelPath,
 
                 auto const encoderMaxInputLen = encoderJsonConfig.getModelConfig().getMaxInputLen();
                 auto const encoderHiddenSize = encoderJsonConfig.getModelConfig().getHiddenSize()
-                    * encoderJsonConfig.getTensorParallelism(); // recover full hidden size
+                    * encoderJsonConfig.getTensorParallelism(); // recover full hidden
+                                                                // size
                 // add encoder info to decoder for encoder-decoder models
-                // note: GptJsonConfig can no longer have modelConfig as const member since it must be mutable here
+                // note: GptJsonConfig can no longer have modelConfig as const member
+                // since it must be mutable here
                 decoderJsonConfig.getModelConfigMutable().setMaxEncoderLen(encoderMaxInputLen);
                 decoderJsonConfig.getModelConfigMutable().setEncoderHiddenSize(encoderHiddenSize);
 
@@ -355,9 +360,11 @@ Executor::Impl::Impl(BufferView const& engineBufferView, std::string const& json
 
             auto const encoderMaxInputLen = encoderJsonConfig.getModelConfig().getMaxInputLen();
             auto const encoderHiddenSize = encoderJsonConfig.getModelConfig().getHiddenSize()
-                * encoderJsonConfig.getTensorParallelism(); // recover full hidden size
+                * encoderJsonConfig.getTensorParallelism(); // recover full hidden
+                                                            // size
             // add encoder info to decoder for encoder-decoder models
-            // note: GptJsonConfig can no longer have modelConfig as const member since it must be mutable here
+            // note: GptJsonConfig can no longer have modelConfig as const member
+            // since it must be mutable here
             decoderJsonConfig.getModelConfigMutable().setMaxEncoderLen(encoderMaxInputLen);
             decoderJsonConfig.getModelConfigMutable().setEncoderHiddenSize(encoderHiddenSize);
 
@@ -477,7 +484,9 @@ void Executor::Impl::initialize(ExecutorConfig const& executorConfig)
             }
             else
             {
-                TLLM_LOG_WARNING("Dynamic batch tuner can only support transformer models that use KV cache.");
+                TLLM_LOG_WARNING(
+                    "Dynamic batch tuner can only support transformer "
+                    "models that use KV cache.");
             }
         }
     }
@@ -495,7 +504,8 @@ std::shared_ptr<Model> Executor::Impl::createModel(runtime::RawEngine const& raw
         {
         case BatchingType::kSTATIC:
             TLLM_THROW(
-                "Static batching type is deprecated. Please use in-flight batching with "
+                "Static batching type is deprecated. Please use in-flight "
+                "batching with "
                 "CapacitySchedulerPolicy::kSTATIC_BATCH instead.");
         case BatchingType::kINFLIGHT:
             return modelConfig.isRnnBased() ? batch_manager::TrtGptModelType::InflightBatching
@@ -534,11 +544,13 @@ void Executor::Impl::setOrchLeaderComm(
     }
 
     TLLM_CHECK_WITH_INFO(parallelConfig.getParticipantIds(),
-        "When not spawning processes in orchestrator mode, participant IDs must be provided");
+        "When not spawning processes in orchestrator mode, "
+        "participant IDs must be provided");
     auto participantIds = parallelConfig.getParticipantIds().value();
 
     TLLM_CHECK_WITH_INFO(static_cast<SizeType32>(participantIds.size()) == tp * pp * cp,
-        "When specifying participantIds, participantIds size must be equal to tp*pp*cp");
+        "When specifying participantIds, participantIds size "
+        "must be equal to tp*pp*cp");
 
     bool isLeader = (mWorldRank == participantIds.front());
     bool isOrchestrator = (mWorldRank == 0);
@@ -560,8 +572,8 @@ void Executor::Impl::setOrchLeaderComm(
     TLLM_CHECK_WITH_INFO(participantIds.front() < worldSize, "Not enough ranks in world");
 
     MPI_Group leaderOrchCommGroup = nullptr;
-    MPICHECK(
-        MPI_Group_incl(worldGroup, leaderOrchRanks.size(), leaderOrchRanks.data(), &leaderOrchCommGroup)); // NOLINT
+    MPICHECK(MPI_Group_incl(worldGroup, leaderOrchRanks.size(), leaderOrchRanks.data(),
+        &leaderOrchCommGroup)); // NOLINT
     int leaderOrchGroupRank = 0;
     int leaderOrchGroupSize = 0;
     MPI_Group_rank(leaderOrchCommGroup, &leaderOrchGroupRank);
@@ -570,8 +582,8 @@ void Executor::Impl::setOrchLeaderComm(
     if (isOrchestrator || isLeader)
     {
         MPI_Comm leaderOrchComm = nullptr;
-        MPICHECK(MPI_Comm_create_group(
-            MPI_COMM_WORLD, leaderOrchCommGroup, participantIds.front(), &leaderOrchComm)); // NOLINT
+        MPICHECK(MPI_Comm_create_group(MPI_COMM_WORLD, leaderOrchCommGroup, participantIds.front(),
+            &leaderOrchComm)); // NOLINT
         mOrchLeaderComm = std::make_shared<tensorrt_llm::mpi::MpiComm>(leaderOrchComm, false);
     }
     else
@@ -589,7 +601,9 @@ void Executor::Impl::initializeCommAndWorkers(SizeType32 tp, SizeType32 pp, Size
     if (modelType.has_value() && modelType.value() == ModelType::kENCODER_DECODER)
     {
         TLLM_CHECK_WITH_INFO(pp == 1,
-            "Encoder-Decoder C++ runtime doesn't support Pipeline Parallelism currently. Please switch to Python "
+            "Encoder-Decoder C++ runtime doesn't "
+            "support Pipeline Parallelism currently. "
+            "Please switch to Python "
             "runtime for PP mode, if necessary.");
     }
 
@@ -605,7 +619,8 @@ void Executor::Impl::initializeCommAndWorkers(SizeType32 tp, SizeType32 pp, Size
 
     mRecvPollPeriodMs = executorConfig.getRecvPollPeriodMs();
 
-    // Need to create communicator between orchestrator and leader if not spawning processes in orchestrator mode
+    // Need to create communicator between orchestrator and leader if not
+    // spawning processes in orchestrator mode
     if (mCommMode == CommunicationMode::kORCHESTRATOR && !optOrchestratorConfig.value().getSpawnProcesses())
     {
         setOrchLeaderComm(tp, pp, cp, parallelConfig);
@@ -631,10 +646,14 @@ void Executor::Impl::validateParallelConfig(ParallelConfig const& parallelConfig
 
     if (parallelConfig.getCommunicationMode() == CommunicationMode::kORCHESTRATOR)
     {
-        TLLM_CHECK_WITH_INFO(
-            optOrchestratorConfig, "OrchestratorConfig must be set when using ORCHESTRATOR communication mode.");
+        TLLM_CHECK_WITH_INFO(optOrchestratorConfig,
+            "OrchestratorConfig must be "
+            "set when using ORCHESTRATOR "
+            "communication mode.");
 
-        TLLM_CHECK_WITH_INFO(modelPath, "OrchestratorMode only supports reading model weight from disk currently.");
+        TLLM_CHECK_WITH_INFO(modelPath,
+            "OrchestratorMode only supports reading "
+            "model weight from disk currently.");
 
         TLLM_CHECK_WITH_INFO(modelType, "OrchestratorMode requires modelType to be specified.");
     }
@@ -661,7 +680,9 @@ void Executor::Impl::initializeOrchestrator(SizeType32 tp, SizeType32 pp, SizeTy
     if (orchestratorConfig.getSpawnProcesses())
     {
         TLLM_CHECK_WITH_INFO(worldSize == 1,
-            "When using the orchestrator mode and isOrchestrator is true, expect MPI worldSize to be 1.");
+            "When using the orchestrator mode "
+            "and isOrchestrator is true, expect "
+            "MPI worldSize to be 1.");
 
         // Spawn the worker threads
         auto workerExecPath = orchestratorConfig.getWorkerExecutablePath();
@@ -670,8 +691,10 @@ void Executor::Impl::initializeOrchestrator(SizeType32 tp, SizeType32 pp, SizeTy
         MPICHECK(MPI_Info_create(&mpiInfo));
         MPICHECK(MPI_Info_set(mpiInfo, "env", "FORCE_NCCL_ALL_REDUCE_STRATEGY"));
 
-        // Binding policy is not inherited for dynamically spawned jobs, resulting in the worker being bound
-        // to a single core. Override the setting to avoid perf issue - see https://nvbugs/4574329
+        // Binding policy is not inherited for dynamically spawned jobs, resulting
+        // in the worker being bound
+        // to a single core. Override the setting to avoid perf issue - see
+        // https://nvbugs/4574329
         MPICHECK(MPI_Info_set(mpiInfo, "bind_to", "none"));
 
         MPICHECK(MPI_Comm_spawn(workerExecPath.c_str(), MPI_ARGV_NULL, tp * pp * cp, mpiInfo, 0, MPI_COMM_SELF,
@@ -704,10 +727,12 @@ void Executor::Impl::initializeOrchestrator(SizeType32 tp, SizeType32 pp, SizeTy
         MPICHECK(MPI_Barrier(intercomm));
     }
 
-    // Spawn the thread responsible for sending new requests to the leader of the model
+    // Spawn the thread responsible for sending new requests to the leader of
+    // the model
     mOrchSendReqThread = std::thread(&Impl::orchSendReqThread, this);
 
-    // Spawn the thread responsible for receiving new responses from the leader of the model
+    // Spawn the thread responsible for receiving new responses from the leader
+    // of the model
     mOrchRecvThread
         = std::thread([&]() { this->orchRecvThread(mpi::MpiTag::kOrchestratorId, mpi::MpiTag::kOrchestratorData); });
 
@@ -730,7 +755,8 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
     if (mCommMode == CommunicationMode::kORCHESTRATOR && !orchestratorConfig.value().getSpawnProcesses())
     {
         TLLM_CHECK_WITH_INFO(parallelConfig.getParticipantIds(),
-            "When not spawning processes in orchestrator mode, participant IDs must be provided");
+            "When not spawning processes in orchestrator mode, "
+            "participant IDs must be provided");
 
         // Check that rank 0 is reserved for the orchestrator
         auto const participantIds = parallelConfig.getParticipantIds().value();
@@ -745,7 +771,8 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
     if (!parallelConfig.getParticipantIds())
     {
         TLLM_CHECK_WITH_INFO(worldSize == tp * pp * cp,
-            "With communicationMode kLEADER, MPI worldSize is expected to be equal to tp*pp*cp when "
+            "With communicationMode kLEADER, MPI worldSize is "
+            "expected to be equal to tp*pp*cp when "
             "participantIds are not specified");
 
         participantIds.resize(tp * pp * cp);
@@ -756,12 +783,14 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
         if (mCommMode == CommunicationMode::kORCHESTRATOR && orchestratorConfig.value().getSpawnProcesses())
         {
             TLLM_THROW(
-                "Participant ids should not be set when using CommunicationMode::kORCHESTRATOR with "
+                "Participant ids should not be set when using "
+                "CommunicationMode::kORCHESTRATOR with "
                 "spawnProcesses=true");
         }
         participantIds = parallelConfig.getParticipantIds().value();
         TLLM_CHECK_WITH_INFO(static_cast<SizeType32>(participantIds.size()) == tp * pp * cp,
-            tensorrt_llm::common::fmtstr("When specifying participantIds, participantIds size (%lu) must be equal to "
+            tensorrt_llm::common::fmtstr("When specifying participantIds, participantIds "
+                                         "size (%lu) must be equal to "
                                          "tp*pp*cp (tp is %u, pp is %u, cp is %u)",
                 participantIds.size(), tp, pp, cp));
     }
@@ -775,7 +804,8 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
         {
             auto const numNodes = hasNumNodes ? parallelConfig.getNumNodes().value() : tensorrt_llm::mpi::getNumNodes();
             TLLM_CHECK_WITH_INFO(static_cast<SizeType32>(deviceIds.size() * numNodes) == tp * pp * cp,
-                tensorrt_llm::common::fmtstr("When specifying deviceIds, deviceIds (%lu) * numNodes (%u) must be equal "
+                tensorrt_llm::common::fmtstr("When specifying deviceIds, deviceIds (%lu) * "
+                                             "numNodes (%u) must be equal "
                                              "to tp*pp*cp (tp is %u, pp is %u, cp is %u)",
                     deviceIds.size(), numNodes, tp, pp, cp));
         }
@@ -791,13 +821,15 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
 #if ENABLE_MULTI_DEVICE
     if (mIsWorker)
     {
-        // Create a session, but only assign to COMM_SESSION for ranks participating in this model
+        // Create a session, but only assign to COMM_SESSION for ranks
+        // participating in this model
         MPI_Group worldGroup = MPI_GROUP_NULL;
         MPICHECK(MPI_Comm_group(MPI_COMM_WORLD, &worldGroup)); // NOLINT
         MPI_Group sessionGroup = MPI_GROUP_NULL;
         if (pp > 1)
         {
-            // reverse participantIds to move leader to last pp rank. retain order in each tp group
+            // reverse participantIds to move leader to last pp rank. retain order
+            // in each tp group
             std::reverse(participantIds.begin(), participantIds.end());
             if (tp > 1)
             {
@@ -809,8 +841,8 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
         }
         MPICHECK(MPI_Group_incl(worldGroup, participantIds.size(), participantIds.data(), &sessionGroup)); // NOLINT
         MPI_Comm sessionComm = MPI_COMM_NULL;
-        MPICHECK(
-            MPI_Comm_create_group(MPI_COMM_WORLD, sessionGroup, 1000 + participantIds.front(), &sessionComm)); // NOLINT
+        MPICHECK(MPI_Comm_create_group(MPI_COMM_WORLD, sessionGroup, 1000 + participantIds.front(),
+            &sessionComm)); // NOLINT
 
         tensorrt_llm::mpi::MpiComm::setSession(tensorrt_llm::mpi::MpiComm(sessionComm, false));
     }
@@ -839,10 +871,12 @@ void Executor::Impl::initializeWorkers(SizeType32 tp, SizeType32 pp, SizeType32 
             auto worldConfig = runtime::WorldConfig::mpi(gpusPerNode, tp, pp, cp, parallelConfig.getDeviceIds());
             mDeviceId = worldConfig.getDevice();
         }
-        // Spawn the thread responsible for receiving new requests from the orchestrator
+        // Spawn the thread responsible for receiving new requests from the
+        // orchestrator
         mLeaderRecvReqThread = std::thread(&Impl::leaderRecvReqThread, this);
 
-        // Spawn the thread responsible for sending new responses to the orchestrator
+        // Spawn the thread responsible for sending new responses to the
+        // orchestrator
         mLeaderSendThread = std::thread([&]()
             { this->leaderSendThread(mSendQueue, mpi::MpiTag::kOrchestratorId, mpi::MpiTag::kOrchestratorData); });
     }
@@ -894,7 +928,8 @@ std::vector<IdType> Executor::Impl::enqueueRequests(common::ArrayView<Request co
     std::vector<RequestWithId> requestWithIds;
     requestWithIds.reserve(requests.size());
 
-    // First check valid of request in enqueue thread, so Exceptions can be thrown to user.
+    // First check valid of request in enqueue thread, so Exceptions can be
+    // thrown to user.
     for (auto const& req : requests)
     {
         auto logitsPostProcessorName = req.getLogitsPostProcessorName();
@@ -943,7 +978,10 @@ std::vector<IdType> Executor::Impl::enqueueRequests(common::ArrayView<Request co
 
                 if (maxQueueSize > 0 && mQueuedRequests.size() + totalRequestSize > static_cast<size_t>(maxQueueSize))
                 {
-                    TLLM_THROW("Maximum queue size of %d has been reached, please try again later", maxQueueSize);
+                    TLLM_THROW(
+                        "Maximum queue size of %d has been reached, please try "
+                        "again later",
+                        maxQueueSize);
                 }
             }
 
@@ -1014,7 +1052,8 @@ std::vector<Response> Executor::Impl::awaitResponses(
         return responses;
     };
 
-    // We don't process a terminated request again. Terminated request is defined as a response
+    // We don't process a terminated request again. Terminated request is
+    // defined as a response
     // with isFinal = true for a given requestId.
     if (mTerminatedReqIds.contains(reqId))
     {
@@ -1339,7 +1378,8 @@ std::vector<RequestWithId> Executor::Impl::getLeaderNewReqWithIds(
         if (beamWidth != operatingBeamWidth)
         {
             TLLM_LOG_INFO(
-                "Can't dequeue request with ID %ld because beam width %d differs from operating beam width %d.",
+                "Can't dequeue request with ID %ld because beam width %d "
+                "differs from operating beam width %d.",
                 nextRequest.id, beamWidth, operatingBeamWidth);
             return false;
         }
@@ -1501,7 +1541,8 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                         {
                             TLLM_CHECK_WITH_INFO(!mModel->getReplicateLogitsPostProcessor()
                                     || mModel->getWorldConfig().getTensorParallelism() == 1,
-                                "Dynamic logits postprocessor must be used with replicate=false or no tensor "
+                                "Dynamic logits postprocessor must be used with "
+                                "replicate=false or no tensor "
                                 "parallelism.");
                         }
                         if (mModel->getWorldConfig().isFirstTensorParallelRank()
@@ -1533,7 +1574,8 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                 auto newReq
                     = seqIdx == 0 ? newLlmReq : newLlmReq->createChildRequest(reqWithId.childReqIds.at(seqIdx - 1));
 
-                // If static batching and streaming, disable streaming and exclude input
+                // If static batching and streaming, disable streaming and exclude
+                // input
                 if (mBatchingType == BatchingType::kSTATIC && newReq->isStreaming())
                 {
                     newReq->setStreaming(false);
@@ -1547,21 +1589,29 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                     mEnableBlockReuse);
 
                 TLLM_CHECK_WITH_INFO(!mEncoderModel || !mIsSchedulerMaxUtilization,
-                    "Encoder or Encoder-Decoder model don't support max utilization scheduler yet. Only max requests "
+                    "Encoder or Encoder-Decoder model don't support "
+                    "max utilization scheduler yet. Only max "
+                    "requests "
                     "or guaranteed no evict.");
 
-                // When streaming is enabled and scheduling policy permits evict/restart, need to guard against the case
-                // where the sequence is truncated on eviction (to respect maxInputLen limits), resulting in loss of
-                // some tokens that have been streamed out. In this case, resuming generation may result in different
-                // completion for locations whose tokens have already been returned. There is no way to protect against
+                // When streaming is enabled and scheduling policy permits
+                // evict/restart, need to guard against the case
+                // where the sequence is truncated on eviction (to respect maxInputLen
+                // limits), resulting in loss of
+                // some tokens that have been streamed out. In this case, resuming
+                // generation may result in different
+                // completion for locations whose tokens have already been returned.
+                // There is no way to protect against
                 // this, so disallowing.
                 if (newReq->isStreaming() && !mIsSchedulerGuaranteedNoEvict && !mIsChunkedContext)
                 {
                     auto const maxReqSeqLen = newReq->mPromptLen + newReq->mMaxNewTokens;
                     auto const maxRestartLen = maxReqSeqLen - 1;
                     TLLM_CHECK_WITH_INFO(maxRestartLen <= mModel->getMaxInputLen(),
-                        "Request sequence length is potentially greater than max input length. This cannot be run "
-                        "unless streaming is disabled, context chunking is enabled or the GUARANTEED_NO_EVICT "
+                        "Request sequence length is potentially greater than max input "
+                        "length. This cannot be run "
+                        "unless streaming is disabled, context chunking is enabled or "
+                        "the GUARANTEED_NO_EVICT "
                         "scheduling policy is used");
                 }
 
@@ -1569,7 +1619,8 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                 if (mEncoderModel)
                 {
                     TLLM_CHECK_WITH_INFO(mModel || (!mModel && newReq->getReturnEncoderOutput()),
-                        "Encoder-Decoder models allow optionally returning encoder output. But if it is Encoder-only "
+                        "Encoder-Decoder models allow optionally returning encoder "
+                        "output. But if it is Encoder-only "
                         "models, please make sure returnEncoderOutput is always true.");
 
                     // gpu buffers for passing to the next phase
@@ -1597,7 +1648,8 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                 if (newReq->getReturnContextLogits())
                 {
                     TLLM_CHECK_WITH_INFO(mModel->getModelConfig().computeContextLogits(),
-                        "Return context logit need to build engine with gather_context_logits");
+                        "Return context logit need to build engine with "
+                        "gather_context_logits");
                     newReq->allocContextLogitsHost(mModel->getVocabSizePadded(), mModel->getLogitDataType());
                 }
 
@@ -1605,7 +1657,9 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                 if (newReq->getReturnGenerationLogits())
                 {
                     TLLM_CHECK_WITH_INFO(mModel->getGatherGenerationLogits(),
-                        "To return generation logits, gather_generation_logits must be enabled in ExecutorConfig");
+                        "To return generation logits, "
+                        "gather_generation_logits must be enabled in "
+                        "ExecutorConfig");
 
                     if (mModel->getModelConfig().getSpeculativeDecodingMode().isDraftTokensExternal()
                         && newReq->hasDraftTokens())
@@ -1622,7 +1676,8 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
                 if (mModel->getWorldConfig().isLastPipelineParallelRank() && newReq->getGuidedDecodingParams())
                 {
                     TLLM_CHECK_WITH_INFO(mModel->hasGuidedDecoder(),
-                        "Request is specified with GuidedDecodingParams, but GuidedDecoder is not setup. Please "
+                        "Request is specified with GuidedDecodingParams, but "
+                        "GuidedDecoder is not setup. Please "
                         "provide a valid GuidedDecodingConfig to setup GuidedDecoder.");
                 }
 
@@ -1647,7 +1702,8 @@ std::tuple<Executor::Impl::RequestList, double> Executor::Impl::fetchNewRequests
         {
             if (mIsLeader)
             {
-                // In case  of an expected LoRA exception (e.g. cache full, cache miss), log a warning and enqueue
+                // In case  of an expected LoRA exception (e.g. cache full, cache
+                // miss), log a warning and enqueue
                 // response
                 TLLM_LOG_WARNING("%s", e.what());
                 enqueueNewResponses({{reqWithId.id, e.what(), reqWithId.req.getClientId()}});
@@ -1711,8 +1767,10 @@ void Executor::Impl::forwardSync(RequestList& activeRequests)
     TLLM_LOG_TRACE("[RANK %d] %s stop", COMM_SESSION.getRank(), __PRETTY_FUNCTION__);
 }
 
-// The function is used to change the state of a request to context_init from encoder_init for enc-dec model whose
-// encoder is skipped. The encoder output is populated accordingly with input features given through model executor of
+// The function is used to change the state of a request to context_init from
+// encoder_init for enc-dec model whose
+// encoder is skipped. The encoder output is populated accordingly with input
+// features given through model executor of
 // decoder.
 void Executor::Impl::prepRequestsForEncoderSkip(RequestList& activeRequests)
 {
@@ -1722,7 +1780,9 @@ void Executor::Impl::prepRequestsForEncoderSkip(RequestList& activeRequests)
 
         if (req->isEncoderInitState() && req->getEncoderInputFeatures())
         {
-            TLLM_LOG_INFO("Changing state of request and setting encoder output to skip encoder run");
+            TLLM_LOG_INFO(
+                "Changing state of request and setting encoder output to "
+                "skip encoder run");
             req->setState(batch_manager::LlmRequestState::kCONTEXT_INIT);
             req->setEncoderOutput(req->getEncoderInputFeatures());
         }
@@ -2240,7 +2300,8 @@ Executor::Impl::RequestList Executor::Impl::populateNewResponses(
                 auto kvMgr = mModel->getKVCacheManager();
                 if (kvMgr && kvMgr->isEnableBlockReuse() && !kvMgr->getBlockManager().isVariableWindow())
                 {
-                    lastBlockId = kvMgr->storeBlocksForReuse(llmReq->mRequestId, llmReq, /*pinBlocks=*/true);
+                    lastBlockId = kvMgr->storeBlocksForReuse(llmReq->mRequestId, llmReq,
+                        /*pinBlocks=*/true);
                     mModel->terminateRequest(llmReq);
                 }
                 inTransmissionRequests.push_back(InTransmissionItem{*it, lastBlockId});
@@ -2294,7 +2355,8 @@ void Executor::Impl::executionLoop()
                 cudaProfilerStop();
             }
 
-            // When there are no active or inflight requests, we need to update the stats before calling
+            // When there are no active or inflight requests, we need to update the
+            // stats before calling
             // fetchNewRequests to make sure that the stats are reported accurately.
             if (activeRequests.empty() && (!firstIteration))
             {
@@ -2456,9 +2518,11 @@ void Executor::Impl::orchSendReqThread()
             auto packed = RequestWithId::serializeReqWithIds(reqWithIds.requests);
 
             TLLM_LOG_DEBUG("Orchestrator sendReq thread sending %d pending requests", reqWithIds.requests.size());
-            // Temporary WAR to indicate to client that we cannot send the serialized request
+            // Temporary WAR to indicate to client that we cannot send the
+            // serialized request
             // because it exceeds int32_t size limit.
-            // TODO: Should fix as part of https://jirasw.nvidia.com/browse/TRTLLM-708
+            // TODO: Should fix as part of
+            // https://jirasw.nvidia.com/browse/TRTLLM-708
             if (packed.size() > std::numeric_limits<int32_t>::max())
             {
                 for (auto const& reqWithId : reqWithIds.requests)
@@ -2466,9 +2530,12 @@ void Executor::Impl::orchSendReqThread()
                     {
                         std::scoped_lock<std::mutex> lck(mResponsesMtx);
                         mResponses[reqWithId.id].emplace_back(reqWithId.id,
-                            "Request is too large, or you are enqueuing too many requests at once "
-                            "to be sent via MPI_Send, please try to enqueue the request(s) again. "
-                            "This issue will be resolved in a future version of TRT-LLM.");
+                            "Request is too large, or you are enqueuing "
+                            "too many requests at once "
+                            "to be sent via MPI_Send, please try to "
+                            "enqueue the request(s) again. "
+                            "This issue will be resolved in a future "
+                            "version of TRT-LLM.");
                     }
                     mResponsesCv.notify_all();
                 }
@@ -2527,7 +2594,8 @@ void Executor::Impl::leaderRecvReqThread()
             // Enqueue a request to indicate to other ranks to terminate
             enqueueTerminateRequest();
 
-            // Send message to orchestrator to indicate to terminate orch recv thread
+            // Send message to orchestrator to indicate to terminate orch recv
+            // thread
             mSendQueue.push(MpiMessage(mpiId));
             TLLM_LOG_INFO("Leader recvReq thread exiting");
             break;
@@ -2549,7 +2617,10 @@ void Executor::Impl::leaderRecvReqThread()
                     if (maxQueueSize > 0 && mQueuedRequests.size() >= static_cast<size_t>(maxQueueSize))
                     {
                         auto err = tensorrt_llm::common::fmtstr(
-                            "Maximum queue size of %d has been reached, please try again later", maxQueueSize);
+                            "Maximum queue size of "
+                            "%d has been reached, "
+                            "please try again later",
+                            maxQueueSize);
                         TLLM_LOG_ERROR("%s", err.c_str());
                         std::vector<Response> responses;
                         responses.reserve(requestWithIds.size());
@@ -2573,9 +2644,10 @@ void Executor::Impl::leaderRecvReqThread()
         {
             // Prepare receiving data
             mOrchLeaderComm->mprobe(mOrchRank, mpi::MpiTag::kOrchestratorData, &msg, &status);
-            MPICHECK(MPI_Get_count(&status, MPI_UINT64_T, &count));                          // NOLINT
+            MPICHECK(MPI_Get_count(&status, MPI_UINT64_T, &count)); // NOLINT
             std::vector<uint64_t> cancelledReqIds(count);
-            MPICHECK(MPI_Mrecv(cancelledReqIds.data(), count, MPI_UINT64_T, &msg, &status)); // NOLINT
+            MPICHECK(MPI_Mrecv(cancelledReqIds.data(), count, MPI_UINT64_T, &msg,
+                &status)); // NOLINT
 
             std::scoped_lock<std::mutex> lck(mCancelReqMtx);
             selCancelledReqIds.insert(cancelledReqIds.begin(), cancelledReqIds.end());
@@ -2605,8 +2677,7 @@ void Executor::Impl::leaderSendThread(MpiMessageQueue& sendQueue, mpi::MpiTag id
             TLLM_LOG_INFO("Leader sendThread exiting");
             break;
         }
-        if (message.id == MpiId::RESPONSE || message.id == MpiId::ITER_STATS
-            || message.id == MpiId ::REQUEST_ITER_STATS)
+        if (message.id == MpiId::RESPONSE || message.id == MpiId::ITER_STATS || message.id == MpiId::REQUEST_ITER_STATS)
         {
             std::vector<char> buffer;
             if (message.id == MpiId::RESPONSE)
@@ -2764,15 +2835,18 @@ void Executor::Impl::checkParallelApiUsage(std::string const& methodName) const
     if (mCommMode == CommunicationMode::kLEADER && !mIsLeader)
     {
         // Non-leader are not expected to call cancelRequest
-        TLLM_THROW("With LEADER communication mode, only leader rank is expected to call %s", methodName.c_str());
+        TLLM_THROW(
+            "With LEADER communication mode, only leader rank is expected "
+            "to call %s",
+            methodName.c_str());
     }
     if (mCommMode == CommunicationMode::kORCHESTRATOR && !mIsOrchestrator)
     {
         TLLM_THROW(
-            "With ORCHESTRATOR communication mode, only orchestrator rank is expected to call %s", methodName.c_str());
+            "With ORCHESTRATOR communication mode, only orchestrator rank "
+            "is expected to call %s",
+            methodName.c_str());
     }
 }
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

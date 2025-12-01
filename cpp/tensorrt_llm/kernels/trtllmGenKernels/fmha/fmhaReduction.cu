@@ -21,10 +21,7 @@
 #include <cuda_runtime_api.h>
 #include <float.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,12 +34,16 @@ __global__ void __launch_bounds__(NumThreadsPerCta, 2) fmhaReductionKernel(Kerne
 {
 
     // clang-format off
-  // The shape of partialO buffer: [batchSize, numHeadCtas, numCtasQ, numCtasKv, TileSizePerCtaQ, headDimPerCta].
+  // The shape of partialO buffer: [batchSize, numHeadCtas, numCtasQ, numCtasKv,
+  // TileSizePerCtaQ, headDimPerCta].
   // The shape of final O buffer: [batchSize, numCtasQ, numHeadsQ, headDim].
   // The shape of attentionSinks buffer: [numHeadsQ].
-  // The shape of partialStats buffer: [batchSize, numHeadCtas, numCtasQ, numCtasKv, TileSizePerCtaQ], where each element is a float2 (max/sum).
-  // The shape of softmaxStats buffer: [batchSize, numCtasQ, numHeadsQ], where each element is a float2 (max/sum).
-  // Note that numValidRows includes both numValidTokens and numHeadsQPerKv if grouping headsQ.
+  // The shape of partialStats buffer: [batchSize, numHeadCtas, numCtasQ,
+  // numCtasKv, TileSizePerCtaQ], where each element is a float2 (max/sum).
+  // The shape of softmaxStats buffer: [batchSize, numCtasQ, numHeadsQ], where
+  // each element is a float2 (max/sum).
+  // Note that numValidRows includes both numValidTokens and numHeadsQPerKv if
+  // grouping headsQ.
     // clang-format on
 
     // The batchIdx.
@@ -122,15 +123,18 @@ __global__ void __launch_bounds__(NumThreadsPerCta, 2) fmhaReductionKernel(Kerne
     int32_t constexpr NumBytesPerPartialElt{sizeof(DtypePartialO)};
     static_assert(NumBytesPerPartialElt == 2, "The data type of partialO should be either fp16 or bf16.");
 
-    // The threads in the warp-group should load different values from one partial output
-    // [numValidRows, headDim], and then iterate over partial outputs from different CTAs.
+    // The threads in the warp-group should load different values from one partial
+    // output
+    // [numValidRows, headDim], and then iterate over partial outputs from
+    // different CTAs.
     int32_t constexpr NumEltsPer16BVec{16 / NumBytesPerPartialElt};
     static_assert((HeadDimPerCta * NumBytesPerPartialElt) % 16 == 0, "Not implemented");
 
     // The number of unrolled iterations to issue multiple LDGs.
     int32_t constexpr UnrollSize{4};
 
-    // The number of processed rows in one slice where each CTA will process one slice.
+    // The number of processed rows in one slice where each CTA will process one
+    // slice.
     int32_t constexpr NumBytesPerHeadDim{HeadDimPerCta * NumBytesPerPartialElt};
     int32_t constexpr NumBytePerSlice{NumThreadsPerCta * 16};
     static_assert(NumBytePerSlice % NumBytesPerHeadDim == 0, "Not implemented");
@@ -224,12 +228,14 @@ __global__ void __launch_bounds__(NumThreadsPerCta, 2) fmhaReductionKernel(Kerne
         if (attentionSinksPtr != nullptr)
         {
             float attentionSinkVal = exp2f(attentionSinksPtr[localHeadIdxO] * M_LOG2E - maxVal * softmaxScaleLog2);
-            // Multiply the attention sink value by 448.f if the MMA data type is e4m3 as the sum value
+            // Multiply the attention sink value by 448.f if the MMA data type is e4m3
+            // as the sum value
             // has also included the 448.f quantization scale.
             sumVal += IsE4m3Bmm ? attentionSinkVal * 448.f : attentionSinkVal;
         }
 
-        // Stores the final softmax stats values to global memory if needed (Helix attention, which
+        // Stores the final softmax stats values to global memory if needed (Helix
+        // attention, which
         // splits seqLenKv across GPUs).
         if (storesSoftmaxStats && isValidRow && headDimIdx == 0)
         {
@@ -244,7 +250,8 @@ __global__ void __launch_bounds__(NumThreadsPerCta, 2) fmhaReductionKernel(Kerne
         }
 
         // The final normalized scale.
-        // If the output data type is e4m3, make sure that sumVal is divided by the quantization scale
+        // If the output data type is e4m3, make sure that sumVal is divided by the
+        // quantization scale
         // (448.f), so 1.0f / (sumVal / 448.f) = 448.f / sumVal.
         float normalizedScale{IsE4m3Bmm ? (448.f / sumVal) : (1.0f / sumVal)};
         float2 normalizedScale2{normalizedScale, normalizedScale};
@@ -320,7 +327,8 @@ void runFmhaReduction(TllmGenFmhaKernelMetaInfo const& kernelMeta, KernelParams 
         return;
     }
 
-    // This should only be enabled when the keepsMmaAbForGeneration MLA kernel (either 1-CTA or 2-CTA)
+    // This should only be enabled when the keepsMmaAbForGeneration MLA kernel
+    // (either 1-CTA or 2-CTA)
     // is used.
     TLLM_CHECK_WITH_INFO(kernelMeta.mHeadDimQk == 576 && kernelMeta.mHeadDimV == 512
             && isKeepsMmaAbForGenerationKernel(static_cast<FmhaKernelType>(kernelMeta.mKernelType)),
@@ -340,7 +348,8 @@ void runFmhaReduction(TllmGenFmhaKernelMetaInfo const& kernelMeta, KernelParams 
     // The number of Ctas for headDim.
     int32_t const numHeadDimCtasV{kernelMeta.mHeadDimV / headDimPerCtaV};
 
-    // The 512 threads will split the reduction work of TileSizePerCtaQ * HeadDimPerCta.
+    // The 512 threads will split the reduction work of TileSizePerCtaQ *
+    // HeadDimPerCta.
     dim3 blockDim(NumThreadsPerCta);
     dim3 gridDim;
     // Each CTA processes one tokenQ.
@@ -351,7 +360,8 @@ void runFmhaReduction(TllmGenFmhaKernelMetaInfo const& kernelMeta, KernelParams 
     gridDim.z = params.mBatchSize;
 
     // The maximum number of Ctas for the reduction work.
-    // This avoids having too many waves of CTAs which can have obvious launching overheads.
+    // This avoids having too many waves of CTAs which can have obvious launching
+    // overheads.
     int32_t const maxNumCtasForReduction{
         (multiProcessorCount * 2) / static_cast<int32_t>(gridDim.x * gridDim.y * gridDim.z)};
     // The number of Ctas for the reduction work.
@@ -393,6 +403,4 @@ void runFmhaReduction(TllmGenFmhaKernelMetaInfo const& kernelMeta, KernelParams 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

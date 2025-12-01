@@ -21,10 +21,8 @@
 #include <cuda_runtime.h>
 #include <sstream>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <int HeadSize, int paddedHeadSize, int BlockSizeQ, int BlockSizeK, int BlockSizeV, typename T, typename TQuant,
     typename TSmoothK>
 void sage_quant(
@@ -48,6 +46,4 @@ void unpadding(
     // device output
     void* output, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

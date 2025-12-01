@@ -17,16 +17,13 @@
 #include "fp8_rowwise_gemm_template.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 #ifdef ENABLE_BF16
 template class CutlassFp8RowwiseGemmRunner<__nv_bfloat16>;
 #endif
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

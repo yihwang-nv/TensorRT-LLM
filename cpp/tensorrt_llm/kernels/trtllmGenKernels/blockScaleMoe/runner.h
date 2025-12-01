@@ -27,10 +27,8 @@
 #include <set>
 #include <string>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace trtllmGenFp8BlockScaleMoe
 {
 
@@ -65,14 +63,16 @@ namespace Routing
 {
 
 // The type of method in top-K routing, for use in torch custom op
-// Please keep this in sync with the counterpart defined in tensorrt_llm/_torch/modules/fused_moe/routing.py
+// Please keep this in sync with the counterpart defined in
+// tensorrt_llm/_torch/modules/fused_moe/routing.py
 enum class RoutingMethodType : int64_t
 {
     // Default: Softmax -> TopK
     Default = 0,
     // Renormalize: TopK -> Softmax
     Renormalize = 1,
-    // DeepSeekV3: Sigmoid -> RoutingBiasAdd -> Top2 in group -> Top4 groups -> Top8 experts from the Top4 groups
+    // DeepSeekV3: Sigmoid -> RoutingBiasAdd -> Top2 in group -> Top4 groups ->
+    // Top8 experts from the Top4 groups
     DeepSeekV3 = 2,
     // Llama4: Top1 -> Sigmoid
     Llama4 = 3,
@@ -105,28 +105,39 @@ inline std::string serializeMoeRoutingMethodType(RoutingMethodType routingMethod
 inline int32_t getMaxNumCtasInBatchDim(int32_t numTokens, int32_t topK, int32_t numExperts, int32_t tileTokensDim)
 {
     // For MoE, mNumTokens != 0 and the number of CTAs is known only at runtime.
-    // We launch maximally possible number of CTAs and use ptrNumNonExitingCtas to determine
+    // We launch maximally possible number of CTAs and use ptrNumNonExitingCtas to
+    // determine
     // the actual number of CTAs to run.
 
-    // Initialize number of tokens with the number of expanded tokens after routing.
+    // Initialize number of tokens with the number of expanded tokens after
+    // routing.
     int32_t numRemainingTokens = numTokens * topK;
     int32_t maxNumCtasInBatchDim = 0;
-    // First, distribute one token each expert until token depletion to maximize CTA tile count.
+    // First, distribute one token each expert until token depletion to maximize
+    // CTA tile count.
     int32_t numExpertsFilled = std::min(numExperts, numRemainingTokens);
     maxNumCtasInBatchDim += numExpertsFilled;
     numRemainingTokens -= numExpertsFilled;
-    // Next, greedily pour all remaining tokens to one expert to maximize CTA tile count.
-    // E.g., at this point tokens over 4 experts are [1, 1, 1, 1], and we have 4 tokens left.
-    // If each CTA handles 4 tokens/expert, the greedy strategy is to pour all remaining tokens
-    // to any one expert to get to the 5th CTA tile. Otherwise, we can only get 4 tiles in total.
+    // Next, greedily pour all remaining tokens to one expert to maximize CTA tile
+    // count.
+    // E.g., at this point tokens over 4 experts are [1, 1, 1, 1], and we have 4
+    // tokens left.
+    // If each CTA handles 4 tokens/expert, the greedy strategy is to pour all
+    // remaining tokens
+    // to any one expert to get to the 5th CTA tile. Otherwise, we can only get 4
+    // tiles in total.
     //
-    // Another way to reason about this is to pour the remaining tokens into buckets of some fixed
-    // capacity. These buckets, if full, can then be attributed to any expert; it does not have to
+    // Another way to reason about this is to pour the remaining tokens into
+    // buckets of some fixed
+    // capacity. These buckets, if full, can then be attributed to any expert; it
+    // does not have to
     // belong to the same expert every time.
     if (numRemainingTokens > 0)
     {
-        // For every tileTokenDim tokens, we add an extra CTA tile in the token dimension.
-        // The number of CTA tiles is given by divDown(numRemainingTokens, tokenTileDim).
+        // For every tileTokenDim tokens, we add an extra CTA tile in the token
+        // dimension.
+        // The number of CTA tiles is given by divDown(numRemainingTokens,
+        // tokenTileDim).
         maxNumCtasInBatchDim += (numRemainingTokens / tileTokensDim);
     }
     return maxNumCtasInBatchDim;
@@ -242,10 +253,11 @@ namespace btg = batchedGemm::trtllm::gen;
 
 struct MoERunnerArgs
 {
-    void* routing_logits
-        = nullptr; // [num_tokens, num_experts] in float, generated after gemm(hidden_state, routing_weights)
-    void* routing_bias = nullptr;  // [num_experts] in bfloat16 for now = mDtypeExpW
-    void* hidden_states = nullptr; // [num_tokens, hidden_size] in fp8 = mDtypeElt
+    void* routing_logits = nullptr; // [num_tokens, num_experts] in float,
+                                    // generated after gemm(hidden_state,
+                                    // routing_weights)
+    void* routing_bias = nullptr;   // [num_experts] in bfloat16 for now = mDtypeExpW
+    void* hidden_states = nullptr;  // [num_tokens, hidden_size] in fp8 = mDtypeElt
     // [hidden_size/128, num_tokens] in float for e4m3 DS recipe
     // and [num_tokens, hidden_size/16] in float for e2m1
     void* hidden_states_scale = nullptr;
@@ -389,13 +401,14 @@ private:
     PermuteGemm1::Runner mPermuteGemm1;
     Gemm2::Runner mGemm2;
 
-    // This will be the cartesian product of the passing configs for gemm1 and gemm2
-    // This allows us to autotune the MoE as one operation instead of tuning gemm1 and gemm2 separately
+    // This will be the cartesian product of the passing configs for gemm1 and
+    // gemm2
+    // This allows us to autotune the MoE as one operation instead of tuning gemm1
+    // and gemm2 separately
     std::vector<MoEConfig> mPassingConfigs;
 };
 } // namespace MoE
 
 } // namespace trtllmGenFp8BlockScaleMoe
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

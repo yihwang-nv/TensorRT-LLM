@@ -23,10 +23,7 @@
 #include <functional>
 #include <memory>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <>
 void DecoderXQAImpl::run(
@@ -52,6 +49,4 @@ std::unique_ptr<DecoderXQAImpl> DecoderXQAImpl::create(DecoderXQARunner* runner,
     TLLM_THROW("Unknown DecoderXQAImpl::ImplType");
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

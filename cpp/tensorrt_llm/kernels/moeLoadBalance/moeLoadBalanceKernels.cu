@@ -25,10 +25,7 @@
 
 namespace cg = cooperative_groups;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using tensorrt_llm::common::launchWithPdlWhenEnabled;
 
@@ -601,7 +598,8 @@ __global__ void moeComputeRouteSortKernel(MoeLoadBalanceMetaInfo metaInfo, MoePl
             {
                 int replicaCount = sharedExpertReplicaCount[expertId];
                 int replicaStartOffset = sharedExpertReplicaStartOffset[expertId];
-                int key = blockIdx.x + idxInBlock; // using local round robin here, do we need global round robin?
+                int key = blockIdx.x + idxInBlock; // using local round robin here, do
+                                                   // we need global round robin?
                 if (offsetByEpRank)
                 {
                     key += metaInfo.epRank;
@@ -629,7 +627,8 @@ void moeComputeRouteDevice(MoeLoadBalanceMetaInfo metaInfo, MoePlacementInfo pla
     if (metaInfo.expertCount == metaInfo.epSize * metaInfo.slotCountPerRank)
     {
         auto* kernelFn = moeComputeRouteNoRedundantKernel<1024, kThreadCount, kEltPerThread>;
-        // no redundant expert, so we don't need complex routing, but just assign to the correct solt.
+        // no redundant expert, so we don't need complex routing, but just assign to
+        // the correct solt.
         launchWithPdlWhenEnabled("moeComputeRouteNoRedundant", kernelFn, blockCount, kThreadCount, dynamicShmSize,
             stream, metaInfo, placementInfo, tokenSelectedExperts, tokenRoutedSlotIds, tokenCount);
     }
@@ -665,6 +664,4 @@ void moeSetSignalForGpuStageHost(MoeLoadBalanceSingleLayerSignal* signal, int64_
     __atomic_store_n(&signal->stepAndOwner, value, __ATOMIC_RELEASE);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

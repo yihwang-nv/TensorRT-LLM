@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,14 +46,12 @@
 #include <vector>
 #ifdef _WIN32  // Windows
 #include <windows.h>
-#undef ERROR   // A Windows header file defines ERROR as 0, but it's used in our logger.h enum. Logging breaks without
+#undef ERROR   // A Windows header file defines ERROR as 0, but it's used in our
+               // logger.h enum. Logging breaks without
                // this undef.
 #endif         // WIN32
 
 TRTLLM_NAMESPACE_BEGIN
-
-namespace common
-{
 
 // workspace for cublas gemm : 32MB
 #define CUBLAS_WORKSPACE_SIZE 33554432
@@ -214,65 +213,123 @@ inline void syncAndCheck(cudaStream_t stream, char const* const file, int const 
     } while (0)
 
 // clang-format off
-template<typename T> struct packed_type;
-template <>          struct packed_type<float>         { using type = float; }; // we don't need to pack float by default
-template <>          struct packed_type<half>          { using type = half2; };
+template <typename T> struct packed_type;
+template <> struct packed_type<float> {
+  using type = float;
+}; // we don't need to pack float by default
+template <> struct packed_type<half> {
+  using type = half2;
+};
 
 #ifdef ENABLE_BF16
-template<>
-struct packed_type<__nv_bfloat16> {
-    using type = __nv_bfloat162;
+template <> struct packed_type<__nv_bfloat16> {
+  using type = __nv_bfloat162;
 };
 #endif
 
 #ifdef ENABLE_FP8
-template<>
-struct packed_type<__nv_fp8_e4m3> {
-    using type = __nv_fp8x2_e4m3;
+template <> struct packed_type<__nv_fp8_e4m3> {
+  using type = __nv_fp8x2_e4m3;
 };
 #endif
 
-template<typename T> struct num_elems;
-template <>          struct num_elems<float>           { static constexpr int value = 1; };
-template <>          struct num_elems<float2>          { static constexpr int value = 2; };
-template <>          struct num_elems<float4>          { static constexpr int value = 4; };
-template <>          struct num_elems<half>            { static constexpr int value = 1; };
-template <>          struct num_elems<half2>           { static constexpr int value = 2; };
+template <typename T> struct num_elems;
+template <> struct num_elems<float> {
+  static constexpr int value = 1;
+};
+template <> struct num_elems<float2> {
+  static constexpr int value = 2;
+};
+template <> struct num_elems<float4> {
+  static constexpr int value = 4;
+};
+template <> struct num_elems<half> {
+  static constexpr int value = 1;
+};
+template <> struct num_elems<half2> {
+  static constexpr int value = 2;
+};
 #ifdef ENABLE_BF16
-template <>          struct num_elems<__nv_bfloat16>   { static constexpr int value = 1; };
-template <>          struct num_elems<__nv_bfloat162>  { static constexpr int value = 2; };
+template <> struct num_elems<__nv_bfloat16> {
+  static constexpr int value = 1;
+};
+template <> struct num_elems<__nv_bfloat162> {
+  static constexpr int value = 2;
+};
 #endif
 #ifdef ENABLE_FP8
-template <>          struct num_elems<__nv_fp8_e4m3>   { static constexpr int value = 1; };
-template <>          struct num_elems<__nv_fp8x2_e4m3>  { static constexpr int value = 2; };
+template <> struct num_elems<__nv_fp8_e4m3> {
+  static constexpr int value = 1;
+};
+template <> struct num_elems<__nv_fp8x2_e4m3> {
+  static constexpr int value = 2;
+};
 #endif
 
-template<typename T, int num> struct packed_as;
-template<typename T>          struct packed_as<T, 1>              { using type = T; };
-template<>                    struct packed_as<half,  2>          { using type = half2; };
-template<>                    struct packed_as<float,  2>         { using type = float2; };
-template<>                    struct packed_as<int8_t, 2>         { using type = int16_t; };
-template<>                    struct packed_as<int32_t, 2>        { using type = int2; };
-template<>                    struct packed_as<half2, 1>          { using type = half; };
-template<>                    struct packed_as<float2, 1>         { using type = float; };
+template <typename T, int num> struct packed_as;
+template <typename T> struct packed_as<T, 1> {
+  using type = T;
+};
+template <> struct packed_as<half, 2> {
+  using type = half2;
+};
+template <> struct packed_as<float, 2> {
+  using type = float2;
+};
+template <> struct packed_as<int8_t, 2> {
+  using type = int16_t;
+};
+template <> struct packed_as<int32_t, 2> {
+  using type = int2;
+};
+template <> struct packed_as<half2, 1> {
+  using type = half;
+};
+template <> struct packed_as<float2, 1> {
+  using type = float;
+};
 #ifdef ENABLE_BF16
-template<> struct packed_as<__nv_bfloat16,  2> { using type = __nv_bfloat162; };
-template<> struct packed_as<__nv_bfloat162, 1> { using type = __nv_bfloat16;  };
+template <> struct packed_as<__nv_bfloat16, 2> {
+  using type = __nv_bfloat162;
+};
+template <> struct packed_as<__nv_bfloat162, 1> {
+  using type = __nv_bfloat16;
+};
 #endif
 #ifdef ENABLE_FP8
-template<> struct packed_as<__nv_fp8_e4m3,  2> { using type = __nv_fp8x2_e4m3; };
-template<> struct packed_as<__nv_fp8x2_e4m3, 1> { using type = __nv_fp8_e4m3;  };
-template<> struct packed_as<__nv_fp8_e5m2,  2> { using type = __nv_fp8x2_e5m2; };
-template<> struct packed_as<__nv_fp8x2_e5m2, 1> { using type = __nv_fp8_e5m2;  };
+template <> struct packed_as<__nv_fp8_e4m3, 2> {
+  using type = __nv_fp8x2_e4m3;
+};
+template <> struct packed_as<__nv_fp8x2_e4m3, 1> {
+  using type = __nv_fp8_e4m3;
+};
+template <> struct packed_as<__nv_fp8_e5m2, 2> {
+  using type = __nv_fp8x2_e5m2;
+};
+template <> struct packed_as<__nv_fp8x2_e5m2, 1> {
+  using type = __nv_fp8_e5m2;
+};
 #endif
 
-inline __device__ float2 operator*(float2 a, float2 b) { return make_float2(a.x * b.x, a.y * b.y); }
-inline __device__ float2 operator+(float2 a, float2 b) { return make_float2(a.x + b.x, a.y + b.y); }
-inline __device__ float2 operator-(float2 a, float2 b) { return make_float2(a.x - b.x, a.y - b.y); }
+inline __device__ float2 operator*(float2 a, float2 b) {
+  return make_float2(a.x * b.x, a.y * b.y);
+}
+inline __device__ float2 operator+(float2 a, float2 b) {
+  return make_float2(a.x + b.x, a.y + b.y);
+}
+inline __device__ float2 operator-(float2 a, float2 b) {
+  return make_float2(a.x - b.x, a.y - b.y);
+}
 
-inline __device__ float2 operator*(float2 a, float  b) { return make_float2(a.x * b, a.y * b); }
-inline __device__ float2 operator+(float2 a, float  b) { return make_float2(a.x + b, a.y + b); }
-inline __device__ float2 operator-(float2 a, float  b) { return make_float2(a.x - b, a.y - b); }
+inline __device__ float2 operator*(float2 a, float b) {
+  return make_float2(a.x * b, a.y * b);
+}
+inline __device__ float2 operator+(float2 a, float b) {
+  return make_float2(a.x + b, a.y + b);
+}
+inline __device__ float2 operator-(float2 a, float b) {
+  return make_float2(a.x - b, a.y - b);
+}
 
 // clang-format on
 
@@ -302,7 +359,8 @@ struct CudaDataType<__nv_bfloat16>
 #endif
 
 /// @brief Get the SM version of the current device.
-/// @param queryRealSmArch Whether to query the real SM architecture. example usage: use real sm arch when do LUT tuning
+/// @param queryRealSmArch Whether to query the real SM architecture. example
+/// usage: use real sm arch when do LUT tuning
 /// and use fake sm arch when reuse sm120 code on sm121 devices.
 /// @return The SM version of the current device.
 inline int getSMVersion(bool queryRealSmArch = false)
@@ -374,7 +432,9 @@ inline std::tuple<size_t, size_t> getDeviceMemoryInfo(bool const useUvm)
         freeSysMem = memInfo.ullAvailPhys;
 #endif // WIN32
 
-        TLLM_LOG_INFO("Using UVM based system memory for KV cache, total memory %0.2f GB, available memory %0.2f GB",
+        TLLM_LOG_INFO(
+            "Using UVM based system memory for KV cache, total memory "
+            "%0.2f GB, available memory %0.2f GB",
             ((double) totalSysMem / 1e9), ((double) freeSysMem / 1e9));
         return {freeSysMem, totalSysMem};
     }
@@ -382,14 +442,17 @@ inline std::tuple<size_t, size_t> getDeviceMemoryInfo(bool const useUvm)
     size_t free = 0;
     size_t total = 0;
     check_cuda_error(cudaMemGetInfo(&free, &total));
-    TLLM_LOG_DEBUG("Using GPU memory for KV cache, total memory %0.2f GB, available memory %0.2f GB",
+    TLLM_LOG_DEBUG(
+        "Using GPU memory for KV cache, total memory %0.2f GB, "
+        "available memory %0.2f GB",
         ((double) total / 1e9), ((double) free / 1e9));
     return {free, total};
 }
 
 /// @brief Gets the memory allocation granularity for the current device.
 ///
-/// @return size_t The size of the smallest difference in memory size supported by the current device.
+/// @return size_t The size of the smallest difference in memory size supported
+/// by the current device.
 inline size_t getAllocationGranularity()
 {
     auto const currentDevice = getDevice();
@@ -725,8 +788,10 @@ inline void printMatrix(T const* ptr, int nRow, int nCol, int nStride)
 
     bool const isDevicePtr = (getPtrCudaMemoryType(ptr) == cudaMemoryTypeDevice);
     size_t sizeInByte = sizeof(T) * nRow * nStride;
-    TLLM_LOG_TRACE("addr=%p, location=%s, sizeof(T)=%lu, nRow=%d, nStride=%d, sizeInByte=%lu\n", ptr,
-        (isDevicePtr ? "Device" : "Host"), sizeof(T), nRow, nStride, sizeInByte);
+    TLLM_LOG_TRACE(
+        "addr=%p, location=%s, sizeof(T)=%lu, nRow=%d, nStride=%d, "
+        "sizeInByte=%lu\n",
+        ptr, (isDevicePtr ? "Device" : "Host"), sizeof(T), nRow, nStride, sizeInByte);
     if (isDevicePtr)
     {
         std::vector<T> tmpVec;
@@ -862,18 +927,22 @@ extern "C"
 __forceinline__ __device__ void issue_stas(uint32_t dist_barrier_ptr, uint32_t dist_buffer_ptr, uint32_t d0)
 {
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && (__CUDACC_VER_MAJOR__ >= 12))
-    asm volatile("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 [%0], %2, [%1];\n\t"
-                 :
-                 : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "r"(d0));
+    asm volatile(
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 "
+        "[%0], %2, [%1];\n\t"
+        :
+        : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "r"(d0));
 #endif
 }
 
 __forceinline__ __device__ void issue_stas(uint32_t dist_barrier_ptr, uint32_t dist_buffer_ptr, uint64_t d0)
 {
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && (__CUDACC_VER_MAJOR__ >= 12))
-    asm volatile("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 [%0], %2, [%1];\n\t"
-                 :
-                 : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "l"(d0));
+    asm volatile(
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 "
+        "[%0], %2, [%1];\n\t"
+        :
+        : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "l"(d0));
 #endif
 }
 
@@ -881,9 +950,11 @@ __forceinline__ __device__ void issue_stas(
     uint32_t dist_barrier_ptr, uint32_t dist_buffer_ptr, uint32_t d0, uint32_t d1)
 {
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && (__CUDACC_VER_MAJOR__ >= 12))
-    asm volatile("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b32 [%0], {%2, %3}, [%1];\n\t"
-                 :
-                 : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "r"(d0), "r"(d1));
+    asm volatile(
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2."
+        "b32 [%0], {%2, %3}, [%1];\n\t"
+        :
+        : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "r"(d0), "r"(d1));
 #endif
 }
 
@@ -891,9 +962,11 @@ __forceinline__ __device__ void issue_stas(
     uint32_t dist_barrier_ptr, uint32_t dist_buffer_ptr, uint32_t d0, uint32_t d1, uint32_t d2, uint32_t d3)
 {
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && (__CUDACC_VER_MAJOR__ >= 12))
-    asm volatile("st.async.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%2, %3, %4, %5}, [%1];\n\t"
-                 :
-                 : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "r"(d0), "r"(d1), "r"(d2), "r"(d3));
+    asm volatile(
+        "st.async.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 "
+        "[%0], {%2, %3, %4, %5}, [%1];\n\t"
+        :
+        : "r"(dist_buffer_ptr), "r"(dist_barrier_ptr), "r"(d0), "r"(d1), "r"(d2), "r"(d3));
 #endif
 }
 
@@ -1000,7 +1073,8 @@ public:
             "{\n\t"
             ".reg .pred                P1; \n\t"
             "LAB_WAIT: \n\t"
-            "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64 P1, [%0], %1; \n\t"
+            "mbarrier.try_wait.parity.acquire.cta.shared::cta.b64 P1, "
+            "[%0], %1; \n\t"
             "@P1                       bra.uni DONE; \n\t"
             "bra.uni                   LAB_WAIT; \n\t"
             "DONE: \n\t"
@@ -1404,8 +1478,6 @@ DEFINE_MEMBER_CHECKER(deq)
 DEFINE_MEMBER_CHECKER(qua)
 DEFINE_MEMBER_CHECKER(high_preciecion_normed_output)
 
-} // namespace common
-
 TRTLLM_NAMESPACE_END
 
 /*
@@ -1417,9 +1489,12 @@ TRTLLM_NAMESPACE_END
         tensorrt_llm::common::check((stat), #stat, __FILE__, __LINE__);                                                \
     } while (0)
 
-// We use singleton memory pool and the order of destructors depends on the compiler implementation. We find that the
-// cudaFree/cudaFreeHost is called after cudaruntime destruction on Windows. There will be an cudaErrorCudartUnloading
-// error.  However, it is safe to ignore this error because the cuda runtime is already exited, we are no more worried
+// We use singleton memory pool and the order of destructors depends on the
+// compiler implementation. We find that the
+// cudaFree/cudaFreeHost is called after cudaruntime destruction on Windows.
+// There will be an cudaErrorCudartUnloading
+// error.  However, it is safe to ignore this error because the cuda runtime is
+// already exited, we are no more worried
 // about the memory leaks.
 #define TLLM_CUDA_CHECK_FREE_RESOURCE(stat)                                                                            \
     do                                                                                                                 \

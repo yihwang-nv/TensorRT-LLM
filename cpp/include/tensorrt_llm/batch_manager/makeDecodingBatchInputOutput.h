@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,25 +20,22 @@
 
 #include "common.h"
 #include "tensorrt_llm/common/algorithm.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iGptDecoderBatched.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::decoder
+namespace tensorrt_llm::runtime::decoder
 {
 class DecoderState;
-} // namespace runtime::decoder
+} // namespace tensorrt_llm::runtime::decoder
 
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class DecoderInputBuffers;
 class RuntimeBuffers;
 
-class MakeDecodingBatchInputOutput : Algorithm
+class MakeDecodingBatchInputOutput : tensorrt_llm::common::Algorithm
 {
 public:
     constexpr static auto name{"MakeDecodingBatchInputOutput"};
@@ -56,6 +54,4 @@ public:
         runtime::decoder::DecoderState const& decoderState);
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

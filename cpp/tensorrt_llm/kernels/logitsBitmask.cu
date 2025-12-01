@@ -21,10 +21,8 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace
 {
 
@@ -330,6 +328,4 @@ template void invokeContiguousLogitsBitmask<__nv_bfloat16>(__nv_bfloat16* logits
     cudaStream_t stream);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

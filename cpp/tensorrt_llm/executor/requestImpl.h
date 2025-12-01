@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/serializeUtils.h"
 #include "tensorrt_llm/executor/tensor.h"
@@ -27,9 +27,7 @@
 #include <utility>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 class Request::Impl
 {
@@ -101,17 +99,21 @@ public:
 
     void serialize(std::ostream& ostream) const
     {
-        // Dynamic logitsPostProcessor is only supported with replicate=false or no tensor parallelism.
+        // Dynamic logitsPostProcessor is only supported with replicate=false or
+        // no tensor parallelism.
         TLLM_CHECK_WITH_INFO(!mLogitsPostProcessor.has_value(),
-            "Serialization of Request with logitsPostProcessor is currently not supported.");
+            "Serialization of Request with logitsPostProcessor "
+            "is currently not supported.");
         visitMembers([&ostream](auto const& member) { serialize_utils::serialize(member, ostream); });
     }
 
     [[nodiscard]] size_t serializedSize() const
     {
-        // Dynamic logitsPostProcessor is only supported with replicate=false or no tensor parallelism.
+        // Dynamic logitsPostProcessor is only supported with replicate=false or
+        // no tensor parallelism.
         TLLM_CHECK_WITH_INFO(!mLogitsPostProcessor.has_value(),
-            "Serialization of Request with logitsPostProcessor is currently not supported.");
+            "Serialization of Request with logitsPostProcessor "
+            "is currently not supported.");
         size_t totalSize = 0;
         visitMembers([&totalSize](auto const& member) { totalSize += serialize_utils::serializedSize(member); });
         return totalSize;
@@ -275,8 +277,10 @@ public:
     [[nodiscard]] std::optional<SizeType32> getNumReturnSequences() const
     {
         TLLM_LOG_WARNING(
-            "The 'getNumReturnSequences' method in the Request class is deprecated and will be removed in a future "
-            "release. Please use 'getNumReturnSequences' directly from the 'SamplingConfig' object.");
+            "The 'getNumReturnSequences' method in the Request "
+            "class is deprecated and will be removed in a future "
+            "release. Please use 'getNumReturnSequences' directly "
+            "from the 'SamplingConfig' object.");
         return mSamplingConfig.getNumReturnSequences();
     }
 
@@ -448,8 +452,10 @@ public:
     void setNumReturnSequences(SizeType32 numReturnSequences)
     {
         TLLM_LOG_WARNING(
-            "The 'setNumReturnSequences' method in the Request class is deprecated and will be removed in a future "
-            "release. Please use 'setNumReturnSequences' directly on the 'SamplingConfig' object.");
+            "The 'setNumReturnSequences' method in the Request "
+            "class is deprecated and will be removed in a future "
+            "release. Please use 'setNumReturnSequences' directly "
+            "on the 'SamplingConfig' object.");
         mNumReturnSequences = numReturnSequences;
         mSamplingConfig.setNumReturnSequences(numReturnSequences);
     }
@@ -494,14 +500,18 @@ private:
         if (mNumReturnSequences > 1)
         {
             TLLM_LOG_WARNING(
-                "The 'numReturnSequences' in the Request class is deprecated and will be removed in a future release. "
-                "Please set the number of return sequences directly in 'SamplingConfig'.");
+                "The 'numReturnSequences' in the Request class is "
+                "deprecated and will be removed in a future release. "
+                "Please set the number of return sequences directly "
+                "in 'SamplingConfig'.");
             mSamplingConfig.setNumReturnSequences(mNumReturnSequences);
         }
 
         if (mLogitsPostProcessorName.has_value() && mLogitsPostProcessor.has_value())
         {
-            TLLM_THROW("Only one of 'logitsPostProcessorName' and 'logitsPostProcessor' can be specified.");
+            TLLM_THROW(
+                "Only one of 'logitsPostProcessorName' and "
+                "'logitsPostProcessor' can be specified.");
         }
 
         if (mGuidedDecodingParams.has_value() && mSamplingConfig.getBeamWidth() > 1)
@@ -599,6 +609,4 @@ private:
     std::optional<CacheSaltIDType> mCacheSaltID;
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

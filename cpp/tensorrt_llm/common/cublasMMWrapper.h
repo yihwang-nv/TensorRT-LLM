@@ -27,9 +27,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 class CublasMMWrapper
 {
 protected:
@@ -86,7 +83,8 @@ public:
 
 #ifdef ENABLE_CUBLASLT_FP4_GEMM
     /********************** Block-Scaled GEMMs **********************/
-    // Generic block-scaled GEMM interface supporting FP4, FP8, and other quantized formats
+    // Generic block-scaled GEMM interface supporting FP4, FP8, and other
+    // quantized formats
     // that require per-block scaling factors (a_sf, b_sf)
 
     // Uses default/heuristic algorithm
@@ -183,7 +181,5 @@ public:
         return mCDesc;
     }
 };
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

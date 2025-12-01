@@ -35,12 +35,10 @@
 #include <set>
 #include <vector>
 
-using namespace tensorrt_llm::cutlass_extensions;
+using namespace tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 
@@ -79,7 +77,8 @@ bool is_valid_split_k_factor(int64_t const m, int64_t const n, int64_t const k, 
     // All tile sizes have a k_tile of 64.
     static constexpr int k_tile = 64;
 
-    // For weight-only quant, we need k and k_elements_per_split to be a multiple of cta_k
+    // For weight-only quant, we need k and k_elements_per_split to be a multiple
+    // of cta_k
     if (is_weight_only)
     {
         if ((k % k_tile) != 0)
@@ -264,7 +263,8 @@ bool sm90_supports_coop(CutlassTileConfigSM90 const tile)
 #endif
 }
 
-// We only compile CUTLASS kernels with multi-cast along M if the M tile is >= 128. This is purely to improve
+// We only compile CUTLASS kernels with multi-cast along M if the M tile is >=
+// 128. This is purely to improve
 // compilation speed.
 bool sm90_supports_mcast_along_m(CutlassTileConfigSM90 const tile)
 {
@@ -279,7 +279,8 @@ bool sm90_supports_mcast_along_m(CutlassTileConfigSM90 const tile)
 #endif
 }
 
-// We only compile CUTLASS kernels with multi-cast along N if the N tile is >= 128. This is purely to improve
+// We only compile CUTLASS kernels with multi-cast along N if the N tile is >=
+// 128. This is purely to improve
 // compilation speed.
 bool sm90_supports_mcast_along_n(CutlassTileConfigSM90 const tile)
 {
@@ -433,7 +434,8 @@ std::vector<CutlassGemmConfig> get_candidate_configs_sm100_dynamic_cluster_shape
     {
         tile_configs.push_back({CutlassTileConfigSM100::CtaShape128x16x128B, cluster1sm});
         // TODO: re-enable when handled by the MoE GEMM dispatch
-        // tile_configs.push_back({ CutlassTileConfigSM100::CtaShape128x8x256B, ClusterShape::ClusterShape_1x1x1 });
+        // tile_configs.push_back({ CutlassTileConfigSM100::CtaShape128x8x256B,
+        // ClusterShape::ClusterShape_1x1x1 });
     }
 
     for (auto [tile, cluster] : tile_configs)
@@ -459,10 +461,14 @@ std::vector<CutlassGemmConfig> get_candidate_configs_sm100(
         std::vector<CutlassGemmConfig> candidate_configs;
         for (auto schedule : {EpilogueScheduleType::TMA, EpilogueScheduleType::NO_SMEM})
         {
-            // TODO The tactic profiling is a bit long with all of these shapes enabled
-            //   Shape 4x4x1 shapes do not seem to give better performance in the cases I tested so we disable it here
-            auto cluster_shapes = {ClusterShape::ClusterShape_1x1x1, ClusterShape::ClusterShape_4x1x1,
-                ClusterShape::ClusterShape_4x2x1 /*, ClusterShape::ClusterShape_4x4x1*/};
+            // TODO The tactic profiling is a bit long with all of these shapes
+            // enabled
+            //   Shape 4x4x1 shapes do not seem to give better performance in the
+            // cases I tested so we disable it here
+            auto cluster_shapes = {
+                ClusterShape::ClusterShape_1x1x1, ClusterShape::ClusterShape_4x1x1,
+                ClusterShape::ClusterShape_4x2x1 /*, ClusterShape::ClusterShape_4x4x1*/
+            };
             for (auto cluster_shape : cluster_shapes)
             {
                 auto fallback_cluster_shape = cluster_shape == ClusterShape::ClusterShape_1x1x1
@@ -524,7 +530,9 @@ std::vector<CutlassGemmConfig> get_candidate_configs_sm120(CutlassGemmConfig::Ca
                 MainloopScheduleType::AUTO, EpilogueScheduleType::AUTO, ClusterShape::ClusterShape_1x1x1});
             return candidate_configs;
         }
-        TLLM_THROW("Not Implemented: SM120 group GEMM only supports mxfp8-mxfp4 mixed or nvfp4.");
+        TLLM_THROW(
+            "Not Implemented: SM120 group GEMM only supports mxfp8-mxfp4 "
+            "mixed or nvfp4.");
     }
     else
     {
@@ -543,8 +551,7 @@ std::vector<CutlassGemmConfig> get_candidate_configs_sm120(CutlassGemmConfig::Ca
         }
     }
 #endif
-
-} // namespace kernels
+}
 
 std::vector<CutlassGemmConfig> get_candidate_configs(
     int sm, int const max_split_k, CutlassGemmConfig::CandidateConfigTypeParam const config_type_param)
@@ -693,6 +700,5 @@ CutlassGemmConfig estimate_best_config_from_occupancies(std::vector<CutlassGemmC
 }
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

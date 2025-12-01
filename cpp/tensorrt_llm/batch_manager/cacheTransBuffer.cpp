@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 
 #include "cacheTransBuffer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/opUtils.h"
@@ -24,9 +24,7 @@
 #include <NvInferRuntimeBase.h>
 #include <mutex>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 
 class FabricMemory::Impl
@@ -141,7 +139,9 @@ bool FabricMemory::supportFbaricMemory()
         CUresult ret1 = cuDeviceGetAttribute(&gpu_direct_rdma_with_cuda_vmm_supported,
             CU_DEVICE_ATTRIBUTE_GPU_DIRECT_RDMA_WITH_CUDA_VMM_SUPPORTED, deviceIdx);
         TLLM_LOG_DEBUG("FabricMemory::supportFabricMemory fabric_handle_supported:%d", fabric_handle_supported);
-        TLLM_LOG_DEBUG("FabricMemory::supportFabricMemory gpu_direct_rdma_with_cuda_vmm_supported:%d",
+        TLLM_LOG_DEBUG(
+            "FabricMemory::supportFabricMemory "
+            "gpu_direct_rdma_with_cuda_vmm_supported:%d",
             gpu_direct_rdma_with_cuda_vmm_supported);
         if (ret0 != CUresult::CUDA_SUCCESS || ret1 != CUresult::CUDA_SUCCESS || fabric_handle_supported == 0
             || gpu_direct_rdma_with_cuda_vmm_supported == 0)
@@ -170,7 +170,9 @@ bool FabricMemory::supportFbaricMemory()
         }
         if (cuRet == CUresult::CUDA_ERROR_NOT_PERMITTED)
         {
-            TLLM_LOG_WARNING("Try to creat fabric memory failed , setting imex channel may be required");
+            TLLM_LOG_WARNING(
+                "Try to creat fabric memory failed , setting imex "
+                "channel may be required");
             return false;
         }
         TLLM_CU_CHECK(cuRet);
@@ -250,7 +252,8 @@ CacheTransBufferManager::CacheTransBufferManager(
     mPreAllocBufferSize = mTransferBufferSize * (mRecvBufferCount + mSendBufferCount);
     TLLM_LOG_INFO(
         "CacheTransBufferManager: mMaxNumTokens:%ld, mRecvBufferCount:%ld, "
-        "mSendBufferCount:%ld,mTransferBufferSize:%ld, mPreAllocBufferSize:%ld,mOnlyUseDynamicBuffer:%d "
+        "mSendBufferCount:%ld,mTransferBufferSize:%ld, "
+        "mPreAllocBufferSize:%ld,mOnlyUseDynamicBuffer:%d "
         "mUseFabricMemory:%d mDataType:%d",
         maxNumTokens.has_value() ? maxNumTokens.value() : 0, mRecvBufferCount, mSendBufferCount, mTransferBufferSize,
         mPreAllocBufferSize, mOnlyUseDynamicBuffer, mUseFabricMemory, mDataType);
@@ -354,7 +357,8 @@ runtime::ITensor::SharedPtr CacheTransBufferManager::getRecvBuffer(std::optional
     if (bufferId.has_value())
     {
         TLLM_CHECK(static_cast<size_t>(bufferId.value()) < mRecvBufferCount);
-        // TLLM_CHECK(mConcurrenceRecvResource.mBufferIndexFlag[bufferId.value()] == 1);
+        // TLLM_CHECK(mConcurrenceRecvResource.mBufferIndexFlag[bufferId.value()]
+        // == 1);
         return mConcurrenceRecvResource.mBuffers[bufferId.value()];
     }
     return nullptr;
@@ -396,11 +400,16 @@ std::tuple<std::vector<runtime::ITensor::SharedPtr>, size_t, bool> CacheTransBuf
         if (bufferCoverTargetNum < static_cast<size_t>(targetNum))
         {
             TLLM_LOG_WARNING(
-                "CacheTransceiver getOrAllocateBuffers: bufferCoverTargetNum:%d < targetNum:%d, may use dynamic "
-                "buffer which will fail with NIXL backend. It is recommended to set "
-                "cacheTransceiverConfig.MaxTokensInBuffer (cache_transceiver_config.max_tokens_in_buffer in config "
-                "YAML file) to a value greater than the maximum ISL of the processed requests. Otherwise, performance "
-                "may be degraded or transfer may fail.  requestedNumberOfElements.size():%ld, "
+                "CacheTransceiver getOrAllocateBuffers: bufferCoverTargetNum:%d < "
+                "targetNum:%d, may use dynamic "
+                "buffer which will fail with NIXL backend. It is recommended to "
+                "set "
+                "cacheTransceiverConfig.MaxTokensInBuffer "
+                "(cache_transceiver_config.max_tokens_in_buffer in config "
+                "YAML file) to a value greater than the maximum ISL of the "
+                "processed requests. Otherwise, performance "
+                "may be degraded or transfer may fail.  "
+                "requestedNumberOfElements.size():%ld, "
                 "mNumberOfElements:%ld, requestedNumberOfElements[0]:%ld",
                 bufferCoverTargetNum, targetNum, requestedNumberOfElements.size(), mNumberOfElements,
                 requestedNumberOfElements[0]);
@@ -530,6 +539,4 @@ size_t CacheTransBufferManager::getSendBufferCount()
     return mSendBufferCount;
 }
 
-} // namespace batch_manager::kv_cache_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager

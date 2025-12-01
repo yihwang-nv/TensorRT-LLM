@@ -16,7 +16,6 @@
  */
 
 #include "qserveGemmPlugin.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/qserveGemm.h"
 #include <cassert>
 #include <numeric>
@@ -35,9 +34,7 @@ static char const* QSERVE_GEMM_PLUGIN_NAME{"QServeGemm"};
 PluginFieldCollection QServeGemmPluginCreator::mFC{};
 std::vector<nvinfer1::PluginField> QServeGemmPluginCreator::mPluginAttributes;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 QServeGemmPlugin::QServeGemmPlugin(
@@ -144,7 +141,6 @@ bool QServeGemmPlugin::supportsFormatCombination(
         default: return false;
         }
     }
-
     else
     { // Per-channel
         switch (pos)
@@ -208,20 +204,32 @@ int QServeGemmPlugin::enqueue(nvinfer1::PluginTensorDesc const* inputDesc, nvinf
     // inputs
 
     // Per group:
-    //     activation       [M, K]                  int8_t      Quantized sint8 activations
-    //     weights          [N, K/2]                int8_t      Quantized uint4 weights  (packed as int8_t)
-    //     s2_zeros         [K/group_size, N]       int8_t      Level-2 sint8 scaled zeros of weights
-    //     s2_scales        [K/group_size, N]       int8_t      Level-2 sint8 scales of weights
-    //     s1_scales        [N]                     half        Level-1 fp16 scales of weights
-    //     act_scales       [M]                     half        Scales of activations
+    //     activation       [M, K]                  int8_t      Quantized sint8
+    // activations
+    //     weights          [N, K/2]                int8_t      Quantized uint4
+    // weights  (packed as int8_t)
+    //     s2_zeros         [K/group_size, N]       int8_t      Level-2 sint8
+    // scaled zeros of weights
+    //     s2_scales        [K/group_size, N]       int8_t      Level-2 sint8
+    // scales of weights
+    //     s1_scales        [N]                     half        Level-1 fp16
+    // scales of weights
+    //     act_scales       [M]                     half        Scales of
+    // activations
 
     // Per channel:
-    //     activation       [M, K]                  int8_t      Quantized sint8 activations
-    //     weights          [N, K/2]                int8_t      Quantized uint4 weights  (packed as int8_t)
-    //     s1_scales        [N]                     half        Level-1 scales of weights
-    //     s1_szeros        [N]                     half        Level-1 scaled zeros of weights
-    //     act_sums         [M]                     half        Per-token sums of activations
-    //     act_scales       [M]                     half        Scales of activations
+    //     activation       [M, K]                  int8_t      Quantized sint8
+    // activations
+    //     weights          [N, K/2]                int8_t      Quantized uint4
+    // weights  (packed as int8_t)
+    //     s1_scales        [N]                     half        Level-1 scales
+    // of weights
+    //     s1_szeros        [N]                     half        Level-1 scaled
+    // zeros of weights
+    //     act_sums         [M]                     half        Per-token sums
+    // of activations
+    //     act_scales       [M]                     half        Scales of
+    // activations
 
     // outputs
     //     mat              [M(*), N]               half
@@ -384,7 +392,9 @@ IPluginV2* QServeGemmPluginCreator::createPlugin(char const* name, PluginFieldCo
     {
         // QServeGemmPluginCreator is unique and shared for an engine generation
         // Create plugin profiler with shared tactics map
-        // auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ false);
+        // auto pluginProfiler =
+        // gemmPluginProfileManager.createGemmPluginProfiler(/* inference */
+        // false);
         // QuantMode quantMode = QuantMode::fromQuantAlgo("W4A8_QSERVE");
         auto* obj = new QServeGemmPlugin(dtype, group_size);
         obj->setPluginNamespace(mNamespace.c_str());
@@ -404,8 +414,11 @@ IPluginV2* QServeGemmPluginCreator::deserializePlugin(
     // call QServeGemmPlugin::destroy()
     try
     {
-        // Create plugin profiler with private tactics map which is read from the serialized engine
-        // auto pluginProfiler = gemmPluginProfileManager.createGemmPluginProfiler(/* inference */ true);
+        // Create plugin profiler with private tactics map which is read from the
+        // serialized engine
+        // auto pluginProfiler =
+        // gemmPluginProfileManager.createGemmPluginProfiler(/* inference */
+        // true);
         auto* obj = new QServeGemmPlugin(serialData, serialLength);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
@@ -416,6 +429,4 @@ IPluginV2* QServeGemmPluginCreator::deserializePlugin(
     }
     return nullptr;
 }
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

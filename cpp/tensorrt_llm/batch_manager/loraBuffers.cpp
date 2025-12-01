@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +17,11 @@
  */
 
 #include "loraBuffers.h"
-#include "tensorrt_llm/batch_manager/llmRequest.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/runtime/loraUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 LoraBuffers::LoraBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth, runtime::TllmRuntime const& tllmRuntime,
@@ -35,7 +33,8 @@ LoraBuffers::LoraBuffers(SizeType32 maxBatchSize, SizeType32 maxBeamWidth, runti
 
     auto nbModelConfigs = static_cast<SizeType32>(modelConfig.getLoraModules().size());
 
-    // there are 3 pointers: LoRA A, LoRA B, and a DoRA magnitude (null if not DoRA)
+    // there are 3 pointers: LoRA A, LoRA B, and a DoRA magnitude (null if not
+    // DoRA)
     auto loraWeightsPtrsShape
         = runtime::ITensor::makeShape({nbModelConfigs, localNbLayers, maxBatchSize * maxBeamWidth, 3});
     auto loraAdapterSizesShape
@@ -109,6 +108,4 @@ void LoraBuffers::reshape(SizeType32 numSequences)
     mLoraAdapterSizesHost->reshape(adapterSizesShape);
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

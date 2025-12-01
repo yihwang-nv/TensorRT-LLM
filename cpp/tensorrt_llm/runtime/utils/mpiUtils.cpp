@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/assert.h"
 #include <numeric>
 #include <unordered_set>
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/runtime/utils/mpiUtils.h"
 
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
-#include "tensorrt_llm/runtime/utils/mpiUtils.h"
 
 #include <csignal>
 #include <cstdlib>
@@ -36,12 +35,11 @@
 
 // We rely on SizeType32 being int32_t in some places with weak type checking,
 // i.e. we're passing void ptr to some function. To prevent mysterious errors
-// in the future, we trigger a compilation error here if SizeType32 isn't int32_t.
+// in the future, we trigger a compilation error here if SizeType32 isn't
+// int32_t.
 static_assert(std::is_same<tensorrt_llm::runtime::SizeType32, std::int32_t>::value);
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace mpi
+namespace tensorrt_llm::mpi
 {
 
 MPI_Datatype getMpiDtype(MpiType dtype)
@@ -141,7 +139,9 @@ std::vector<int> getWorldRanks(MpiComm const& comm)
 int getNumNodes()
 {
 #if ENABLE_MULTI_DEVICE
-    TLLM_LOG_WARNING("Number of nodes was not provided, using MPI to determine number of nodes");
+    TLLM_LOG_WARNING(
+        "Number of nodes was not provided, using MPI to determine "
+        "number of nodes");
 
     // Create a communicator for processes with the same hostname
     MPI_Comm node_comm;
@@ -189,8 +189,10 @@ void initialize(MpiThreadSupport threadMode, bool forwardAbortToParent)
         std::atexit([]() { MPI_Finalize(); });
 
         /*
-         * We only catch SIGABRT and SIGSEGV because most, of not all errors in the worker will cause one of these 2
-         * signals. Signals like SIGINT and SIGTERM should be issued to the parent and should terminate MPI workers
+         * We only catch SIGABRT and SIGSEGV because most, of not all errors in
+         * the worker will cause one of these 2
+         * signals. Signals like SIGINT and SIGTERM should be issued to the parent
+         * and should terminate MPI workers
          * correctly.
          */
         for (int sig : {SIGABRT, SIGSEGV})
@@ -657,6 +659,4 @@ void MpiWaitThread::notifyStop()
     TLLM_LOG_TRACE("%s: %s stop", mName.c_str(), __PRETTY_FUNCTION__);
 }
 
-} // namespace mpi
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::mpi

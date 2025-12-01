@@ -28,9 +28,9 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels_oss
+namespace cutlass_kernels_oss
 {
 template <typename ElementType_, typename CutlassWeightType_, int MaxTileM_, int TileN_, int TileK_, int Stages_,
     typename EpilogueTag>
@@ -60,8 +60,10 @@ void sm80_generic_fused_moe_gemm_kernelLauncher(ElementType_ const* A, CutlassWe
             if (smem_size + attr.sharedSizeBytes >= static_cast<size_t>(max_smem_per_block))
             {
                 // This should mean that
-                // cudaFuncSetAttribute(cutlass::Kernel<GemmKernel>, cudaFuncAttributeMaxDynamicSharedMemorySize,
-                // smem_size) wouldn't work. In that case, we return an occupancy of 0. This will cause the
+                // cudaFuncSetAttribute(cutlass::Kernel<GemmKernel>,
+                // cudaFuncAttributeMaxDynamicSharedMemorySize,
+                // smem_size) wouldn't work. In that case, we return an occupancy of 0.
+                // This will cause the
                 // heuristic to ignore this configuration.
                 *kernel_occupancy = 0;
                 return;
@@ -96,6 +98,6 @@ void sm80_generic_fused_moe_gemm_kernelLauncher(ElementType_ const* A, CutlassWe
     auto result = cudaGetLastError();
     TLLM_CHECK_WITH_INFO(result == cudaSuccess, "Fail to execute fused moe kernel, cuda error %d\n", (int) (result));
 }
-} // namespace kernels::cutlass_kernels_oss
+} // namespace cutlass_kernels_oss
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

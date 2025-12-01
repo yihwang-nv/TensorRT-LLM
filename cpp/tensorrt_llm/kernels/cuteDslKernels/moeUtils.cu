@@ -26,9 +26,9 @@
 #include <cuda_fp4.h>
 #include <cute/numeric/numeric_types.hpp>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cute_dsl
+namespace cute_dsl
 {
 namespace
 {
@@ -102,8 +102,9 @@ __global__ void moePermuteKernel(InputType const* input, InputType* permuted_out
             {
                 // input_sf is not swizzled, while permuted_sf is swizzled.
                 int64_t const src_offset = token_idx * kSFCopyPerToken + i;
-                int64_t const dst_offset = get_sf_out_offset_128x4(/* batchIdx= */ std::nullopt, permuted_idx,
-                                               i * kSFElemPerCopy, /* numRows= */ std::nullopt, sf_hidden_size)
+                int64_t const dst_offset
+                    = get_sf_out_offset_128x4(/* batchIdx= */ std::nullopt, permuted_idx, i * kSFElemPerCopy,
+                          /* numRows= */ std::nullopt, sf_hidden_size)
                     / kSFElemPerCopy;
 
                 sf_dst_ptr[dst_offset] = sf_src_ptr[src_offset];
@@ -342,8 +343,8 @@ __global__ void moeActivationKernel(InputType const* input, OutputType* output, 
             if constexpr (std::is_same_v<OutputType, __nv_fp4_e2m1>)
             {
                 auto* sf_dst_ptr = cvt_quant_get_sf_out_offset<SFType, kSFVecSize / kElemPerCopy>(
-                    /* batchIdx= */ std::nullopt, permuted_idx, i, /*numRows=*/std::nullopt, interm_size / kSFVecSize,
-                    output_sf, QuantizationSFLayout::SWIZZLED);
+                    /* batchIdx= */ std::nullopt, permuted_idx, i,
+                    /*numRows=*/std::nullopt, interm_size / kSFVecSize, output_sf, QuantizationSFLayout::SWIZZLED);
                 dst_ptr[i] = cvt_warp_fp16_to_fp4<InputType, kSFVecSize, false>(
                     *reinterpret_cast<PackedVec<InputType>*>(rmem), global_sf_val, sf_dst_ptr);
             }
@@ -460,6 +461,6 @@ INSTANTIATE_MOE_ACTIVATION(__nv_bfloat16, __nv_fp4_e2m1, uint8_t);
 #endif
 #undef INSTANTIATE_MOE_ACTIVATION
 
-} // namespace kernels::cute_dsl
+} // namespace cute_dsl
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

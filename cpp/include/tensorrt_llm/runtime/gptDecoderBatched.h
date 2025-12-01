@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
@@ -29,14 +28,12 @@
 #include <memory>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 class LlmRequest;
-} // namespace batch_manager
+} // namespace tensorrt_llm::batch_manager
 
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 //! GPT decoder class with support for in-flight batching
@@ -91,6 +88,4 @@ private:
     using GptDecoderPtr = std::unique_ptr<IGptDecoder>;
     GptDecoderPtr mDecoder;
 };
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

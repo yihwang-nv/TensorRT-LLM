@@ -26,10 +26,7 @@
 #include <tuple>
 #include <type_traits>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using tensorrt_llm::common::divUp;
 using tensorrt_llm::common::roundUp;
@@ -261,7 +258,8 @@ struct LowPrecisionIntPack<16>
 __inline__ __device__ void multi_gpu_barrier(
     uint64_t** signals, const uint64_t flag, const size_t rank, const size_t world_size, int const tidx, int const bidx)
 {
-    // At the end of the function, we now that has least block 0 from all others GPUs have reached that point.
+    // At the end of the function, we now that has least block 0 from all others
+    // GPUs have reached that point.
     uint64_t volatile* my_signals = signals[rank];
     if (tidx < world_size)
     {
@@ -1076,7 +1074,7 @@ static __global__ __launch_bounds__(512, 1) void lowPrecisionTwoShotHierAllReduc
         QUANT_T* src_d[LP_ALLREDUCE_RANKS_PER_NUMA];
         QUANT_T* dst = reinterpret_cast<QUANT_T*>(params.rs_buffers[local_bid]);
 
-        // The destination ranks for round-robin gathering
+// The destination ranks for round-robin gathering
 #pragma unroll
         for (int ii = 0; ii < LP_ALLREDUCE_RANKS_PER_NUMA; ++ii)
         {
@@ -1126,7 +1124,6 @@ static __global__ __launch_bounds__(512, 1) void lowPrecisionTwoShotHierAllReduc
         }
         return;
     }
-
     else if (bidx >= block_num_per_stage && bidx < block_num_per_stage * 2)
     {
         // partial allreduce cross NUMA
@@ -1308,7 +1305,10 @@ void lowPrecisionAllReduceDispatchType(kernels::LowPrecisionAllReduceParams& par
     case 2: lowPrecisionAllReduceDispatchRanksPerNode<T, __nv_fp8_e4m3, 2>(param, stream); break;
     case 4: lowPrecisionAllReduceDispatchRanksPerNode<T, __nv_fp8_e4m3, 4>(param, stream); break;
     case 8: lowPrecisionAllReduceDispatchRanksPerNode<T, __nv_fp8_e4m3, 8>(param, stream); break;
-    default: TLLM_THROW("Custom LowPrecision all reduce only supported on {2, 4, 8} GPUs per node.");
+    default:
+        TLLM_THROW(
+            "Custom LowPrecision all reduce only supported on {2, 4, 8} "
+            "GPUs per node.");
     }
 #else
     TLLM_THROW("Can't Use Low Precision Allreduce When Compile Without ENABLE_FP8");
@@ -1339,7 +1339,8 @@ std::vector<size_t> splitNumber(size_t number)
             {
                 parts.push_back(LP_ALLREDUCE_MAX_ELTS_IN_WORKSPACE);
             }
-            // if last remain part is small, will split a normal part, and fuse remain part to half normal
+            // if last remain part is small, will split a normal part, and fuse remain
+            // part to half normal
             // part
             if (remain < LP_ALLREDUCE_MIN_ELTS_THRESHOLD)
             {
@@ -1392,7 +1393,8 @@ LowPrecisionAllReduceParams LowPrecisionAllReduceParams::deserialize(
     {
         params.peer_barrier_ptrs_out[i] = static_buffers->peer_barrier_ptrs_out[i];
     }
-    // Assume that a single allreduce will not be divided into more than 64 allreduces of 64MB each,it is not very safe
+    // Assume that a single allreduce will not be divided into more than 64
+    // allreduces of 64MB each,it is not very safe
     params.barrier_flag = flag_value;
     params.ranks_per_node = tpSize;
     params.local_rank = tpRank;
@@ -1436,14 +1438,16 @@ LowPrecisionAllReduceParams LowPrecisionAllReduceParams::deserialize_hier(
     {
         params.peer_barrier_ptrs_out[i] = static_buffers->peer_barrier_ptrs_out[i];
     }
-    // Assume that a single allreduce will not be divided into more than 64 allreduces of 64MB each,it is not very safe
+    // Assume that a single allreduce will not be divided into more than 64
+    // allreduces of 64MB each,it is not very safe
     params.barrier_flag = flag_value;
     params.ranks_per_node = tpSize;
     params.local_rank = tpRank;
 
     params.numa_rank = tpRank % LP_ALLREDUCE_MAX_RANKS_PER_NUMA;
 
-    // assume quant_type is 1 bytes , so we can transfer LP_ALLREDUCE_BYTES_PER_LOAD elts once
+    // assume quant_type is 1 bytes , so we can transfer
+    // LP_ALLREDUCE_BYTES_PER_LOAD elts once
     int REAL_ELTS_PER_BLOCK
         = (LP_ALLREDUCE_WARPSIZE - 1) * LP_ALLREDUCE_BYTES_PER_LOAD * LP_ALLREDUCE_WARP_NUM_PER_BLOCK;
     int QUANT_ELTS_PER_BLOCK = LP_ALLREDUCE_DEFAULT_BLOCK_SIZE * LP_ALLREDUCE_BYTES_PER_LOAD;
@@ -1585,7 +1589,8 @@ bool lowPrecisionConfigurationSupported(size_t n_ranks, size_t msg_size)
 
 int32_t max_workspace_size_lowprecision(int32_t tp_size)
 {
-    // assume quant_type is 1 byte , so we can transfer LP_ALLREDUCE_BYTES_PER_LOAD elts once
+    // assume quant_type is 1 byte , so we can transfer
+    // LP_ALLREDUCE_BYTES_PER_LOAD elts once
     constexpr int32_t REAL_ELTS_PER_BLOCK
         = (LP_ALLREDUCE_WARPSIZE - 1) * LP_ALLREDUCE_BYTES_PER_LOAD * LP_ALLREDUCE_WARP_NUM_PER_BLOCK;
     constexpr int32_t QUANT_ELTS_PER_BLOCK = LP_ALLREDUCE_DEFAULT_BLOCK_SIZE * LP_ALLREDUCE_BYTES_PER_LOAD;
@@ -1635,6 +1640,4 @@ void customLowPrecisionAllReduce(
     sync_check_cuda_error(stream);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

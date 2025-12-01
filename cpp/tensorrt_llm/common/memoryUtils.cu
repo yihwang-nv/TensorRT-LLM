@@ -28,9 +28,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 #ifdef __has_feature
 #if __has_feature(address_sanitizer)
 #define TLLM_HAS_ASAN
@@ -370,8 +367,10 @@ template void cudaRandomUniform(char* buffer, const size_t size);
 template void cudaRandomUniform(__nv_fp8_e4m3* buffer, const size_t size);
 #endif
 
-// loads data from binary file. If it succeeds, returns a non-empty vector. If loading fails or
-// the product of the elements in shape is 0, this function will return an empty vector.
+// loads data from binary file. If it succeeds, returns a non-empty vector. If
+// loading fails or
+// the product of the elements in shape is 0, this function will return an empty
+// vector.
 template <typename T>
 std::vector<T> loadWeightFromBinHelper(std::vector<size_t> shape, std::string filename)
 {
@@ -559,17 +558,40 @@ void invokeCudaD2DScaleCpyConvert(
 }
 
 // clang-format off
-template void invokeCudaD2DScaleCpyConvert(float* tgt, const int32_t* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
-template void invokeCudaD2DScaleCpyConvert(int32_t* tgt, const float* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
-template void invokeCudaD2DScaleCpyConvert(half* tgt, const int32_t* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
-template void invokeCudaD2DScaleCpyConvert(int32_t* tgt, const half* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
+template void invokeCudaD2DScaleCpyConvert(float *tgt, const int32_t *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
+template void invokeCudaD2DScaleCpyConvert(int32_t *tgt, const float *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
+template void invokeCudaD2DScaleCpyConvert(half *tgt, const int32_t *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
+template void invokeCudaD2DScaleCpyConvert(int32_t *tgt, const half *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
 #ifdef ENABLE_BF16
-template void invokeCudaD2DScaleCpyConvert(__nv_bfloat16* tgt, const int32_t* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
-template void invokeCudaD2DScaleCpyConvert(int32_t* tgt, const __nv_bfloat16* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
-#endif  // ENABLE_BF16
+template void invokeCudaD2DScaleCpyConvert(__nv_bfloat16 *tgt,
+                                           const int32_t *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
+template void invokeCudaD2DScaleCpyConvert(int32_t *tgt,
+                                           const __nv_bfloat16 *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
+#endif // ENABLE_BF16
 #ifdef ENABLE_FP8
-template void invokeCudaD2DScaleCpyConvert(float* tgt, const __nv_fp8_e4m3* src, const float* scale, bool invert_scale, const size_t size, cudaStream_t stream);
-#endif  // ENABLE_FP8
+template void invokeCudaD2DScaleCpyConvert(float *tgt, const __nv_fp8_e4m3 *src,
+                                           const float *scale,
+                                           bool invert_scale, const size_t size,
+                                           cudaStream_t stream);
+#endif // ENABLE_FP8
 // clang-format on
 
 void invokeCudaD2DcpyHalf2Float(float* dst, half* src, const size_t size, cudaStream_t stream)
@@ -920,7 +942,8 @@ template bool invokeCheckRange<int>(
     int const* buffer, const size_t size, int min, int max, bool* d_within_range, cudaStream_t stream);
 
 /*
- *  Determine the total workspace size based on a vector containing multiple variable sizes.
+ *  Determine the total workspace size based on a vector containing multiple
+ * variable sizes.
  */
 size_t calcAlignedSize(std::vector<size_t> const& sizes, const size_t ALIGN_BYTES)
 {
@@ -934,13 +957,15 @@ size_t calcAlignedSize(std::vector<size_t> const& sizes, const size_t ALIGN_BYTE
         total += (sz + ALIGN_BYTES - 1) & ALIGN_MASK;
     }
 
-    // We add extra "ALIGN_BYTES - 1" bytes in case the start address passed to the function calcAlignedPointers() is
+    // We add extra "ALIGN_BYTES - 1" bytes in case the start address passed to
+    // the function calcAlignedPointers() is
     // not aligned.
     return total + ALIGN_BYTES - 1;
 }
 
 /*
- * Given the address of the workspace and the vector containing multiple variable sizes, calculate the start addresses
+ * Given the address of the workspace and the vector containing multiple
+ * variable sizes, calculate the start addresses
  * of each variable.
  */
 void calcAlignedPointers(
@@ -960,7 +985,5 @@ void calcAlignedPointers(
         ptr += (sz + ALIGN_BYTES - 1) & ALIGN_MASK;
     }
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

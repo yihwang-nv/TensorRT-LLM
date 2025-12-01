@@ -32,10 +32,7 @@
 
 using namespace tensorrt_llm::common;
 
-namespace tensorrt_llm
-{
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 __global__ void extractRealDraftTokensKernel(int const curDraftIdx, int const batchSize, int const maxDraftLen,
     int const maxTotalDraftTokens, int const maxTopK, int const numTokensExpandThisLayer,
@@ -46,14 +43,18 @@ __global__ void extractRealDraftTokensKernel(int const curDraftIdx, int const ba
     // batchSize: int
     // maxTotalDraftTokens: int
     // maxTopK: int
-    // tokensGatherIdxForDrafterModel: int32_t*, indices of the draft tokens that need to be expand this layer
+    // tokensGatherIdxForDrafterModel: int32_t*, indices of the draft tokens that
+    // need to be expand this layer
     //     shape: [numTokensExpandThisLayer]
     // topKList: int32_t*, top k value for each expandable token
     //     shape: [numTokensExpandThisLayer]
-    // draftTokensIndicesCumsum: int32_t*, the cumulative sum of the write back indices for each draft layer
+    // draftTokensIndicesCumsum: int32_t*, the cumulative sum of the write back
+    // indices for each draft layer
     //     shape: [maxDraftLen + 1]
-    // newDraftTokens: int64_t*, the new draft tokens. We only need to extract this layer's tokens and write back to
-    // the draftTokensBuffer shape: [batchSize, maxTotalDraftTokens + 1 if curDraftIdx > 0 else 1, maxTopK]
+    // newDraftTokens: int64_t*, the new draft tokens. We only need to extract
+    // this layer's tokens and write back to
+    // the draftTokensBuffer shape: [batchSize, maxTotalDraftTokens + 1 if
+    // curDraftIdx > 0 else 1, maxTopK]
     // draftTokensBuffer: int64_t*, the buffer to store the real draft tokens
     //     shape: [maxBatchSize, maxTotalDraftTokens + 1]
 
@@ -98,5 +99,4 @@ void invokeExtractRealDraftTokens(ExtractRealDraftTokensParam& params, cudaStrea
     sync_check_cuda_error(stream);
 }
 
-} // namespace kernels
-} // namespace tensorrt_llm
+TRTLLM_KERNELS_NAMESPACE_END

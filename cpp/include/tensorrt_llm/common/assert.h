@@ -56,7 +56,7 @@ TRTLLM_NAMESPACE_END
 #define TLLM_CHECK_DEBUG(val)                                                                                          \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (TLLM_UNLIKELY(tensorrt_llm::DebugConfig::isCheckDebugEnabled()))                                           \
+        if (TLLM_UNLIKELY(tensorrt_llm::common::DebugConfig::isCheckDebugEnabled()))                                   \
         {                                                                                                              \
             TLLM_LIKELY(static_cast<bool>(val))                                                                        \
             ? ((void) 0) : tensorrt_llm::common::throwRuntimeError(__FILE__, __LINE__, #val);                          \
@@ -66,7 +66,7 @@ TRTLLM_NAMESPACE_END
 #define TLLM_CHECK_DEBUG_WITH_INFO(val, info, ...)                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (TLLM_UNLIKELY(tensorrt_llm::DebugConfig::isCheckDebugEnabled()))                                           \
+        if (TLLM_UNLIKELY(tensorrt_llm::common::DebugConfig::isCheckDebugEnabled()))                                   \
         {                                                                                                              \
             TLLM_LIKELY(static_cast<bool>(val))                                                                        \
             ? ((void) 0)                                                                                               \

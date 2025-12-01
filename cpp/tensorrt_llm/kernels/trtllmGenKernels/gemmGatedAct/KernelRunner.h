@@ -22,10 +22,7 @@
 
 #include "trtllmGen_gatedAct_export/trtllm/gen/DtypeDecl.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct TrtllmGenGemmGatedActRunnerOptions
 {
@@ -56,6 +53,5 @@ private:
     std::optional<int> mSelectedConfigIndex;
     std::vector<int32_t> mPassingConfigIndices;
 };
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

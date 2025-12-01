@@ -15,12 +15,11 @@
  */
 
 #include "beamSearchLayer.h"
-#include "tensorrt_llm/common/config.h"
-#include "tensorrt_llm/common/cudaUtils.h"
+#include "tensorrt_llm/kernels/beamSearchKernels/beamSearchKernelsTemplate.h"
 
+#include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/beamSearchKernels.h"
-#include "tensorrt_llm/kernels/beamSearchKernels/beamSearchKernelsTemplate.h"
 #include "tensorrt_llm/layers/defaultDecodingParams.h"
 #include "tensorrt_llm/layers/layerUtils.h"
 
@@ -29,9 +28,7 @@
 using namespace tensorrt_llm::runtime;
 using namespace tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 #define GET_INFO_STAGE1(paddedBeamWidth)                                                                               \
@@ -155,8 +152,10 @@ void BeamSearchLayer<T>::configureBeamSearchLayer()
         }
         int nByteStaticSharedMemory = attr.sharedSizeBytes;
         int nByteMaxDynamicSharedMemoryPerBlock = nByteMaxSharedMemoryPerBlock - nByteStaticSharedMemory;
-        // Find the maximum of `nBlock` (maximum of `nVPart`, minimum of `nByteDynamicSharedMemoryStage1`), s.t.
-        // `nVPart <= kMaxVPartStage1 && nByteDynamicSharedMemoryStage1 * nVPart >= sizeof(T) * vocabSize`
+        // Find the maximum of `nBlock` (maximum of `nVPart`, minimum of
+        // `nByteDynamicSharedMemoryStage1`), s.t.
+        // `nVPart <= kMaxVPartStage1 && nByteDynamicSharedMemoryStage1 * nVPart
+        // >= sizeof(T) * vocabSize`
         TLLM_CHECK_WITH_INFO(nByteMaxDynamicSharedMemoryPerBlock * kMaxVPartStage1 >= sizeof(T) * vocabSize,
             "vocab_size is too large for Beam search.");
         int nByteExtralSharedMemory = nByteReservedSharedMemoryPerBlock + nByteStaticSharedMemory;
@@ -176,7 +175,8 @@ void BeamSearchLayer<T>::configureBeamSearchLayer()
 
         // Stage 2
         TLLM_CHECK_WITH_INFO(batchSize * beamWidth * paddedBeamWidth < (1 << 21),
-            "max_batch_size or max_beam_width of TRT-LLM engine is too large for Beam search, try to decrease the "
+            "max_batch_size or max_beam_width of TRT-LLM engine "
+            "is too large for Beam search, try to decrease the "
             "parameters while building.");
         size_t const nByteDynamicSharedMemoryStage2 = common::roundUp(
             sizeof(float) * nVPart * (paddedBeamWidth * 4) + sizeof(cub::KeyValuePair<int, T>) * paddedBeamWidth * 2,
@@ -195,7 +195,8 @@ void BeamSearchLayer<T>::configureBeamSearchLayer()
         bool const bUseGlobalMemoryStage2 = (nByteDynamicSharedMemoryStage2 > nByteMaxDynamicSharedMemoryPerBlock);
 
         // Stage 3
-        // Keep top 2K candidates in case of k candidates finishes in one iteration
+        // Keep top 2K candidates in case of k candidates finishes in one
+        // iteration
         size_t const nByteDynamicSharedMemoryStage3
             = common::roundUp(sizeof(T) * paddedBeamWidth * paddedBeamWidth * 2, 4);
         switch (paddedBeamWidth)
@@ -211,13 +212,15 @@ void BeamSearchLayer<T>::configureBeamSearchLayer()
         bool const bUseGlobalMemoryStage3 = (nByteDynamicSharedMemoryStage3 > nByteMaxDynamicSharedMemoryPerBlock);
         this->mByteSharedMemoryStage3 = nByteStaticSharedMemory; // Only static shared memory
 
-        // Compute workspace size, see `beamSearchKernelsTemplate.h` for detailed information
+        // Compute workspace size, see `beamSearchKernelsTemplate.h` for detailed
+        // information
         // |<----- Workspace ----->|
         // |<- A ->|<- B ->|<- C ->|
         //         |<---- D ---->|
         // A for data exchange between stage 2 and 3
         // B for data exchange between stage 1 and 2, can be reuse for stage 3
-        // C for stage 2 if `bUseGlobalMemoryStage2 == true`, can be reuse for stage 3
+        // C for stage 2 if `bUseGlobalMemoryStage2 == true`, can be reuse for
+        // stage 3
         // D for stage 3 if `bUseGlobalMemoryStage3 == true`
         size_t const nByteA = common::roundUp(sizeof(T) * batchSize * paddedBeamWidth * paddedBeamWidth * 4, 4);
         size_t const nByteB
@@ -246,11 +249,16 @@ void BeamSearchLayer<T>::configureBeamSearchLayer()
         this->mByteSharedMemoryStage3 = attr.sharedSizeBytes; // Only static shared memory
 
         // Compute shared memory size for stage 3
-        // Compute workspace size, see `beamSearchKernelsTemplate.h` for detailed information
-        // |<----------------------------------------- Workspace ------------------------------------------>|
-        // |<- Stage2Ids ->|<- Stage2LogProbs ->|<- Stage1Ids ->|<- Stage1LogProbs ->|<---- Stage1TopK ---->|
-        //                                                                           |<- stage2TopK ->|
-        //                                      |<------------------ Stage3 ------------------>|
+        // Compute workspace size, see `beamSearchKernelsTemplate.h` for detailed
+        // information
+        // |<----------------------------------------- Workspace
+        // ------------------------------------------>|
+        // |<- Stage2Ids ->|<- Stage2LogProbs ->|<- Stage1Ids ->|<- Stage1LogProbs
+        // ->|<---- Stage1TopK ---->|
+        //                                                                           |<-
+        // stage2TopK ->|
+        //                                      |<------------------ Stage3
+        // ------------------>|
         SizeType32 const batchSize{mDecoderDomain.getBatchSize()};
         SizeType32 const beamWidth{mDecoderDomain.getBeamWidth()};
         SizeType32 const vocabSize{mDecoderDomain.getVocabSize()};
@@ -336,7 +344,8 @@ void BeamSearchLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> const
     TLLM_CHECK_WITH_INFO(ip->ite == 0, "Pipeline Parallelism is not supported yet!");
 
     BeamHypotheses bh;
-    // bh's members not used in this function: outputIds, logProbs, outputIdsUnfinish, parentIdsUnfinish
+    // bh's members not used in this function: outputIds, logProbs,
+    // outputIdsUnfinish, parentIdsUnfinish
     bh.bVBWS = this->mVBWS;
     bh.nMaxBatchSize = static_cast<std::int32_t>(op->outputIdsPtr->getDimension<0>());
     bh.nBatchSize = ip->localBatchSize;
@@ -361,15 +370,19 @@ void BeamSearchLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> const
         {
             auto const slot = batchSlotsHost[i];
             auto const step = ip->beamSearchSteps.value()[slot];
-            // Clamp `step` to [0, kMaxBeamWidthArrayLength - 1], and set `indexInput=0` when step = 0 or 1
+            // Clamp `step` to [0, kMaxBeamWidthArrayLength - 1], and set
+            // `indexInput=0` when step = 0 or 1
             auto const indexOutput = std::min(step, static_cast<SizeType32>(kMaxBeamWidthArrayLength) - 1);
             auto const indexInput = std::max(indexOutput - 1, 0);
             bh.nBeamWidthInHost[i] = bh.beamWidthArraysHost[slot * kMaxBeamWidthArrayLength + indexInput];
             bh.nBeamWidthOutHost[i] = bh.beamWidthArraysHost[slot * kMaxBeamWidthArrayLength + indexOutput];
         }
-        // At present, all requests of a batch must have the same beam width in one generation step (or they will not
-        // be batched together). So, the beam width of the first request is taken here to reshape the buffer.
-        // Corresponding changes must be done if Diverse-Beam-Width-Search (DBWS, requests with diverse beam width in
+        // At present, all requests of a batch must have the same beam width in
+        // one generation step (or they will not
+        // be batched together). So, the beam width of the first request is taken
+        // here to reshape the buffer.
+        // Corresponding changes must be done if Diverse-Beam-Width-Search (DBWS,
+        // requests with diverse beam width in
         // a batch in one generation step) is supported in the future.
         op->beamWidth = bh.nBeamWidthOutHost[0];
     }
@@ -421,6 +434,4 @@ void BeamSearchLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs> const
 template class BeamSearchLayer<float>;
 template class BeamSearchLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

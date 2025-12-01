@@ -21,10 +21,7 @@
 #include "tensorrt_llm/kernels/decodingCommon.h"
 #include "tensorrt_llm/runtime/common.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 struct InvokeBatchApplyPenaltyParams
@@ -60,6 +57,4 @@ struct InvokeBatchApplyPenaltyParams
 template <typename T>
 void invokeBatchApplyPenalty(InvokeBatchApplyPenaltyParams<T> const& params);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

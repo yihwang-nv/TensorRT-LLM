@@ -27,10 +27,7 @@
 #include <algorithm>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // TODO should reuse the function in gemmPlugin
 void _getProblemParams(cublasOperation_t& transa, cublasOperation_t& transb, int& m, int& n, int& k, int& lda, int& ldb,
@@ -206,7 +203,10 @@ int LoraImpl::run(int64_t numTokens, int64_t numReqs, void const* input, int32_t
             if (N > 0)
             {
                 TLLM_CHECK_WITH_INFO(N <= mMaxLowRank,
-                    "Invalid low_rank (%d). low_rank must be smaller than mMaxLowRank (%d)", N, mMaxLowRank);
+                    "Invalid low_rank (%d). "
+                    "low_rank must be smaller than "
+                    "mMaxLowRank (%d)",
+                    N, mMaxLowRank);
                 // size
                 auto const K = mInHiddenSize;
                 auto const N2 = mOutHiddenSizes[loraModuleIdx];
@@ -258,8 +258,10 @@ int LoraImpl::run(int64_t numTokens, int64_t numReqs, void const* input, int32_t
                 = reinterpret_cast<int64_t const*>(&loraWeightsPtr[loraModuleIdx * numTokens * 2]);
             int32_t const* loraRanksModule = &loraRanks[loraModuleIdx * numTokens];
 
-            // The following loop aggregates the contiguous requests that use the same LoRA weights to reduce
-            // the problem_size of grouped GEMMs and increase the M dimension of those GEMMs.
+            // The following loop aggregates the contiguous requests that use the same
+            // LoRA weights to reduce
+            // the problem_size of grouped GEMMs and increase the M dimension of those
+            // GEMMs.
             int rowId = 0;
             int handled_token_num = 0;
             while (rowId < numTokens)
@@ -279,8 +281,10 @@ int LoraImpl::run(int64_t numTokens, int64_t numReqs, void const* input, int32_t
                 if (N > 0)
                 {
                     TLLM_CHECK_WITH_INFO(N <= mMaxLowRank,
-
-                        "Invalid low_rank (%d). low_rank must be smaller than mMaxLowRank (%d)", N, mMaxLowRank);
+                        "Invalid low_rank (%d). "
+                        "low_rank must be smaller "
+                        "than mMaxLowRank (%d)",
+                        N, mMaxLowRank);
 
                     auto const K = mInHiddenSize;
                     minKN = std::min(minKN, N);
@@ -318,10 +322,13 @@ int LoraImpl::run(int64_t numTokens, int64_t numReqs, void const* input, int32_t
         if (problem_sizes.size() > 0)
         {
             TLLM_CHECK_WITH_INFO(mTransA == false && mTransB == true,
-                "Invalid transA (%d) transB (%d). transA must be false, transB must be true", int(mTransA),
-                int(mTransB));
-            // For the first GEMM, K is the "hidden size" and N is the "lora rank". So, K is often much larger than N.
-            // To improve the GPU utilization, we use splitK to handle the K dimension in multiple blocks in parallel.
+                "Invalid transA (%d) transB (%d). transA must be "
+                "false, transB must be true",
+                int(mTransA), int(mTransB));
+            // For the first GEMM, K is the "hidden size" and N is the "lora rank".
+            // So, K is often much larger than N.
+            // To improve the GPU utilization, we use splitK to handle the K dimension
+            // in multiple blocks in parallel.
             splitkGroupedGemm(problem_sizes, ptrA, ptrB, ptrC, ptrD, groupGemmParamsWorkSpace,
                 groupGemmParamsWorkSpaceSize, gemmWorkSpace, GemmWorkSpaceSize, true, mType, mSplitKSlices, minKN,
                 stream);
@@ -342,6 +349,4 @@ int Lora_run(LoraImpl* impl, int64_t numTokens, int64_t numReqs, void const* inp
     return impl->run(numTokens, numReqs, input, loraRanks, loraWeightsPtr, weightIndex, outputs, workspace, stream);
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

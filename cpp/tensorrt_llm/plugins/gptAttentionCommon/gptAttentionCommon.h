@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/attentionOp.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cublasMMWrapper.h"
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/kernels/gptKernels.h"
@@ -27,14 +27,12 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
+namespace tensorrt_llm::kernels
 {
 class DecoderXQARunnerResource;
 }
 
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class GPTAttentionPluginCommon : public BasePlugin, public tensorrt_llm::common::op::AttentionOp
@@ -78,12 +76,14 @@ public:
     void terminate() noexcept override;
 
     //! This is called on every trt ExecutionContext creation by TRT
-    //! Note TRT does not call the initialize on cloned plugin, so clone internally should do initialization.
+    //! Note TRT does not call the initialize on cloned plugin, so clone
+    // internally should do initialization.
     template <typename T>
     T* cloneImpl() const noexcept;
 
     //! This is called on evert trt Engine or ExecutionContext destroy.
-    //! None-cloned plugins will call terminate and then call destroy, while the cloned plugins will call destroy only
+    //! None-cloned plugins will call terminate and then call destroy, while the
+    // cloned plugins will call destroy only
     //! So plugin should put the resource release inside destroy.
     void destroy() noexcept override;
 
@@ -112,6 +112,4 @@ protected:
     nvinfer1::PluginFieldCollection mFC{};
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

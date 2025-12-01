@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,13 +23,10 @@
 #include "tensorrt_llm/batch_manager/peftCacheManager.h"
 #include "tensorrt_llm/batch_manager/runtimeBuffers.h"
 #include "tensorrt_llm/batch_manager/sequenceSlotManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/optionalRef.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::utils
+namespace tensorrt_llm::batch_manager::utils
 {
 using SizeType32 = runtime::SizeType32;
 using TensorPtr = runtime::ITensor::SharedPtr;
@@ -39,7 +37,8 @@ using OptionalRef = common::OptionalRef<T>;
 TensorPtr collectRequestIds(RequestVector const& contextRequests, RequestVector const& generationRequests);
 
 //! @brief Sort requests for functional correctness and performance.
-//! @details Sort context requests for moveFinishedContextRequestsToGeneration.
+//! @details Sort context requests for
+// moveFinishedContextRequestsToGeneration.
 //!          Sort requests by lora task id for performance.
 //! @param contextRequests The context requests.
 //! @param generationRequests The generation requests.
@@ -47,14 +46,19 @@ TensorPtr collectRequestIds(RequestVector const& contextRequests, RequestVector 
 void sortRequests(RequestVector& contextRequests, RequestVector& generationRequests, bool chunksPresent);
 
 //! @brief Move finished context requests to generation requests.
-//! @details This function assumes that the context requests are sorted so that requests with isLastContextChunk() are
-//!          at the end of the context requests vector. These requests are moved to the beginning of the generation
-//!          requests vector. This means that the order of the requests in context+generation requests is not changed.
+//! @details This function assumes that the context requests are sorted so
+// that requests with isLastContextChunk() are
+//!          at the end of the context requests vector. These requests are
+// moved to the beginning of the generation
+//!          requests vector. This means that the order of the requests in
+// context+generation requests is not changed.
 //! @param scheduledRequests The scheduled context and generation requests.
 void moveFinishedContextRequestsToGeneration(ScheduledRequests& scheduledRequests);
 
-//! @param beforeDecoder    Whether the function is called before the decoder. If it is true, correct the output offset.
-//! @param numDroppedTokens The number of dropped tokens for each beam (e.g. when the requests finished early).
+//! @param beforeDecoder    Whether the function is called before the decoder.
+// If it is true, correct the output offset.
+//! @param numDroppedTokens The number of dropped tokens for each beam (e.g.
+// when the requests finished early).
 //!                         Generation logits for dropped tokens are ignored.
 void copyGenerationLogits(RuntimeBuffers::GenerationLogitsCache& generationLogitsCache,
     runtime::BufferManager const& bufferManager, LlmRequest& llmReq, bool beforeDecoder,
@@ -126,6 +130,4 @@ private:
     GraphExecutorLruCache mCache;
     std::unordered_map<BatchState, GraphExecutorLruCache::iterator, BatchStateHash> mMap;
 };
-} // namespace batch_manager::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::utils

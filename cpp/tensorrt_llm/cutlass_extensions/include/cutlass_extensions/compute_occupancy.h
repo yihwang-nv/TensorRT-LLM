@@ -21,7 +21,7 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace cutlass_extensions
 {
@@ -51,8 +51,10 @@ inline int compute_occupancy_for_kernel()
         if (smem_size + attr.sharedSizeBytes >= static_cast<size_t>(max_smem_per_block))
         {
             // This should mean that
-            // cudaFuncSetAttribute(cutlass::Kernel<GemmKernel>, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size)
-            // wouldn't work. In that case, we return an occupancy of 0. This will cause the heuristic to ignore this
+            // cudaFuncSetAttribute(cutlass::Kernel<GemmKernel>,
+            // cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size)
+            // wouldn't work. In that case, we return an occupancy of 0. This will
+            // cause the heuristic to ignore this
             // configuration.
             return 0;
         }
@@ -87,4 +89,4 @@ inline int compute_occupancy_for_kernel()
 
 } // namespace cutlass_extensions
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

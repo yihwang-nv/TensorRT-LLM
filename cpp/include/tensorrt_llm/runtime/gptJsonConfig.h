@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/runtimeDefaults.h"
@@ -27,9 +26,7 @@
 #include <string>
 #include <utility>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class GptJsonConfig
@@ -126,10 +123,9 @@ private:
     SizeType32 const mPipelineParallelism;
     SizeType32 const mContextParallelism;
     SizeType32 const mGpusPerNode;
-    ModelConfig mModelConfig; // remove const qualifier because config has to mutable after json parsing
+    ModelConfig mModelConfig; // remove const qualifier because config has to
+                              // mutable after json parsing
     std::optional<RuntimeDefaults> mRuntimeDefaults;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

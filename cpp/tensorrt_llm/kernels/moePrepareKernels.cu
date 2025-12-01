@@ -25,10 +25,7 @@
 
 namespace cg = cooperative_groups;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace moe_prepare
 {
@@ -303,7 +300,8 @@ void computeCountAndIndice(int* experts, int* sendCounts, int* recvCounts, int* 
     MoeCommWorkspace workspace, int tokenCount, int maxTokenCountPerRank, int topK, int slotCount, int expertCount,
     int rankId, int rankCount, cudaStream_t stream)
 {
-    // first rankCount CTAs for count and send, then rankCount / PIPELINE_PER_CTA CTAs only for receive
+    // first rankCount CTAs for count and send, then rankCount / PIPELINE_PER_CTA
+    // CTAs only for receive
     int grid_x = rankCount + (rankCount + PIPELINE_PER_CTA - 1) / PIPELINE_PER_CTA;
     int block_size = 1024;
     dim3 block(block_size);
@@ -377,6 +375,4 @@ size_t getMoePrepareWorkspaceSize(int epSize)
 
 } // namespace moe_prepare
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

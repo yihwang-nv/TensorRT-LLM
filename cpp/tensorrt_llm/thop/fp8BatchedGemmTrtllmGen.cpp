@@ -114,19 +114,24 @@ std::tuple<at::Tensor, at::Tensor> fp8_batched_gemm_sm100(at::Tensor const& mat1
         TORCH_CHECK(dDqSfsB.value().scalar_type() == at::ScalarType::Float, "Scale dtype must be FP32.");
         TORCH_CHECK(dDqSfsA.value().dim() == 2, "batching M: dDqSfsA must be a 2D matrix");
         TORCH_CHECK(dDqSfsA.value().sizes()[0] == k / dsFp8QuantBlockSize,
-            "batching M: dDqSfsA must have size B x K/dsFp8QuantBlockSize x divUp(m, dsFp8QuantBlockSize) * tileSize * "
+            "batching M: dDqSfsA must have size B x K/dsFp8QuantBlockSize "
+            "x divUp(m, dsFp8QuantBlockSize) * tileSize * "
             "b");
         TORCH_CHECK(
             dDqSfsA.value().sizes()[1] == static_cast<int64_t>(tensorrt_llm::common::divUp(m, tileSize) * tileSize * b),
-            "batching M: dDqSfsA must have size B x K/dsFp8QuantBlockSize x divUp(m, tileSize) * tileSize * b");
+            "batching M: dDqSfsA must have size B x K/dsFp8QuantBlockSize x "
+            "divUp(m, tileSize) * tileSize * b");
 
         TORCH_CHECK(dDqSfsB.value().dim() == 3, "batching M: dDqSfsB must be a 3D matrix");
         TORCH_CHECK(dDqSfsB.value().sizes()[0] == b,
-            "batching M: dDqSfsB must have size B x N/dsFp8QuantBlockSize x K/dsFp8QuantBlockSize");
+            "batching M: dDqSfsB must have size B x N/dsFp8QuantBlockSize "
+            "x K/dsFp8QuantBlockSize");
         TORCH_CHECK(dDqSfsB.value().sizes()[1] == n / dsFp8QuantBlockSize,
-            "batching M: dDqSfsB must have size B x N/dsFp8QuantBlockSize x K/dsFp8QuantBlockSize");
+            "batching M: dDqSfsB must have size B x N/dsFp8QuantBlockSize "
+            "x K/dsFp8QuantBlockSize");
         TORCH_CHECK(dDqSfsB.value().sizes()[2] == k / dsFp8QuantBlockSize,
-            "batching M: dDqSfsB must have size B x N/dsFp8QuantBlockSize x K/dsFp8QuantBlockSize");
+            "batching M: dDqSfsB must have size B x N/dsFp8QuantBlockSize "
+            "x K/dsFp8QuantBlockSize");
     }
     else
     {
@@ -143,7 +148,8 @@ std::tuple<at::Tensor, at::Tensor> fp8_batched_gemm_sm100(at::Tensor const& mat1
 
     bool const needOutSfC = useDeepSeekFp8 && outDtype.value() == at::ScalarType::Float8_e4m3fn;
 
-    // Torch class did not support returning a default tensor so using empty instead.
+    // Torch class did not support returning a default tensor so using empty
+    // instead.
     int64_t const outSfCSize0 = needOutSfC ? (outputN / dsFp8QuantBlockSize) : 0;
     int64_t const outSfCSize1 = needOutSfC ? (m * b) : 0;
 
@@ -173,7 +179,8 @@ std::tuple<at::Tensor, at::Tensor> fp8_batched_gemm_sm100(at::Tensor const& mat1
 }
 } // namespace
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -196,10 +203,14 @@ public:
         auto const smVersion = tensorrt_llm::common::getSMVersion();
         if (smVersion != tensorrt_llm::kernels::kSM_100)
         {
-            TLLM_THROW("Unsupported or unimplemented compute capability for fp8 batched gemm: %i", smVersion);
+            TLLM_THROW(
+                "Unsupported or unimplemented compute capability for fp8 "
+                "batched gemm: %i",
+                smVersion);
         }
 
-        tg::Dtype outDtype = tg::Dtype::E4m3; // Default to E4m3, will be updated based on outDtypeArg
+        tg::Dtype outDtype = tg::Dtype::E4m3; // Default to E4m3, will be updated
+                                              // based on outDtypeArg
 
         switch (outDtypeArg)
         {
@@ -270,7 +281,7 @@ private:
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

@@ -18,10 +18,7 @@
 #include "tensorrt_llm/common/config.h"
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 // refer to
 // https://github.com/NVIDIA/FasterTransformer/blob/main/src/fastertransformer/kernels/bert_preprocess_kernels.cu#L291
@@ -98,6 +95,4 @@ template void invokeBuildRelativeAttentionBias<__nv_bfloat16>(__nv_bfloat16* rel
     bool const is_bidirectional, int const max_distance, cudaStream_t stream);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +27,6 @@
 #include <vector>
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/tllmException.h"
 
@@ -76,9 +76,7 @@ inline bool useMPI()
     return useMPI;
 }
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace pg_utils
+namespace tensorrt_llm::pg_utils
 {
 
 // ProcessGroup management functions
@@ -100,13 +98,15 @@ torch::Tensor wrap_tensor(T* data, size_t size)
 {
     if constexpr (std::is_same_v<std::decay_t<T>, char>)
     {
-        // `char` does not have a guaranteed specialization in CppTypeToScalarType
+        // `char` does not have a guaranteed specialization in
+        // CppTypeToScalarType
         // across PyTorch builds. Treat `char` as kChar (int8) explicitly.
         return at::from_blob(data, {static_cast<int64_t>(size)}, c10::TensorOptions{}.dtype(torch::kChar));
     }
     else if constexpr (std::is_same_v<std::decay_t<T>, uint64_t>)
     {
-        // `uint64_t` may not have a guaranteed specialization in CppTypeToScalarType
+        // `uint64_t` may not have a guaranteed specialization in
+        // CppTypeToScalarType
         // across PyTorch builds. Treat `uint64_t` as kLong (int64) explicitly.
         return at::from_blob(data, {static_cast<int64_t>(size)}, c10::TensorOptions{}.dtype(torch::kLong));
     }
@@ -223,7 +223,8 @@ struct PgHelper
         return pg->recv(outputs, srcRank, tag);
     }
 
-    // Variable-size allgather helper implemented via padding + slicing on Tensors.
+    // Variable-size allgather helper implemented via padding + slicing on
+    // Tensors.
     template <typename Input, typename Output, typename SizeT = int64_t>
     bool allgatherv(Input input, Output output, std::vector<SizeT> const& sizes,
         c10d::AllgatherOptions options = c10d::AllgatherOptions())
@@ -284,6 +285,4 @@ struct PgHelper
     }
 };
 
-} // namespace pg_utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::pg_utils

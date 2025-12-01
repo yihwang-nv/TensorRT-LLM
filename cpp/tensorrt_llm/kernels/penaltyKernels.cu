@@ -28,10 +28,7 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 __device__ bool almostEqual(float a, float b, float epsilon)
 {
@@ -238,8 +235,10 @@ __global__ void batchApplyPenalty(T const* const* inputLogits, T* outputLogits, 
     if (hasMinLength)
     {
         __syncthreads();
-        // If current generation length is too short, make sure EOS doesn't have high probability.
-        // This check is not needed when endId is already -1 as generation won't stop on EOS anyway.
+        // If current generation length is too short, make sure EOS doesn't have
+        // high probability.
+        // This check is not needed when endId is already -1 as generation won't
+        // stop on EOS anyway.
         if ((threadIdx.x == 0) && (currentStep - inputLen < minLength) && endIds[batchSlot] > -1)
         {
             outLogitsPtr[endIds[batchSlot]] = MASK_VAL;
@@ -265,6 +264,4 @@ template void invokeBatchApplyPenalty(InvokeBatchApplyPenaltyParams<float> const
 
 template void invokeBatchApplyPenalty(InvokeBatchApplyPenaltyParams<half> const& params);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

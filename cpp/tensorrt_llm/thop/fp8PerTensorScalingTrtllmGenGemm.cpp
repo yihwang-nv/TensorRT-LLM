@@ -25,7 +25,8 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -163,13 +164,15 @@ torch::Tensor fp8_per_tensor_scaling_tllmg_gemm(torch::Tensor const& mat1, torch
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "fp8_per_tensor_scaling_tllmg_gemm(Tensor mat1, Tensor mat2, Tensor global_scale, ScalarType? out_dtype=None, "
-        "Tensor? global_scale_gate=None, bool low_latency_kernel=False, bool gated_silu=False) -> Tensor");
+        "fp8_per_tensor_scaling_tllmg_gemm(Tensor mat1, Tensor mat2, Tensor "
+        "global_scale, ScalarType? out_dtype=None, "
+        "Tensor? global_scale_gate=None, bool low_latency_kernel=False, bool "
+        "gated_silu=False) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)

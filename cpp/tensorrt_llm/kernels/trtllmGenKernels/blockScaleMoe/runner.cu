@@ -24,10 +24,8 @@
 #include <iostream>
 #include <tensorrt_llm/common/assert.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace trtllmGenFp8BlockScaleMoe
 {
 
@@ -91,7 +89,8 @@ void Runner::run(void* routingLogits, void* routingBias, int32_t numTokens, int3
 
         // input:
         routingData.mPtrRoutingBias = routingBias;
-        // Pass-through raw pointer; kernels will cast to the proper InputT based on routing method
+        // Pass-through raw pointer; kernels will cast to the proper InputT based on
+        // routing method
         routingData.mPtrScores = expertIds == nullptr ? routingLogits : nullptr;
         routingData.mPtrTopKIds = expertIds;
         routingData.mNumTokens = numTokens;
@@ -134,10 +133,12 @@ void Runner::run(void* routingLogits, void* routingBias, int32_t numTokens, int3
         // routingData.mAllToAllRouteAct = false;
 
         // input:
-        // routingData.mPtrRoutingWeights = args.mRoutingWeights;  // routing weights (don't need if not using gemm)
+        // routingData.mPtrRoutingWeights = args.mRoutingWeights;  // routing
+        // weights (don't need if not using gemm)
         // routingData.mPtrRoutingBias = routingBias;
 
-        // Pass-through raw pointer; kernels will cast to the proper InputT based on routing method
+        // Pass-through raw pointer; kernels will cast to the proper InputT based on
+        // routing method
         routingData.mPtrScores = expertIds == nullptr ? routingLogits : nullptr;
         routingData.mPtrTopKIds = expertIds;
         // routingData.mPtrIn = args.mInputActs;
@@ -166,12 +167,14 @@ void Runner::run(void* routingLogits, void* routingBias, int32_t numTokens, int3
         //
 
         routingData.mDtypeExpW = btg::Dtype::Bfloat16;
-        // routingData.mDtypeElt = dtypeElt; // no-op for now as hidden_state is not input
+        // routingData.mDtypeElt = dtypeElt; // no-op for now as hidden_state is not
+        // input
         routingData.mUsePdl = true;
         routingData.mDoSoftmaxBeforeTopK = routingMethodType == RoutingMethodType::RenormalizeNaive;
         routingData.mNormTopkProb = routingMethodType == RoutingMethodType::RenormalizeNaive;
 
-        // Pass-through raw pointer; kernels will cast to the proper InputT based on routing method
+        // Pass-through raw pointer; kernels will cast to the proper InputT based on
+        // routing method
         routingData.mPtrScores = expertIds == nullptr ? routingLogits : nullptr;
         //
         // Outputs
@@ -254,8 +257,10 @@ void Runner::run(void* hiddenState, void* hiddenStateScale, void* weights, void*
 {
     if (mDtypeWeights == btg::Dtype::MxE2m1 && mDtypeAct == btg::Dtype::MxE4m3)
     {
-        // The multiple is no less than 128 as TMA requires it for CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B types
-        // FIXME: enforce valid hidden dim to be multiple of 512 due to unhandled OOB read in routeAct. Please keep this
+        // The multiple is no less than 128 as TMA requires it for
+        // CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B types
+        // FIXME: enforce valid hidden dim to be multiple of 512 due to unhandled
+        // OOB read in routeAct. Please keep this
         // in sync with
         // tensorrt_llm/_torch/modules/fused_moe/quantization.py:MXFP4WeightTRTLLMGenFusedMoEMethod.input_hidden_alignment
         validHiddenSize = tensorrt_llm::common::roundUp(validHiddenSize, 512);
@@ -263,10 +268,10 @@ void Runner::run(void* hiddenState, void* hiddenStateScale, void* weights, void*
     auto maxNumCtasInBatchDim = Routing::getMaxNumCtasInBatchDim(numTokens, topK, numExperts, mTileTokensDim);
     mRunner.run(numTokens, 2 * intermediateSize, hiddenSize, numTokens, 2 * validIntermediateSize, validHiddenSize, {},
         numTokens, numExperts, maxNumCtasInBatchDim, hiddenState, hiddenStateScale, weights, weightsScale,
-        useRoutingScalesOnInput ? expertWeights : nullptr, /* perTokensSfB */ nullptr, outputScalesScalar,
-        outputScalesGateScalar, ptrBias, ptrAlpha, ptrBeta, ptrClampLimit, output, outputScale, permutedIdxToTokenIdx,
-        ptrTotalNumPaddedTokens, ptrCtaIdxXyToBatchIdx, ptrCtaIdxXyToMnLimit, ptrNumNonExitingCtas, bmm1Workspace,
-        stream, device, configIndex);
+        useRoutingScalesOnInput ? expertWeights : nullptr,
+        /* perTokensSfB */ nullptr, outputScalesScalar, outputScalesGateScalar, ptrBias, ptrAlpha, ptrBeta,
+        ptrClampLimit, output, outputScale, permutedIdxToTokenIdx, ptrTotalNumPaddedTokens, ptrCtaIdxXyToBatchIdx,
+        ptrCtaIdxXyToMnLimit, ptrNumNonExitingCtas, bmm1Workspace, stream, device, configIndex);
 }
 
 size_t Runner::getWorkspaceSizeInBytes(int32_t topK, int32_t hiddenSize, int32_t intermediateSize, int32_t numExperts,
@@ -348,15 +353,19 @@ void Runner::run(void* permutedHiddenState, void* permutedHiddenStateScale, void
 {
     if (mDtypeWeights == btg::Dtype::MxE2m1 && mDtypeAct == btg::Dtype::MxE4m3)
     {
-        // The multiple is no less than 128 as TMA requires it for CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B types
+        // The multiple is no less than 128 as TMA requires it for
+        // CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B types
         validIntermediateSize = tensorrt_llm::common::roundUp(validIntermediateSize, 128);
     }
     auto maxNumCtasInBatchDim = Routing::getMaxNumCtasInBatchDim(numTokens, topK, numExperts, mTileTokensDim);
     mRunner.run(numTokens, hiddenSize, intermediateSize, numTokens, validHiddenSize, validIntermediateSize, {},
         numTokens, numExperts, maxNumCtasInBatchDim, permutedHiddenState, permutedHiddenStateScale, weights,
-        weightsScale, /* perTokensSfA */ nullptr,
-        /* perTokensSfB */ nullptr, outputScalesScalar, /* outputScalesGateScalar */ nullptr, ptrBias,
-        /* ptrAlpha */ nullptr, /* ptrBeta */ nullptr, /* clampLimit */ nullptr, output, outputScale,
+        weightsScale,
+        /* perTokensSfA */ nullptr,
+        /* perTokensSfB */ nullptr, outputScalesScalar,
+        /* outputScalesGateScalar */ nullptr, ptrBias,
+        /* ptrAlpha */ nullptr, /* ptrBeta */ nullptr,
+        /* clampLimit */ nullptr, output, outputScale,
         /* permutedIdxToTokenIdx */ nullptr, ptrTotalNumPaddedTokens, ptrCtaIdxXyToBatchIdx, ptrCtaIdxXyToMnLimit,
         ptrNumNonExitingCtas, bmm2Workspace, stream, device, configIndex);
 }
@@ -481,7 +490,8 @@ void Runner::setOpsData(MoERunnerArgs const& args, MoEWorkspace const& workspace
         finalizeData.numTokens = args.num_tokens;
         finalizeData.numExperts = args.num_experts;
         finalizeData.topK = args.top_k;
-        // We want to fuse unpadding into the finalize kernel, so we need to use the output hidden size.
+        // We want to fuse unpadding into the finalize kernel, so we need to use the
+        // output hidden size.
         finalizeData.hiddenDim = args.valid_hidden_size.value_or(args.hidden_size);
         finalizeData.hiddenDimPadded = args.output_hidden_size.value_or(args.hidden_size);
         finalizeData.totalNumPaddedTokens = workspace.total_num_padded_tokens;
@@ -567,10 +577,12 @@ void Runner::run(
         args.valid_hidden_size.value_or(args.hidden_size),
         args.valid_intermediate_size.value_or(args.intermediate_size));
 
-    // We do not fuse activation with FC1 for DeepSeek FP8 due to the weights shuffling constraint.
+    // We do not fuse activation with FC1 for DeepSeek FP8 due to the weights
+    // shuffling constraint.
     void* gemm2_input = workspace.gemm1_output;
     void* gemm2_input_scale = workspace.gemm1_output_scale;
-    // We do activation only for DeepSeek FP8, as cubins do not have fused activation.
+    // We do activation only for DeepSeek FP8, as cubins do not have fused
+    // activation.
     if (args.mDtypeElt == btg::Dtype::E4m3 && args.mUseDeepSeekFp8)
     {
         // Run activation
@@ -599,6 +611,5 @@ void Runner::run(
 } // namespace MoE
 
 } // namespace trtllmGenFp8BlockScaleMoe
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

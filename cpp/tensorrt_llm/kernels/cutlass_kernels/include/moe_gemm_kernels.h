@@ -36,9 +36,9 @@
 #include <cuda_fp4.h>
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels
+namespace cutlass_kernels
 {
 
 template <typename AType, typename BType, typename BScaleType, typename OType>
@@ -77,7 +77,8 @@ struct TmaWarpSpecializedGroupedGemmInput
     static_assert(std::is_same_v<cutlass::layout::RowMajor, TransposeLayoutTag<cutlass::layout::ColumnMajor>>);
     static_assert(std::is_same_v<cutlass::layout::ColumnMajor, TransposeLayoutTag<cutlass::layout::RowMajor>>);
 
-    // These are always the layout of A & B matrices, activations and weights will be assigned to either A or B based on
+    // These are always the layout of A & B matrices, activations and weights will
+    // be assigned to either A or B based on
     // swap_ab
     using LayoutA = cutlass::layout::RowMajor;
     using LayoutB = cutlass::layout::ColumnMajor;
@@ -103,17 +104,22 @@ struct TmaWarpSpecializedGroupedGemmInput
     using MXFPXBlockScaledConfig = cutlass::detail::Sm1xxBlockScaledConfig<MXFPXBlockScaleVectorSize>;
 
     // 128
-    // This is the alignment of the weight matrix the fully padded SF will refer to.
+    // This is the alignment of the weight matrix the fully padded SF will refer
+    // to.
     // We require the SFs to be aligned to this value (zero padded as needed)
-    // The weights do not need to be aligned to this value, CUTLASS will handle extra padding
-    // N here is a short hand for the outer dimension of the GEMM, this applies to both M & N dimension of the GEMM
+    // The weights do not need to be aligned to this value, CUTLASS will handle
+    // extra padding
+    // N here is a short hand for the outer dimension of the GEMM, this applies to
+    // both M & N dimension of the GEMM
     constexpr static int MinNDimAlignmentNVFP4 = cute::size<0>(NVFP4BlockScaledConfig::SfAtom{});
     constexpr static int MinNDimAlignmentMXFPX = cute::size<0>(MXFPXBlockScaledConfig::SfAtom{});
 
     // Block scale vector size * 4
-    // This is the alignment of the weight matrix the fully padded SF will refer to.
+    // This is the alignment of the weight matrix the fully padded SF will refer
+    // to.
     // We should never actually need to pad a buffer to this alignment
-    // The weights only need to be aligned to BlockScaleVectorSize, CUTLASS will handle extra padding
+    // The weights only need to be aligned to BlockScaleVectorSize, CUTLASS will
+    // handle extra padding
     // The SFs only need to be aligned to 4 (zero padded as needed)
     // K here is a short hand for the inner dimension of the GEMM
     constexpr static int MinKDimAlignmentNVFP4 = cute::size<1>(NVFP4BlockScaledConfig::SfAtom{});
@@ -339,6 +345,6 @@ private:
     size_t calcMaxWorkspaceSize(int num_experts) const;
 };
 
-} // namespace kernels::cutlass_kernels
+} // namespace cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

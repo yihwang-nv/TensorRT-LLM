@@ -16,15 +16,12 @@
 
 #include "tensorrt_llm/runtime/decoderState.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/decodingCommon.h"
 #include "tensorrt_llm/runtime/runtimeKernels.h"
 
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::decoder
+namespace tensorrt_llm::runtime::decoder
 {
 using TensorPtr = DecoderState::TensorPtr;
 
@@ -338,7 +335,8 @@ void DecoderState::reshapeSpeculativeDecodingBuffers(SpeculativeDecodingMode con
 
     TLLM_CHECK_WITH_INFO((mMaxDecodingEngineTokens == 1 && speculativeDecodingMode.isNone())
             || (mMaxDecodingEngineTokens > 1 && !speculativeDecodingMode.isNone()),
-        "Max tokens per engine step is %d, but must be equal to 1 when no speculative decoding is configured, "
+        "Max tokens per engine step is %d, but must be equal to 1 when no "
+        "speculative decoding is configured, "
         "or > 1 for any speculative decoding mode.",
         mMaxDecodingEngineTokens);
 
@@ -670,6 +668,4 @@ DecodingOutput& DecoderState::getJointDecodingOutput() const
     return *mJointDecodingOutput;
 }
 
-} // namespace runtime::decoder
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::decoder

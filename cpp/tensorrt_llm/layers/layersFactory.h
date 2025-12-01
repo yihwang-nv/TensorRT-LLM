@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/layers/banWordsLayer.h"
 #include "tensorrt_llm/layers/baseLayer.h"
 #include "tensorrt_llm/layers/decodingLayer.h"
@@ -25,9 +24,7 @@
 #include <memory>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 enum DecodingLayers_t
 {
@@ -62,11 +59,13 @@ static std::vector<std::unique_ptr<BaseLayer>> createLayers(executor::DecodingMo
 {
     std::vector<std::unique_ptr<BaseLayer>> layers;
     auto layerTypes = createDecodingLayerTypes(mode);
-    // Only when draft tokens and predicted and decoded by the engine, we can skip penalty layer.
+    // Only when draft tokens and predicted and decoded by the engine, we can
+    // skip penalty layer.
     if (!mode.isExplicitDraftTokens() && !mode.isEagle())
     {
         TLLM_CHECK_WITH_INFO(layerTypes.size() && layerTypes[0] == DecodingLayers_t::PENALTY_LAYER,
-            "Penalty layer is required to be the first layer for any decoder configuration");
+            "Penalty layer is required to be the first layer "
+            "for any decoder configuration");
     }
     for (auto&& type : layerTypes)
     {
@@ -95,6 +94,4 @@ static std::vector<std::unique_ptr<BaseLayer>> createLayers(executor::DecodingMo
     }
     return layers;
 }
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

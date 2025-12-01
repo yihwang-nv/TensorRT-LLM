@@ -22,7 +22,8 @@ namespace th = torch;
 namespace tl = tensorrt_llm;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -35,7 +36,9 @@ std::tuple<at::Tensor, at::Tensor> custom_moe_routing_op(
     int64_t num_tokens = input_size[0];
     int64_t num_experts = input_size[1];
     TORCH_CHECK(input_size.size() == 2, "router_logits must be a 2D Tensor");
-    TORCH_CHECK(topk <= 8, "topk should be smaller than or equal to 8 for now"); //@todo: remove this restriction later
+    TORCH_CHECK(topk <= 8,
+        "topk should be smaller than or equal to 8 for now"); //@todo: remove this
+    // restriction later
     TORCH_CHECK(num_experts <= 128, "expert number should be smaller than or equal to 128 for now");
 
     // Determine output data type
@@ -123,12 +126,13 @@ std::tuple<at::Tensor, at::Tensor> default_moe_routing_op(
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "renorm_moe_routing_op(Tensor router_logits, SymInt topk, ScalarType? output_dtype=None"
+        "renorm_moe_routing_op(Tensor router_logits, SymInt topk, ScalarType? "
+        "output_dtype=None"
         ") -> (Tensor, Tensor)");
 }
 
@@ -140,7 +144,8 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "default_moe_routing_op(Tensor router_logits, SymInt topk, ScalarType? output_dtype=None"
+        "default_moe_routing_op(Tensor router_logits, SymInt topk, ScalarType? "
+        "output_dtype=None"
         ") -> (Tensor, Tensor)");
 }
 

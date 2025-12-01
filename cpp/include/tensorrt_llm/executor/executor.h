@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/tensor.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -35,19 +34,17 @@
 #include <variant>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace mpi
+namespace tensorrt_llm::mpi
 {
 class MpiComm;
-} // namespace mpi
+} // namespace tensorrt_llm::mpi
 
-namespace batch_manager::kv_cache_manager
+namespace tensorrt_llm::batch_manager::kv_cache_manager
 {
 class BaseKVCacheManager;
-} // namespace batch_manager::kv_cache_manager
+} // namespace tensorrt_llm::batch_manager::kv_cache_manager
 
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 /// @brief Version of TRT-LLM
@@ -155,59 +152,84 @@ private:
 
     /// @brief The beam width. Default is 1 which disables beam search.
     SizeType32 mBeamWidth;
-    /// @brief Controls number of logits to sample from. Default is 0 (all logits).
+    /// @brief Controls number of logits to sample from. Default is 0 (all
+    /// logits).
     std::optional<SizeType32> mTopK;
     /// @brief Controls the top-P probability to sample from. Default is 0.f
     std::optional<FloatType> mTopP;
-    /// @brief Controls decay in the top-P algorithm. topPMin is lower-bound. Default is 1.e-6.
+    /// @brief Controls decay in the top-P algorithm. topPMin is lower-bound.
+    /// Default is 1.e-6.
     std::optional<FloatType> mTopPMin;
-    /// @brief Controls decay in the top-P algorithm. Indicates where to reset the decay. Default is 1.
+    /// @brief Controls decay in the top-P algorithm. Indicates where to reset
+    /// the decay. Default is 1.
     std::optional<TokenIdType> mTopPResetIds;
-    /// @brief Controls decay in the top-P algorithm. The decay value. Default is 1.f
+    /// @brief Controls decay in the top-P algorithm. The decay value. Default
+    /// is 1.f
     std::optional<FloatType> mTopPDecay;
-    /// @brief Controls the random seed used by the random number generator in sampling. Default is 0.
+    /// @brief Controls the random seed used by the random number generator in
+    /// sampling. Default is 0.
     std::optional<RandomSeedType> mSeed;
-    /// @brief Controls the modulation of logits when sampling new tokens. It can have values > 0.f. Default is 1.0f
+    /// @brief Controls the modulation of logits when sampling new tokens. It
+    /// can have values > 0.f. Default is 1.0f
     std::optional<FloatType> mTemperature;
-    /// @brief Lower bound on the number of tokens to generate. Values < 1 have no effect. Default is 1.
+    /// @brief Lower bound on the number of tokens to generate. Values < 1 have
+    /// no effect. Default is 1.
     std::optional<SizeType32> mMinTokens;
     /// @brief Controls the diversity in beam search.
     std::optional<FloatType> mBeamSearchDiversityRate;
-    /// @brief Used to penalize tokens based on how often they appear in the sequence. It can have any value > 0.f.
-    /// Values < 1.f encourages repetition, values > 1.f discourages it. Default is 1.f
+    /// @brief Used to penalize tokens based on how often they appear in the
+    /// sequence. It can have any value > 0.f.
+    /// Values < 1.f encourages repetition, values > 1.f discourages it. Default
+    /// is 1.f
     std::optional<FloatType> mRepetitionPenalty;
-    /// @brief Used to penalize tokens already present in the sequence (irrespective of the number of appearances). It
-    /// can have any values. Values < 0.f encourage repetition, values > 0.f discourage it. Default is 0.f
+    /// @brief Used to penalize tokens already present in the sequence
+    /// (irrespective of the number of appearances). It
+    /// can have any values. Values < 0.f encourage repetition, values > 0.f
+    /// discourage it. Default is 0.f
     std::optional<FloatType> mPresencePenalty;
-    /// @brief Used to penalize tokens already present in the sequence (dependent on the number of appearances). It can
-    /// have any values. Values < 0.f encourage repetition, values > 0.f discourage it. Default is 0.f
+    /// @brief Used to penalize tokens already present in the sequence
+    /// (dependent on the number of appearances). It can
+    /// have any values. Values < 0.f encourage repetition, values > 0.f
+    /// discourage it. Default is 0.f
     std::optional<FloatType> mFrequencyPenalty;
-    /// @brief Controls how many tokens to ignore from the prompt for presence and frequency penalties. Values <= 0 have
+    /// @brief Controls how many tokens to ignore from the prompt for presence
+    /// and frequency penalties. Values <= 0 have
     /// no effect. Values > input (prompt) length will be clamped. Default is 0.
     std::optional<SizeType32> mPromptIgnoreLength;
-    /// @brief Controls how to penalize longer sequences in beam search. Default is 0.f
+    /// @brief Controls how to penalize longer sequences in beam search. Default
+    /// is 0.f
     std::optional<FloatType> mLengthPenalty;
-    /// @brief Controls whether the generation process finishes once beamWidth sentences are generated (ends with
+    /// @brief Controls whether the generation process finishes once beamWidth
+    /// sentences are generated (ends with
     /// end_token). Default is 1.
     std::optional<SizeType32> mEarlyStopping;
-    /// @brief Controls how many repeat ngram size are acceptable. Default is 1 << 30.
+    /// @brief Controls how many repeat ngram size are acceptable. Default is 1
+    /// << 30.
     std::optional<SizeType32> mNoRepeatNgramSize;
-    /// @brief The number of return sequences or beams. In beam search, the value should be less than or equal to
-    /// mBeamWidth. In sampling, it specifies the total number of independently generated sequences.
+    /// @brief The number of return sequences or beams. In beam search, the
+    /// value should be less than or equal to
+    /// mBeamWidth. In sampling, it specifies the total number of independently
+    /// generated sequences.
     std::optional<SizeType32> mNumReturnSequences;
-    /// @brief The number of beams to return. It is equal to beamWidth unless numReturnSequences is set.
-    /// If beamWidth > 1 and numReturnSequences is set, then numReturnBeams is equal to numReturnSequences.
+    /// @brief The number of beams to return. It is equal to beamWidth unless
+    /// numReturnSequences is set.
+    /// If beamWidth > 1 and numReturnSequences is set, then numReturnBeams is
+    /// equal to numReturnSequences.
     SizeType32 mNumReturnBeams;
     /// @brief Controls the min_p scaling for sampling.
-    /// It masks x which P_x < min_p * P_max, where P_x is probability of candidate x. Default is 0.f
+    /// It masks x which P_x < min_p * P_max, where P_x is probability of
+    /// candidate x. Default is 0.f
     std::optional<FloatType> mMinP;
-    /// @brief Controls the beam width for each step for Variable-Beam-Width-Search.
+    /// @brief Controls the beam width for each step for
+    /// Variable-Beam-Width-Search.
     std::optional<std::vector<SizeType32>> mBeamWidthArray;
 };
 
 /// @brief Additional output that should be gathered.
-/// @details By default gather output of shape [beamWidth, x] from each generation phase.
-///          If gatherContext is true, also gather output of shape [promptLen, x] from context phase.
+/// @details By default gather output of shape [beamWidth, x] from each
+/// generation phase.
+///          If gatherContext is true, also gather output of shape [promptLen,
+/// x] from context phase.
 class AdditionalModelOutput
 {
 public:
@@ -228,15 +250,20 @@ public:
         bool returnPerfMetrics = false,
         std::optional<std::vector<AdditionalModelOutput>> additionalModelOutputs = std::nullopt);
 
-    /// @brief Controls if Result should contain log probabilities. Default is false.
+    /// @brief Controls if Result should contain log probabilities. Default is
+    /// false.
     bool returnLogProbs;
-    /// @brief Controls if Result should contain the context logits. Default is false.
+    /// @brief Controls if Result should contain the context logits. Default is
+    /// false.
     bool returnContextLogits;
-    /// @brief Controls if Result should contain the generation logits. Default is false.
+    /// @brief Controls if Result should contain the generation logits. Default
+    /// is false.
     bool returnGenerationLogits;
-    /// @brief Controls if output tokens in Result should include the input tokens. Default is false.
+    /// @brief Controls if output tokens in Result should include the input
+    /// tokens. Default is false.
     bool excludeInputFromOutput;
-    /// @brief Controls if Result should contain encoder output hidden states (for encoder-only and encoder-decoder
+    /// @brief Controls if Result should contain encoder output hidden states
+    /// (for encoder-only and encoder-decoder
     /// models). Default is false.
     bool returnEncoderOutput;
     /// @brief Controls if Result should contain performance metrics
@@ -247,7 +274,8 @@ public:
 };
 
 /// @brief Configuration for speculative decoding with external draft tokens.
-/// Allows to include draft tokens, draft logits and specify acceptance threshold.
+/// Allows to include draft tokens, draft logits and specify acceptance
+/// threshold.
 class ExternalDraftTokensConfig
 {
 public:
@@ -285,11 +313,13 @@ public:
 
 private:
     friend class Serialization;
-    /// @brief The prompt embedding table. Expected shape: [task vocab_size, hidden_size]. Data type must match model
+    /// @brief The prompt embedding table. Expected shape: [task vocab_size,
+    /// hidden_size]. Data type must match model
     /// weights.
     Tensor mEmbeddingTable;
 
-    /// @brief The input token extra ids for KV Cache reuse when p-tuning is enabled
+    /// @brief The input token extra ids for KV Cache reuse when p-tuning is
+    /// enabled
     std::optional<VecTokenExtraIds> mInputTokenExtraIds;
 };
 
@@ -325,7 +355,8 @@ public:
 
 private:
     friend class Serialization;
-    /// @brief The mrope rotary sin and cos cache. Expected shape: [maxPositionEmbeddings*rotaryEmbeddingDim],Data type
+    /// @brief The mrope rotary sin and cos cache. Expected shape:
+    /// [maxPositionEmbeddings*rotaryEmbeddingDim],Data type
     /// must float32
     Tensor mMRopeRotaryCosSin;
     /// @brief The mrope position deltas
@@ -348,9 +379,11 @@ private:
 
     /// @brief The Lora task id
     IdType mTaskId;
-    /// @brief The Lora weights. See TRT-LLM documentation for expected shapes and types
+    /// @brief The Lora weights. See TRT-LLM documentation for expected shapes
+    /// and types
     std::optional<Tensor> mWeights;
-    /// @brief The Lora configuration. See TRT-LLM documentation for detailed description of the config tensor
+    /// @brief The Lora configuration. See TRT-LLM documentation for detailed
+    /// description of the config tensor
     std::optional<Tensor> mConfig;
 };
 
@@ -372,12 +405,14 @@ struct LookaheadDecodingConfig
     [[nodiscard]] SizeType32 getNgramSize() const;
     [[nodiscard]] SizeType32 getVerificationSetSize() const;
 
-    /// @brief return <maxDecodingTokens, maxPathLen, maxDraftTokens, maxDraftPathLen>
+    /// @brief return <maxDecodingTokens, maxPathLen, maxDraftTokens,
+    /// maxDraftPathLen>
     [[nodiscard]] std::tuple<SizeType32, SizeType32, SizeType32, SizeType32> calculateSpeculativeResource() const;
     static std::tuple<SizeType32, SizeType32, SizeType32, SizeType32> calculateSpeculativeResourceTuple(
         SizeType32 windowSize, SizeType32 ngramSize, SizeType32 verificationSetSize);
 
-    /// @brief return true when `this` can be executed on resources defined by `that`
+    /// @brief return true when `this` can be executed on resources defined by
+    /// `that`
     [[nodiscard]] bool isLE(LookaheadDecodingConfig const& that) const;
 
     /// @brief return true when the parameter combination is valid.
@@ -481,7 +516,8 @@ private:
     std::optional<VecTokens> mDraftTokens;
 };
 
-/// @brief Configuration for speculative decoding (both draft and target models)
+/// @brief Configuration for speculative decoding (both draft and target
+/// models)
 class SpeculativeDecodingConfig
 {
 public:
@@ -505,14 +541,17 @@ public:
         /// @brief The generated text is amenable to json format.
         kJSON = 0,
 
-        /// @brief The generated text is amenable to json format with additional user-specified restrictions, namely
+        /// @brief The generated text is amenable to json format with additional
+        /// user-specified restrictions, namely
         /// schema.
         kJSON_SCHEMA = 1,
 
-        /// @brief The generated text is amenable to the user-specified regular expression.
+        /// @brief The generated text is amenable to the user-specified regular
+        /// expression.
         kREGEX = 2,
 
-        /// @brief The generated text is amenable to the user-specified extended Backus-Naur form (EBNF) grammar.
+        /// @brief The generated text is amenable to the user-specified extended
+        /// Backus-Naur form (EBNF) grammar.
         /// EBNF grammar is widely-used to express context-free grammars.
         kEBNF_GRAMMAR = 3,
 
@@ -531,7 +570,8 @@ private:
 
     /// @brief The guide type. See GuideType.
     GuideType mGuideType;
-    /// @brief The detailed guide string. It could be a json schema, a regular expression or a EBNF grammar depending on
+    /// @brief The detailed guide string. It could be a json schema, a regular
+    /// expression or a EBNF grammar depending on
     /// mGuideType.
     std::optional<std::string> mGuide;
 };
@@ -561,8 +601,10 @@ public:
     static constexpr RetentionPriority kMaxRetentionPriority = 100;
     static constexpr RetentionPriority kDefaultRetentionPriority = 35;
 
-    /// @brief A single entry to set block priorities over a token range. Earlier ranges always take priority over later
-    /// ones. For example, with a block size of 16, a range of [0, 17] would be applied to the first two blocks.
+    /// @brief A single entry to set block priorities over a token range.
+    /// Earlier ranges always take priority over later
+    /// ones. For example, with a block size of 16, a range of [0, 17] would be
+    /// applied to the first two blocks.
     struct TokenRangeRetentionConfig
     {
     public:
@@ -574,14 +616,19 @@ public:
 
         /// @brief The first token of this range.
         SizeType32 tokenStart;
-        /// @brief The final token of this range. The end is not included in the range. This can be set to std::nullopt
+        /// @brief The final token of this range. The end is not included in the
+        /// range. This can be set to std::nullopt
         /// to extend the range to the end of the sequence.
         std::optional<SizeType32> tokenEnd;
-        /// @brief The priority of this token range. Higher priorities are less likely to be evicted or offloaded.
+        /// @brief The priority of this token range. Higher priorities are less
+        /// likely to be evicted or offloaded.
         RetentionPriority priority;
-        /// @brief The duration in ms that the block should remain at the given priority level. Set to std::nullopt to
-        /// have no expiration time, and keep the block at the given priority level until it gets reclaimed. After the
-        /// duration has passed, the block will be moved back to the `kDefaultRetentionPriority` level.
+        /// @brief The duration in ms that the block should remain at the given
+        /// priority level. Set to std::nullopt to
+        /// have no expiration time, and keep the block at the given priority
+        /// level until it gets reclaimed. After the
+        /// duration has passed, the block will be moved back to the
+        /// `kDefaultRetentionPriority` level.
         std::optional<std::chrono::milliseconds> durationMs;
     };
 
@@ -601,7 +648,8 @@ public:
     [[nodiscard]] KvCacheTransferMode getTransferMode() const;
     [[nodiscard]] std::string const& getDirectory() const;
 
-    /// @brief Convert the token range data into an entry per kv block. Returns a tuple of vectors corresponding to the
+    /// @brief Convert the token range data into an entry per kv block. Returns
+    /// a tuple of vectors corresponding to the
     /// priorities and durations for each block.
     [[nodiscard]] std::vector<RetentionPriorityAndDuration> getPerBlockRetentionPriorityDuration(
         SizeType32 blockSize, SizeType32 seqLen) const;
@@ -615,17 +663,21 @@ public:
     }
 
 private:
-    /// @brief The token ranges and priority levels to update. Ranges must be non-overlapping. For example [(0, 64),
+    /// @brief The token ranges and priority levels to update. Ranges must be
+    /// non-overlapping. For example [(0, 64),
     /// (100, 128), (70, 80)] is valid, whereas
     /// [(0, 64), (60, 128)] is not.
     std::vector<TokenRangeRetentionConfig> mTokenRangeRetentionConfigs;
-    /// @brief The priority level to assign to blocks allocated in the decode phase
+    /// @brief The priority level to assign to blocks allocated in the decode
+    /// phase
     RetentionPriority mDecodeRetentionPriority;
-    /// @brief The duration in ms that decode blocks should remain at their assigned priority level.
+    /// @brief The duration in ms that decode blocks should remain at their
+    /// assigned priority level.
     std::optional<std::chrono::milliseconds> mDecodeDurationMs;
     /// @brief The transfer mode for the block.
     KvCacheTransferMode mTransferMode;
-    /// @brief Name of the directory if transfer mode is GDS or POSIX_DEBUG_FALLBACK.
+    /// @brief Name of the directory if transfer mode is GDS or
+    /// POSIX_DEBUG_FALLBACK.
     std::string mDirectory;
 };
 
@@ -639,48 +691,68 @@ public:
 
     /// @param inputTokenIds The input token ids
     /// @param maxTokens  The maximum number of tokens to generate
-    /// @param streaming Indicates if the responses should be streamed or not. Default is false.
+    /// @param streaming Indicates if the responses should be streamed or not.
+    /// Default is false.
     /// @param samplingConfig The sampling configuration
     /// @param outputConfig The output configuration
     /// @param endId The end token id
     /// @param padId The pad token id
     /// @param positionIds The input position ids
-    /// @param badWords A list of bad words tokens. Each "word" can be composed of multiple tokens
-    /// @param stopWords A list of stop words tokens. Each "word" can be composed of multiple tokens
-    /// @param embeddingBias The embedding bias tensor. Expected shape is [vocab_size]
-    /// @param externalDraftTokensConfig The speculative decoding with external draft tokens configuration
+    /// @param badWords A list of bad words tokens. Each "word" can be composed
+    /// of multiple tokens
+    /// @param stopWords A list of stop words tokens. Each "word" can be
+    /// composed of multiple tokens
+    /// @param embeddingBias The embedding bias tensor. Expected shape is
+    /// [vocab_size]
+    /// @param externalDraftTokensConfig The speculative decoding with external
+    /// draft tokens configuration
     /// @param pTuningConfig The prompt tuning configuration
-    /// @param multimodalInput The multimodal input {multimodalHashes, multimodalPositions, multimodalLengths}
-    /// @param multimodalEmbedding The multimodal embedding tensor. Expected shape is [num_multimodal_tokens,
+    /// @param multimodalInput The multimodal input {multimodalHashes,
+    /// multimodalPositions, multimodalLengths}
+    /// @param multimodalEmbedding The multimodal embedding tensor. Expected
+    /// shape is [num_multimodal_tokens,
     /// hidden_dim]
     /// @param mRopeConfig The mrope configuration
     /// @param loraConfig The LoRA configuration
     /// @param lookaheadConfig The lookahead speculative decoding configuration
-    /// @param kvCacheRetentionConfig The configuration used for KV cache block eviction.
-    /// @param logitsPostProcessorName The logits postprocessor name. Must correspond to one of the logits postprocessor
+    /// @param kvCacheRetentionConfig The configuration used for KV cache block
+    /// eviction.
+    /// @param logitsPostProcessorName The logits postprocessor name. Must
+    /// correspond to one of the logits postprocessor
     /// name provided to the ExecutorConfig.
-    /// @param logitsPostProcessor The logits postprocessor dynamically specified per request; only supported with
+    /// @param logitsPostProcessor The logits postprocessor dynamically
+    /// specified per request; only supported with
     /// replicate=false or no tensor parallelism.
-    /// @param encoderInputTokenIds The encoder input token ids for encoder-decoder models, or encoder-only models
+    /// @param encoderInputTokenIds The encoder input token ids for
+    /// encoder-decoder models, or encoder-only models
     /// @param clientId
-    /// @param returnAllGeneratedTokens Indicates whether to return the full beams or just the newly generated tokens
+    /// @param returnAllGeneratedTokens Indicates whether to return the full
+    /// beams or just the newly generated tokens
     /// after every streaming step.
     /// @param priority Sets the execution priority of this request.
     /// @param type Indicate the request type for disaggregated serving mode.
-    /// @param contextPhaseParams Generated token ID  from context only executor.
-    /// @param encoderInputFeatures Encoder input features for multimodal models.
-    /// @param encoderOutputLength Encoder output length if encoder input and output have different lengths (due to
+    /// @param contextPhaseParams Generated token ID  from context only
+    /// executor.
+    /// @param encoderInputFeatures Encoder input features for multimodal
+    /// models.
+    /// @param encoderOutputLength Encoder output length if encoder input and
+    /// output have different lengths (due to
     /// convolution down-sampling, etc.)
     /// @param crossAttentionMask Cross attention mask.
     /// @param numReturnSequences The number of returning sequences.
     /// @param eagleConfig The EAGLE speculative decoding configuration
-    /// @param skipCrossAttnBlocks Skip the cross attention transformer blocks or not.
+    /// @param skipCrossAttnBlocks Skip the cross attention transformer blocks
+    /// or not.
     /// @param guidedDecodingParams The guided decoding parameters.
     /// @param languageAdapterUid Task Uid for language adapter.
-    /// @param allottedTimeMs The allotted time in milliseconds after which the request is cancelled with a timedOut
-    /// finish reason. The request may exceed this time slightly, but at most by 1 forward pass (in pipeline parallelism
-    /// that may involve multiple micro-batches). A request can be timed-out before ever being scheduled.
-    /// @param cacheSaltID Salt ID for KV cache blocks to limit the kv cache reuse to the requests with the same string.
+    /// @param allottedTimeMs The allotted time in milliseconds after which the
+    /// request is cancelled with a timedOut
+    /// finish reason. The request may exceed this time slightly, but at most by
+    /// 1 forward pass (in pipeline parallelism
+    /// that may involve multiple micro-batches). A request can be timed-out
+    /// before ever being scheduled.
+    /// @param cacheSaltID Salt ID for KV cache blocks to limit the kv cache
+    /// reuse to the requests with the same string.
     Request(VecTokens inputTokenIds, SizeType32 maxTokens, bool streaming = false,
         SamplingConfig const& samplingConfig = SamplingConfig(), OutputConfig const& outputConfig = OutputConfig(),
         std::optional<SizeType32> const& endId = std::nullopt, std::optional<SizeType32> const& padId = std::nullopt,
@@ -710,7 +782,8 @@ public:
         std::optional<MillisecondsType> allottedTimeMs = std::nullopt,
         std::optional<CacheSaltIDType> cacheSaltID = std::nullopt);
 
-    /// @brief This logits postprocessor name will dispatch to the batched logits postprocessor
+    /// @brief This logits postprocessor name will dispatch to the batched
+    /// logits postprocessor
     static auto constexpr kBatchedPostProcessorName = "batched";
     /// @brief Dynamic logits postprocessor name will be "dynamic" + requestId
     static auto constexpr kDynamicPostProcessorNamePrefix = "dynamic";
@@ -809,7 +882,8 @@ struct SpeculativeDecodingFastLogitsInfo
     /// @brief MPI world rank of the draft model leader
     int32_t draftParticipantId;
 
-    /// @brief Returns the struct serialized into a tensor that can be used as generation logits input
+    /// @brief Returns the struct serialized into a tensor that can be used as
+    /// generation logits input
     [[nodiscard]] Tensor toTensor() const;
 };
 
@@ -843,14 +917,17 @@ struct Result
     /// @brief The cumulative log probabilities. Size beamSize.
     std::optional<VecLogProbs> cumLogProbs;
 
-    /// @brief The log probabilities for each generated token. Size [beamSize, outputLen]
+    /// @brief The log probabilities for each generated token. Size [beamSize,
+    /// outputLen]
     std::optional<std::vector<VecLogProbs>> logProbs;
 
     /// @brief The context logits. Size [promptLen, vocabSizePadded]
     std::optional<Tensor> contextLogits;
 
-    /// @brief The generation logits. Size [beamSize, maxTokens, vocabSizePadded] (non-streaming)
-    /// or [maxTokens, beamSize, vocabSizePadded] (streaming and allGeneratedTokens)
+    /// @brief The generation logits. Size [beamSize, maxTokens,
+    /// vocabSizePadded] (non-streaming)
+    /// or [maxTokens, beamSize, vocabSizePadded] (streaming and
+    /// allGeneratedTokens)
     /// or [1, beamSize, vocabSizePadded] (streaming and non-allGeneratedTokens)
     std::optional<Tensor> generationLogits;
 
@@ -860,30 +937,42 @@ struct Result
     /// @brief The encoder output. Size [encoderLen, hiddenSize]
     std::optional<Tensor> encoderOutput;
 
-    /// @brief The reason why the model stopped generating tokens for each beam in this request. Size [beamSize].
-    /// Currently only supported when beamSize is 1 and when using BatchingType::kINFLIGHT.
+    /// @brief The reason why the model stopped generating tokens for each beam
+    /// in this request. Size [beamSize].
+    /// Currently only supported when beamSize is 1 and when using
+    /// BatchingType::kINFLIGHT.
     std::vector<FinishReason> finishReasons;
 
     /// @brief The params of the context phase.
     std::optional<ContextPhaseParams> contextPhaseParams;
 
-    /// @brief The number of the decoding iterations used to generate the result.
-    /// In autoregressive decoding, it is equal to the maximum length of the beam in outputTokenIds.
-    /// In speculative decoding, might be less than maximum length of the beam in outputTokenIds as more than
-    /// one token can be generated per iteration. Used for speculative decoding statistics.
+    /// @brief The number of the decoding iterations used to generate the
+    /// result.
+    /// In autoregressive decoding, it is equal to the maximum length of the
+    /// beam in outputTokenIds.
+    /// In speculative decoding, might be less than maximum length of the beam
+    /// in outputTokenIds as more than
+    /// one token can be generated per iteration. Used for speculative decoding
+    /// statistics.
     SizeType32 decodingIter{0};
 
-    /// @brief The average number of decoded tokens per iteration. For standard model it is 1.
-    /// For speculative decoding model >= 1 -- number of draft tokens accepted per step + 1.
+    /// @brief The average number of decoded tokens per iteration. For standard
+    /// model it is 1.
+    /// For speculative decoding model >= 1 -- number of draft tokens accepted
+    /// per step + 1.
     float avgDecodedTokensPerIter{0.0f};
 
-    /// @brief The index of the output sequence of this result where 0 <= sequenceIndex < numReturnSequences.
-    /// In beam search (beamWidth > 1), this index will be always zero because all beams to be returned are included
+    /// @brief The index of the output sequence of this result where 0 <=
+    /// sequenceIndex < numReturnSequences.
+    /// In beam search (beamWidth > 1), this index will be always zero because
+    /// all beams to be returned are included
     /// in this result.
     SizeType32 sequenceIndex{0};
 
-    /// @brief Indicates if this is the final result for a given sequence in the request
-    /// In beam search (beamWidth > 1), the value will always equal to the value of isFinal.
+    /// @brief Indicates if this is the final result for a given sequence in the
+    /// request
+    /// In beam search (beamWidth > 1), the value will always equal to the value
+    /// of isFinal.
     bool isSequenceFinal;
 
     /// @brief Performance metrics if returnPerfMetrics is set in OutputConfig
@@ -909,7 +998,8 @@ public:
     /// @brief Get the id of the request for which this response was generated
     [[nodiscard]] IdType getRequestId() const;
 
-    /// @brief Get the client id of the request for which this response was generated
+    /// @brief Get the client id of the request for which this response was
+    /// generated
     [[nodiscard]] std::optional<IdType> getClientId() const;
 
     /// @brief Indicates if this response has an error or not
@@ -929,13 +1019,16 @@ private:
     std::unique_ptr<Impl> mImpl;
 };
 
-/// @brief Configuration class for dynamic tuning of batch size and max num tokens. During runtime the statistics of
-/// input and output lengths are recoreded. Based on these statistics, the batch size and max num tokens are tuned
+/// @brief Configuration class for dynamic tuning of batch size and max num
+/// tokens. During runtime the statistics of
+/// input and output lengths are recoreded. Based on these statistics, the
+/// batch size and max num tokens are tuned
 /// dynamically to better serve the requests.
 class DynamicBatchConfig
 {
 public:
-    /// @brief The default window size for moving average of input and output length which is used to calculate dynamic
+    /// @brief The default window size for moving average of input and output
+    /// length which is used to calculate dynamic
     /// batch size and max num tokens
     static SizeType32 const kDefaultDynamicBatchMovingAverageWindow = 128;
 
@@ -963,13 +1056,17 @@ private:
     /// @brief Controls if the max num tokens should be tuned dynamically
     bool mEnableMaxNumTokensTuning;
 
-    /// @brief The window size for moving average of input and output length which is used to calculate dynamic batch
+    /// @brief The window size for moving average of input and output length
+    /// which is used to calculate dynamic batch
     /// size and max num tokens
     SizeType32 mDynamicBatchMovingAverageWindow;
 
-    /// @brief A vector of (batchSizeLimit, batchSize). When max capacity batch size is less than
-    // batchSizeLimit_{i} but greater or equal to batchSizeLimit_{i-1}, the batch size will be batchSize_{i}.
-    // For max capacity batch size beyond the last batchSizeLimit, the batch size may be rounded down to multiple of 512
+    /// @brief A vector of (batchSizeLimit, batchSize). When max capacity batch
+    /// size is less than
+    // batchSizeLimit_{i} but greater or equal to batchSizeLimit_{i-1}, the
+    // batch size will be batchSize_{i}.
+    // For max capacity batch size beyond the last batchSizeLimit, the batch
+    // size may be rounded down to multiple of 512
     // based on the actual implementation.
     std::vector<std::pair<SizeType32, SizeType32>> mBatchSizeTable;
 };
@@ -1000,7 +1097,8 @@ private:
     /// @brief The context chunking policy. See ContextChunkingPolicy.
     std::optional<ContextChunkingPolicy> mContextChunkingPolicy;
 
-    /// @brief The config for tuning batch size dynamically. See DynamicBatchSizeConfig.
+    /// @brief The config for tuning batch size dynamically. See
+    /// DynamicBatchSizeConfig.
     std::optional<DynamicBatchConfig> mDynamicBatchConfig;
 };
 
@@ -1062,27 +1160,36 @@ private:
     /// @brief Controls if KV cache blocks can be reused for different requests
     bool mEnableBlockReuse;
 
-    /// @brief The maximum number of tokens that should be stored in the KV cache
-    /// If both mMaxTokens and mFreeGpuMemoryFraction are specified, memory corresponding to the minimum will be
+    /// @brief The maximum number of tokens that should be stored in the KV
+    /// cache
+    /// If both mMaxTokens and mFreeGpuMemoryFraction are specified, memory
+    /// corresponding to the minimum will be
     /// allocated.
     std::optional<SizeType32> mMaxTokens;
 
-    /// @brief Size of the attention window for each sequence. Only the last mMaxAttentionWindow tokens of each sequence
-    /// will be stored in the KV cache. Different layers may have different max attention window sizes.
-    /// If the number of elements in mMaxAttentionWindowVec is less than the number of layers, mMaxAttentionWindowVec
+    /// @brief Size of the attention window for each sequence. Only the last
+    /// mMaxAttentionWindow tokens of each sequence
+    /// will be stored in the KV cache. Different layers may have different max
+    /// attention window sizes.
+    /// If the number of elements in mMaxAttentionWindowVec is less than the
+    /// number of layers, mMaxAttentionWindowVec
     /// will be repeated multiple times to the number of layers.
     std::optional<std::vector<SizeType32>> mMaxAttentionWindowVec;
 
     /// @brief Number of sink tokens (tokens to always keep in attention window)
     std::optional<SizeType32> mSinkTokenLength;
 
-    /// @brief The fraction of GPU memory fraction that should be allocated for the KV cache. Default is 90%.
-    /// If both mMaxTokens and mFreeGpuMemoryFraction are specified, memory corresponding to the minimum will be
+    /// @brief The fraction of GPU memory fraction that should be allocated for
+    /// the KV cache. Default is 90%.
+    /// If both mMaxTokens and mFreeGpuMemoryFraction are specified, memory
+    /// corresponding to the minimum will be
     /// allocated.
     std::optional<FloatType> mFreeGpuMemoryFraction;
 
-    /// @brief The fraction of the KV Cache memory should be reserved for cross attention
-    /// If set to p, self attention will use 1-p of KV Cache memory and cross attention
+    /// @brief The fraction of the KV Cache memory should be reserved for cross
+    /// attention
+    /// If set to p, self attention will use 1-p of KV Cache memory and cross
+    /// attention
     /// will use p of KV Cache memory. Default is 50%.
     /// Should only be set when using encoder-decoder model.
     std::optional<FloatType> mCrossKvCacheFraction;
@@ -1091,10 +1198,12 @@ private:
     /// Having a secondary memory pool increases KV cache block reuse potential.
     std::optional<size_t> mHostCacheSize;
 
-    /// @brief Controls whether offloaded blocks should be onboarded back into primary memory before being reused.
+    /// @brief Controls whether offloaded blocks should be onboarded back into
+    /// primary memory before being reused.
     bool mOnboardBlocks;
 
-    /// @brief Only blocks with priority > mSecondaryOfflineMinPriority can be offloaded to secondary memory.
+    /// @brief Only blocks with priority > mSecondaryOfflineMinPriority can be
+    /// offloaded to secondary memory.
     std::optional<RetentionPriority> mSecondaryOffloadMinPriority;
 
     /// @brief Max size of the KV cache event buffer
@@ -1103,16 +1212,20 @@ private:
     /// @brief Whether blocks that are only partially matched can be reused
     bool mEnablePartialReuse;
 
-    /// @brief Whether partially matched blocks that are in use can be reused after copying them
+    /// @brief Whether partially matched blocks that are in use can be reused
+    /// after copying them
     bool mCopyOnPartialReuse;
 
     /// @brief Whether to use UVM for the KV cache.
     bool mUseUvm;
 
-    /// @brief The period in milliseconds to gather attention DP events across ranks
+    /// @brief The period in milliseconds to gather attention DP events across
+    /// ranks
     SizeType32 mAttentionDpEventsGatherPeriodMs;
-    /// @brief The maximum size in bytes of GPU memory that can be allocated for the KV cache.
-    /// If both mMaxGpuTotalBytes and mFreeGpuMemoryFraction are specified, memory corresponding to the minimum will
+    /// @brief The maximum size in bytes of GPU memory that can be allocated for
+    /// the KV cache.
+    /// If both mMaxGpuTotalBytes and mFreeGpuMemoryFraction are specified,
+    /// memory corresponding to the minimum will
     /// be allocated.
     uint64_t mMaxGpuTotalBytes;
 };
@@ -1153,7 +1266,8 @@ private:
     bool mCudaGraphMode;
 
     /// @brief Number of cuda graphs to be cached in the runtime.
-    /// The larger the cache, the better the perf, but more GPU memory is consumed.
+    /// The larger the cache, the better the perf, but more GPU memory is
+    /// consumed.
     SizeType32 mCudaGraphCacheSize;
 };
 
@@ -1187,7 +1301,8 @@ private:
     bool mDebugOutputTensors;
     /// @brief If not empty, only debug tensors in this list.
     StringVec mDebugTensorNames;
-    /// @brief If > 0, provide debug tensors for at most debugTensorsMaxIterations past iterations,
+    /// @brief If > 0, provide debug tensors for at most
+    /// debugTensorsMaxIterations past iterations,
     /// else dump them to files.
     SizeType32 mDebugTensorsMaxIterations;
 };
@@ -1223,10 +1338,13 @@ public:
     /// @brief Constructor
     /// @param commType The communication type. See CommunicationType.
     /// @param commMode The communication mode. See CommunicationMode.
-    /// @param deviceIds The IDs of the GPUs involved in the execution of the model
-    /// @param participantIds The participant IDs (MPI ranks if commType == kMPI) involved in the execution of the
+    /// @param deviceIds The IDs of the GPUs involved in the execution of the
+    /// model
+    /// @param participantIds The participant IDs (MPI ranks if commType ==
+    /// kMPI) involved in the execution of the
     /// model. The first participant is considered to be the leader.
-    /// @param orchestratorConfig The orchestrator configuration. See OrchestratorConfig.
+    /// @param orchestratorConfig The orchestrator configuration. See
+    /// OrchestratorConfig.
     /// @param numNodes The number of nodes to use for execution. Default is 1.
     explicit ParallelConfig(CommunicationType commType = CommunicationType::kMPI,
         CommunicationMode commMode = CommunicationMode::kLEADER,
@@ -1261,7 +1379,8 @@ private:
     /// @brief The GPU device ids to use for executing this model
     std::optional<std::vector<SizeType32>> mDeviceIds;
 
-    /// @brief The participant ids (MPI ranks for example) used for executing this model
+    /// @brief The participant ids (MPI ranks for example) used for executing
+    /// this model
     std::optional<std::vector<SizeType32>> mParticipantIds;
 
     /// @brief Optional orchestrator configuration
@@ -1307,9 +1426,11 @@ public:
 private:
     friend class Serialization;
 
-    // number of max sized 1-layer 1-module adapterSize=1 sets of weights that can be stored in host cache
+    // number of max sized 1-layer 1-module adapterSize=1 sets of weights that
+    // can be stored in host cache
     SizeType32 mNumHostModuleLayer;
-    // number of max sized 1-layer 1-module sets of weights that can be stored in host cache
+    // number of max sized 1-layer 1-module sets of weights that can be stored
+    // in host cache
     SizeType32 mNumDeviceModuleLayer;
     // optimal adapter size used to set page width
     SizeType32 mOptimalAdapterSize;
@@ -1329,7 +1450,8 @@ private:
     std::optional<FloatType> mDeviceCachePercent;
     // size in bytes to use for host cache
     std::optional<size_t> mHostCacheSize;
-    // folder to store the LoRA weights we hope to load during engine initialization
+    // folder to store the LoRA weights we hope to load during engine
+    // initialization
     std::optional<std::string> mLoraPrefetchDir;
 };
 
@@ -1345,7 +1467,8 @@ public:
     bool operator==(DecodingConfig const& other) const;
 
     // Decoding mode.
-    /// @brief Sets decoding mode. Some modes require the use of their own setters.
+    /// @brief Sets decoding mode. Some modes require the use of their own
+    /// setters.
     void setDecodingMode(DecodingMode const&);
     [[nodiscard]] std::optional<DecodingMode> getDecodingMode() const;
 
@@ -1377,7 +1500,8 @@ private:
     std::optional<MedusaChoices> mMedusaChoices;
     // Eagle config.
     std::optional<EagleConfig> mEagleConfig;
-    // The max number of requests that can support running with lookahead decoding
+    // The max number of requests that can support running with lookahead
+    // decoding
     static constexpr SizeType32 mLookaheadDecodingMaxNumRequest = 8;
 };
 
@@ -1419,18 +1543,22 @@ private:
 
     /// @brief Guided decoding backend. Currently supports XGrammar.
     GuidedDecodingBackend mBackend;
-    /// @brief Encoded vocabulary. For a huggingface tokenizer, it can be extracted by:
+    /// @brief Encoded vocabulary. For a huggingface tokenizer, it can be
+    /// extracted by:
     /// ```python
     /// encoded_vocab = tokenizer.get_vocab()
-    /// encoded_vocab = [token for token, _ in sorted(encoded_vocab.items(), key=lambda x: x[1])]
+    /// encoded_vocab = [token for token, _ in sorted(encoded_vocab.items(),
+    /// key=lambda x: x[1])]
     /// ```
     std::optional<std::vector<std::string>> mEncodedVocab;
-    /// @brief Tokenizer string. For a huggingface fast tokenizer, it can be extracted by:
+    /// @brief Tokenizer string. For a huggingface fast tokenizer, it can be
+    /// extracted by:
     /// ```python
     /// tokenizer_str = tokenizer.backend_tokenizer.to_str()
     /// ```
     std::optional<std::string> mTokenizerStr;
-    /// @brief Stop token ids. If not provided, it can be automatically detected.
+    /// @brief Stop token ids. If not provided, it can be automatically
+    /// detected.
     std::optional<std::vector<TokenIdType>> mStopTokenIds;
 };
 
@@ -1453,7 +1581,8 @@ private:
     std::optional<LogitsPostProcessorMap> mProcessorMap;
     /// @brief single batched post processor
     std::optional<LogitsPostProcessorBatched> mProcessorBatched;
-    /// @brief If set to true, logits post processor will run on all TP ranks in last PP rank
+    /// @brief If set to true, logits post processor will run on all TP ranks in
+    /// last PP rank
     bool mReplicate;
 };
 
@@ -1484,13 +1613,17 @@ public:
 
 private:
     std::optional<BackendType> mBackendType;
-    /// @brief The maximum number of tokens that the CacheTransceiver's pre-allocated buffer can hold. If the number of
-    /// kvCache tokens to be transferred for a single request is greater than this value, the performance of the cache
+    /// @brief The maximum number of tokens that the CacheTransceiver's
+    /// pre-allocated buffer can hold. If the number of
+    /// kvCache tokens to be transferred for a single request is greater than
+    /// this value, the performance of the cache
     /// transfer may be degraded.
     std::optional<size_t> mMaxTokensInBuffer;
     std::optional<int> mKvTransferTimeoutMs;
-    // @brief Timeout in milliseconds to wait for the sender future to be ready when scheduled batch size is 0. This
-    // allows the request to be eventually cancelled by the user or because of kv_transfer_timeout_ms
+    // @brief Timeout in milliseconds to wait for the sender future to be ready
+    // when scheduled batch size is 0. This
+    // allows the request to be eventually cancelled by the user or because of
+    // kv_transfer_timeout_ms
     std::optional<int> mKvTransferSenderFutureTimeoutMs;
 };
 
@@ -1503,7 +1636,8 @@ public:
 
     static constexpr SizeType32 kDefaultIterStatsMaxIterations = 1000;
 
-    // Per request stats may have additional overhead due to going through all requests. Turned off by default.
+    // Per request stats may have additional overhead due to going through all
+    // requests. Turned off by default.
     static constexpr SizeType32 kDefaultRequestStatsMaxIterations = 0;
 
     explicit ExecutorConfig(SizeType32 maxBeamWidth = 1, SchedulerConfig schedulerConfig = SchedulerConfig(),
@@ -1530,8 +1664,10 @@ public:
     [[nodiscard]] SizeType32 getMaxBeamWidth() const;
     [[nodiscard]] SchedulerConfig getSchedulerConfig() const;
     [[nodiscard]] KvCacheConfig getKvCacheConfig() const;
-    // These functions return references and are useful for defining pybind properties.
-    // If we used the normal return by value getters, we would get really confusing
+    // These functions return references and are useful for defining pybind
+    // properties.
+    // If we used the normal return by value getters, we would get really
+    // confusing
     // behavior on the Python side.
     [[nodiscard]] SchedulerConfig& getSchedulerConfigRef();
     [[nodiscard]] KvCacheConfig& getKvCacheConfigRef();
@@ -1595,7 +1731,8 @@ public:
 private:
     friend class Serialization;
 
-    /// @brief The beam width value of requests that will be sent to the executor
+    /// @brief The beam width value of requests that will be sent to the
+    /// executor
     SizeType32 mMaxBeamWidth;
 
     /// @brief The scheduler configuration.
@@ -1610,10 +1747,12 @@ private:
     /// @brief Controls if log probabilities should be normalized or not.
     bool mNormalizeLogProbs;
 
-    /// @brief Controls the maximum number of iterations for which to keep statistics.
+    /// @brief Controls the maximum number of iterations for which to keep
+    /// statistics.
     SizeType32 mIterStatsMaxIterations;
 
-    /// @brief Controls the maximum number of iterations for which to keep per-request statistics.
+    /// @brief Controls the maximum number of iterations for which to keep
+    /// per-request statistics.
     SizeType32 mRequestStatsMaxIterations;
 
     /// @brief The type of batching strategy to use. See BatchingType.
@@ -1641,7 +1780,8 @@ private:
     /// @brief GPU weights percent for weight streaming.
     float mGpuWeightsPercent;
 
-    /// @brief The maximum number of requests allowed in queue before rejecting new requests.
+    /// @brief The maximum number of requests allowed in queue before rejecting
+    /// new requests.
     std::optional<SizeType32> mMaxQueueSize;
 
     /// @brief Config for perf knobs that can be set in runtime.
@@ -1650,10 +1790,12 @@ private:
     /// @brief Debugging configuration.
     std::optional<DebugConfig> mDebugConfig;
 
-    /// @brief The time in ms between polls for new communication in orchestrator mode. Use 0 for busy loop.
+    /// @brief The time in ms between polls for new communication in
+    /// orchestrator mode. Use 0 for busy loop.
     SizeType32 mRecvPollPeriodMs;
 
-    /// @brief The maximum time in microseconds a scheduled request can remain idle before getting terminated.
+    /// @brief The maximum time in microseconds a scheduled request can remain
+    /// idle before getting terminated.
     /// Default value is 3 minutes.
     uint64_t mMaxSeqIdleMicroseconds;
 
@@ -1669,16 +1811,19 @@ private:
     /// @brief The cache transceiver configuration
     std::optional<CacheTransceiverConfig> mCacheTransceiverConfig;
 
-    /// @brief Controls if generation logits should be gathered, so that returnGenerationLogits can be requested.
+    /// @brief Controls if generation logits should be gathered, so that
+    /// returnGenerationLogits can be requested.
     bool mGatherGenerationLogits{false};
 
     /// @brief Controls if prompt table offloading is enabled.
     bool mPromptTableOffloading{false};
 
-    /// @brief Controls whether preparation and TRT engine execution should be overlapped.
+    /// @brief Controls whether preparation and TRT engine execution should be
+    /// overlapped.
     bool mEnableTrtOverlap{false};
 
-    /// @brief Controls whether to fail fast when attention window is too large to fit even a single sequence in the KV
+    /// @brief Controls whether to fail fast when attention window is too large
+    /// to fit even a single sequence in the KV
     /// cache.
     bool mFailFastOnAttentionWindowTooLarge{false};
 };
@@ -1793,7 +1938,8 @@ public:
         std::shared_ptr<tensorrt_llm::batch_manager::kv_cache_manager::BaseKVCacheManager> kvCacheManager);
 
     /// @brief Get the latest KV Cache events.
-    /// @param timeout The maximum time to wait for new events. If nullopt, will only return when new events are
+    /// @param timeout The maximum time to wait for new events. If nullopt, will
+    /// only return when new events are
     /// available, or when the executor instance has shutdown.
     std::deque<KVCacheEvent> getLatestEvents(std::optional<std::chrono::milliseconds> timeout = std::nullopt);
 
@@ -1801,7 +1947,8 @@ private:
     std::shared_ptr<tensorrt_llm::batch_manager::kv_cache_manager::BaseKVCacheManager> kvCacheManager;
 };
 
-/// @brief The executor is responsible for receiving new requests and sending responses, and running the inference
+/// @brief The executor is responsible for receiving new requests and sending
+/// responses, and running the inference
 class Executor
 {
 
@@ -1835,7 +1982,8 @@ public:
     Executor& operator=(Executor&&) = default;
 
     /// @brief Enqueue a new request
-    /// @param request The LLM request which contains input tokens and request parameters
+    /// @param request The LLM request which contains input tokens and request
+    /// parameters
     /// @return A unique id that identifies the request
     [[nodiscard]] IdType enqueueRequest(Request const& request);
 
@@ -1844,8 +1992,10 @@ public:
 
     /// @brief Await for ready responses
     ///
-    ///        This overload awaits for any ready responses. In particular, if several requests
-    ///        have been enqueued, this method will provide any ready responses without order guarantees.
+    ///        This overload awaits for any ready responses. In particular, if
+    /// several requests
+    ///        have been enqueued, this method will provide any ready responses
+    /// without order guarantees.
     /// @param timeout The maximum time to wait for new responses
     /// @return A vector of responses
     [[nodiscard]] std::vector<Response> awaitResponses(
@@ -1860,12 +2010,15 @@ public:
 
     /// @brief Await for multiple ready responses
     ///
-    ///        A multiple ID request behaves as if awaitResponses(IdType, timeout)
+    ///        A multiple ID request behaves as if awaitResponses(IdType,
+    /// timeout)
     ///        were invoked on all IDs. The returned vector contains
-    ///        a vector of responses per ID in the same order specified by the requestIds.
+    ///        a vector of responses per ID in the same order specified by the
+    /// requestIds.
     ///        The same behaviour as awaitResponses(IdType, timeout) applies:
     ///        * Responses may be empty.
-    ///        * If all responses have already been given for one of the requestIds,
+    ///        * If all responses have already been given for one of the
+    /// requestIds,
     ///          then this method will hang unless a timeout is specified.
     /// @param requestIds Ids requested
     /// @param timeout The maximum time to wait for new responses
@@ -1883,20 +2036,24 @@ public:
     void cancelRequest(IdType requestId);
 
     /// @brief   Signals the server to shutdown.
-    /// @details This call is blocking. Only returns when all requests have terminated or timeout has been reached
+    /// @details This call is blocking. Only returns when all requests have
+    /// terminated or timeout has been reached
     void shutdown();
 
-    /// @brief  Returns the per-iterations statistics computed since last call to getLatestIterationStats.
+    /// @brief  Returns the per-iterations statistics computed since last call
+    /// to getLatestIterationStats.
     ///         Contains at most iterStatsMaxIterations iterations.
     /// @return Iteration stats
     std::deque<IterationStats> getLatestIterationStats();
 
-    /// @brief  Returns the request stats of each iteration computed since last call to getLatestRequestStats.
+    /// @brief  Returns the request stats of each iteration computed since last
+    /// call to getLatestRequestStats.
     ///         Contains at most requestStatsMaxIterations iterations.
     /// @return Request stats grouped by iterations
     std::deque<RequestStatsPerIteration> getLatestRequestStats();
 
-    /// @brief  Returns the debug tensors of each iteration computed since last call to getLatestDebugTensors.
+    /// @brief  Returns the debug tensors of each iteration computed since last
+    /// call to getLatestDebugTensors.
     ///         Contains at most debugTensorsMaxIterations iterations.
     /// @return Request debug tensors grouped by iterations
     std::deque<DebugTensorsPerIteration> getLatestDebugTensors();
@@ -1904,7 +2061,8 @@ public:
     /// @brief  Indicates if the current process is allowed to enqueueRequests
     [[nodiscard]] bool canEnqueueRequests() const;
 
-    /// @brief  Indicates if the current process participates in this executor instance
+    /// @brief  Indicates if the current process participates in this executor
+    /// instance
     [[nodiscard]] bool isParticipant() const;
 
     std::optional<std::shared_ptr<KVCacheEventManager>> getKVCacheEventManager() const;
@@ -1918,16 +2076,17 @@ private:
 class JsonSerialization
 {
 public:
-    /// @brief Utility function to convert an iterationStats struct to a json serialized string
+    /// @brief Utility function to convert an iterationStats struct to a json
+    /// serialized string
     [[nodiscard]] static std::string toJsonStr(IterationStats const& iterationStats);
 
-    /// @brief Utility function to convert a requestStatsPerIteration struct to a json serialized string
+    /// @brief Utility function to convert a requestStatsPerIteration struct to
+    /// a json serialized string
     [[nodiscard]] static std::string toJsonStr(RequestStatsPerIteration const& requestStatsPerIter);
 
-    /// @brief Utility function to convert a requestStats struct to a json serialized string
+    /// @brief Utility function to convert a requestStats struct to a json
+    /// serialized string
     [[nodiscard]] static std::string toJsonStr(RequestStats const& requestStats);
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

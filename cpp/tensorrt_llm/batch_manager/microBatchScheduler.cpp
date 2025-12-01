@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,12 +18,9 @@
 
 #include "tensorrt_llm/batch_manager/microBatchScheduler.h"
 #include "tensorrt_llm/batch_manager/utils/inflightBatchingUtils.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using SizeType32 = MicroBatchScheduler::SizeType32;
@@ -54,8 +52,10 @@ void MicroBatchScheduler::fitDraftTokens(RequestVector& contextsToBeChunked,
     {
         if (llmReq->isLastContextChunk() && llmReq->hasDraftTokens())
         {
-            // How many more tokens could fit into this chunkUnit? (Round up to next multiple of chunkUnitSize)
-            // Each chunkUnit requires an additional kvcache block, so we don't want to use an extra one just for draft
+            // How many more tokens could fit into this chunkUnit? (Round up to next
+            // multiple of chunkUnitSize)
+            // Each chunkUnit requires an additional kvcache block, so we don't want
+            // to use an extra one just for draft
             // tokens.
             SizeType32 remainder = llmReq->getContextChunkSize() % chunkUnitSize;
             SizeType32 remainingSpaceForDraftTokens = remainder == 0 ? 0 : chunkUnitSize - remainder;
@@ -187,11 +187,14 @@ std::tuple<RequestVector, RequestVector> MicroBatchScheduler::operator()(Request
     SizeType32 numChunkedTokens{0};
     bool allContextRequestsFit{true};
 
-    // 1. Select the generation phase requests that meet the criteria of total token size.
-    //    If there is any remaining space, include the context requests and divide them into chunks.
+    // 1. Select the generation phase requests that meet the criteria of total
+    // token size.
+    //    If there is any remaining space, include the context requests and
+    // divide them into chunks.
     for (auto& llmReq : activeRequests)
     {
-        // if request cannot be scheduled yet or request should no longer be scheduled, skip
+        // if request cannot be scheduled yet or request should no longer be
+        // scheduled, skip
         if (!llmReq->hasReachedState(mNoScheduleUntilState) || llmReq->hasReachedState(mNoScheduleAfterState))
         {
             continue;
@@ -247,7 +250,8 @@ std::tuple<RequestVector, RequestVector> MicroBatchScheduler::operator()(Request
                 {
                     if (mMaxContextLength.value() < reqNumTokens)
                     {
-                        // The context exceeds the length limit, we need to try chunking later.
+                        // The context exceeds the length limit, we need to try chunking
+                        // later.
                         reqNumTokens = mMaxContextLength.value();
                         allContextRequestsFit = false;
                     }
@@ -272,7 +276,8 @@ std::tuple<RequestVector, RequestVector> MicroBatchScheduler::operator()(Request
             else if (scheduledBeamWidth != reqBeamWidth) // Skip request with different beam width
             {
                 TLLM_LOG_DEBUG(
-                    "generation request skipped: ID %u since its beam width (%d) is different from scheduled ones (%d)",
+                    "generation request skipped: ID %u since its beam "
+                    "width (%d) is different from scheduled ones (%d)",
                     llmReq->mRequestId, reqBeamWidth, scheduledBeamWidth);
                 continue;
             }
@@ -292,10 +297,14 @@ std::tuple<RequestVector, RequestVector> MicroBatchScheduler::operator()(Request
         allContextRequestsFit = false;
     }
 
-    // 2. If not all contexts fit into the batch, the chunk size should be adjusted accordingly.
+    // 2. If not all contexts fit into the batch, the chunk size should be
+    // adjusted accordingly.
     if (!allContextRequestsFit)
     {
-        TLLM_CHECK_WITH_INFO(mCtxChunkConfig, "If chunking is not enabled, context scheduling should be completed.");
+        TLLM_CHECK_WITH_INFO(mCtxChunkConfig,
+            "If chunking is not enabled, "
+            "context scheduling should be "
+            "completed.");
         auto const ctxTokensCapacity
             = maxNumTokensRuntime ? std::make_optional(maxNumTokensRuntime.value() - batchNumTokens) : std::nullopt;
         setCtxRequestsChunkSize(contextsToBeChunked, mCtxChunkConfig.value().chunkingPolicy, ctxTokensCapacity,
@@ -316,10 +325,13 @@ std::tuple<RequestVector, RequestVector> MicroBatchScheduler::operator()(Request
 
     TLLM_LOG_DEBUG(
         "batchSize (num ctx/enc requests + num gen requests): %u", contextRequests.size() + generationRequests.size());
-    TLLM_LOG_DEBUG("batchNumTokens (num ctx/enc input tokens + num gen input tokens) / maxNumTokens: %d / %d",
+    TLLM_LOG_DEBUG(
+        "batchNumTokens (num ctx/enc input tokens + num gen input "
+        "tokens) / maxNumTokens: %d / %d",
         batchNumTokens, maxNumTokensRuntime.value_or(0));
     TLLM_LOG_DEBUG(
-        "[Summary] Micro Batch scheduler schedules %d context/encoder requests, %d generation requests. "
+        "[Summary] Micro Batch scheduler schedules %d "
+        "context/encoder requests, %d generation requests. "
         "%d requests inflight with the model already",
         contextRequests.size(), generationRequests.size(), inflightReqIds.size());
 
@@ -327,6 +339,4 @@ std::tuple<RequestVector, RequestVector> MicroBatchScheduler::operator()(Request
     return {std::move(contextRequests), std::move(generationRequests)};
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

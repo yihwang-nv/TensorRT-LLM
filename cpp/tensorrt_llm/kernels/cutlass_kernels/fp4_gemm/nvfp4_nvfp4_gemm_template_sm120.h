@@ -39,10 +39,8 @@
 #pragma GCC diagnostic pop
 #endif // #ifndef _WIN32
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace cutlass_kernels
 {
 using namespace cute;
@@ -69,7 +67,9 @@ size_t genericFp4GemmKernelLauncherSm120(void* D, void const* A, void const* B, 
         int* occupancy)                                                                                                \
     {                                                                                                                  \
         throw std::runtime_error(                                                                                      \
-            "[TensorRT LLM Error][FP4 gemm Runner] TensorRT LLM is not compiled with support for this Architecture."); \
+            "[TensorRT LLM Error][FP4 gemm Runner] TensorRT "                                                          \
+            "LLM is not compiled with support for this "                                                               \
+            "Architecture.");                                                                                          \
     }
 
 #else
@@ -117,8 +117,7 @@ size_t genericFp4GemmKernelLauncherSm120(void* D, void const* A, void const* B, 
         struct Sm12xOnly : Base                                                                                        \
         {                                                                                                              \
             using typename Base::Params;                                                                               \
-            CUTLASS_DEVICE                                                                                             \
-            void operator()(Params const& params, char* smem_buf)                                                      \
+            CUTLASS_DEVICE void operator()(Params const& params, char* smem_buf)                                       \
             {                                                                                                          \
                 if constexpr (tensorrt_llm::kernels::arch::is_major_v<12>)                                             \
                 {                                                                                                      \
@@ -258,6 +257,5 @@ size_t genericFp4GemmKernelLauncherSm120(void* D, void const* A, void const* B, 
 #endif
 
 } // namespace cutlass_kernels
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,8 +26,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
 // Useful when you want to inject some debug code controllable with env var.
 std::optional<int32_t> getIntEnv(char const* name);
 
@@ -41,7 +40,8 @@ bool forceXQAKernels();
 
 // Whether XQA JIT is enabled.
 //
-// Returns the value of TRTLLM_ENABLE_XQA_JIT env var. If such env var doesn't exist, std::nullopt is returned.
+// Returns the value of TRTLLM_ENABLE_XQA_JIT env var. If such env var doesn't
+// exist, std::nullopt is returned.
 std::optional<bool> getEnvEnableXQAJIT();
 
 // 0 means to use heuristics.
@@ -73,7 +73,7 @@ inline void launchWithPdlWhenEnabled(char const* name, KernelFn kernelFn, dim3 g
 
     cudaLaunchAttribute attrs[1];
     attrs[0].id = cudaLaunchAttributeProgrammaticStreamSerialization;
-    attrs[0].val.programmaticStreamSerializationAllowed = tensorrt_llm::common::getEnvEnablePDL();
+    attrs[0].val.programmaticStreamSerializationAllowed = getEnvEnablePDL();
     kernelConfig.attrs = attrs;
     kernelConfig.numAttrs = 1;
 
@@ -147,15 +147,15 @@ bool getEnvDisableChunkedAttentionInGenPhase();
 bool getEnvMoeA2AOneBlockPerToken();
 
 // TODO: For DEV purpose temporarily.
-// Block size (threads per block) for MoE A2A Dispatch kernels (default 256 if unset or invalid)
+// Block size (threads per block) for MoE A2A Dispatch kernels (default 256 if
+// unset or invalid)
 int getEnvMoeA2ADispatchBlockSize();
-// Block size (threads per block) for MoE A2A Combine kernels (default 256 if unset or invalid)
+// Block size (threads per block) for MoE A2A Combine kernels (default 256 if
+// unset or invalid)
 int getEnvMoeA2ACombineBlockSize();
 
 bool getEnvKVCacheTransferAllBlocksForWindow();
 
 bool getEnvEplbForceGdrcopy();
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

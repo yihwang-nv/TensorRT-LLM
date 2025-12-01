@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +30,8 @@
 #include "tensorrt_llm/runtime/moeLoadBalancer/hostAccessibleDeviceAllocator.h"
 #include "tensorrt_llm/runtime/moeLoadBalancer/moeLoadBalancer.h"
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -172,7 +174,8 @@ void migrateToHostAccessible(at::Tensor& tensor)
     TORCH_CHECK(tensor.device().is_cuda(), "only support CUDA Tensor");
 
     TLLM_CHECK_WITH_INFO(tensorrt_llm::runtime::HostAccessibleDeviceAllocator::getInstance().isSupported(),
-        "host accessible allocator is not supported on system, please install GDRCopy.");
+        "host accessible allocator is not supported on system, please install "
+        "GDRCopy.");
 
     // 1) compute total bytes
     size_t byte_size = tensor.numel() * tensor.element_size();
@@ -195,18 +198,21 @@ void migrateToHostAccessible(at::Tensor& tensor)
         /*resizable=*/false);
     at::Storage new_storage(storage_impl);
 
-    // Finally replace tensor's storage，offset = 0，shape and stride kept unchanged
+    // Finally replace tensor's storage，offset = 0，shape and stride kept
+    // unchanged
     tensor.set_(new_storage,
         /*storage_offset=*/0, tensor.sizes().vec(), tensor.strides().vec());
 }
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("moe_load_balance_wait_gpu_stage(int single_layer_load_balancer_ptr) -> Tensor");
+    m.def(
+        "moe_load_balance_wait_gpu_stage(int single_layer_load_balancer_ptr) "
+        "-> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CompositeExplicitAutograd, m)
@@ -216,7 +222,9 @@ TORCH_LIBRARY_IMPL(trtllm, CompositeExplicitAutograd, m)
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
-    m.def("moe_load_balance_set_cpu_stage(int single_layer_load_balancer_ptr) -> ()");
+    m.def(
+        "moe_load_balance_set_cpu_stage(int single_layer_load_balancer_ptr) -> "
+        "()");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CompositeExplicitAutograd, m)
@@ -227,8 +235,10 @@ TORCH_LIBRARY_IMPL(trtllm, CompositeExplicitAutograd, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_load_balance_statistic(Tensor gathered_raw_expert_ids, Tensor enabled, int "
-        "single_layer_load_balancer_ptr, int is_first_stage, int is_last_stage) -> ()");
+        "moe_load_balance_statistic(Tensor gathered_raw_expert_ids, Tensor "
+        "enabled, int "
+        "single_layer_load_balancer_ptr, int is_first_stage, int "
+        "is_last_stage) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -239,9 +249,11 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_hierarchical_statistic_local_device(Tensor local_raw_expert_ids, Tensor local_expert_token_count, Tensor "
+        "moe_hierarchical_statistic_local_device(Tensor local_raw_expert_ids, "
+        "Tensor local_expert_token_count, Tensor "
         "enabled, int "
-        "single_layer_load_balancer_ptr, int is_first_stage, int is_last_stage) -> ()");
+        "single_layer_load_balancer_ptr, int is_first_stage, int "
+        "is_last_stage) -> ()");
 }
 
 TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
@@ -252,7 +264,8 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_hierarchical_statistic_update(Tensor global_expert_token_count, Tensor enabled, int "
+        "moe_hierarchical_statistic_update(Tensor global_expert_token_count, "
+        "Tensor enabled, int "
         "single_layer_load_balancer_ptr) -> ()");
 }
 
@@ -264,7 +277,8 @@ TORCH_LIBRARY_IMPL(trtllm, CUDA, m)
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "moe_load_balance_routing(Tensor token_selected_experts, bool offset_by_ep_rank, "
+        "moe_load_balance_routing(Tensor token_selected_experts, bool "
+        "offset_by_ep_rank, "
         "int single_layer_load_balancer_ptr) -> Tensor");
 }
 

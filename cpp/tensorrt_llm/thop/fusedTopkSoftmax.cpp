@@ -25,7 +25,8 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -33,7 +34,8 @@ namespace torch_ext
 std::tuple<torch::Tensor, torch::Tensor> fused_topk_softmax(torch::Tensor const& router_logits, int64_t const top_k,
     int64_t const num_experts_total, int64_t const start_expert, int64_t const end_expert)
 {
-    // TODO: enable once the kernel has been added to the internal CUTLASS library.
+    // TODO: enable once the kernel has been added to the internal CUTLASS
+    // library.
     TLLM_CHECK_WITH_INFO(false, "Fused topk/softmax op has not been enabled yet.");
 
     CHECK_INPUT(router_logits, torch::kBFloat16);
@@ -52,13 +54,14 @@ std::tuple<torch::Tensor, torch::Tensor> fused_topk_softmax(torch::Tensor const&
     // auto stream = at::cuda::getCurrentCUDAStream(router_logits.get_device());
     // tensorrt_llm::kernels::topkGatingSoftmaxKernelLauncher(
     //     static_cast<__nv_bfloat16 const*>(router_logits.const_data_ptr()),
-    //     static_cast<float*>(token_final_scales.data_ptr()), static_cast<int*>(token_selected_experts.data_ptr()),
+    //     static_cast<float*>(token_final_scales.data_ptr()),
+    // static_cast<int*>(token_selected_experts.data_ptr()),
     //     num_rows, top_k, num_experts_total, start_expert, end_expert, stream);
     return {token_final_scales, token_selected_experts};
 }
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

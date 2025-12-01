@@ -16,7 +16,6 @@
 
 #include "tensorrt_llm/runtime/loraManager.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/memoryUtils.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -29,9 +28,7 @@
 
 #include <NvInferRuntime.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 void LoraManager::create(ModelConfig const& modelConfig)
@@ -105,7 +102,8 @@ void LoraManager::fillInputTensors(TensorPtr weightsPtrs, TensorPtr adapterSizes
                 >= weightsPointersPtrOffset + lora::kLORA_NUM_WEIGHTS_POINTERS * beamWidth,
             "Coding error attempting to write lora ptrs outside range of buffer");
         TLLM_CHECK_WITH_INFO(static_cast<SizeType32>(adapterSizes->getSize()) >= adapterSizesPtrOffset + beamWidth,
-            "Coding error attempting to write lora low ranks outside range of buffer");
+            "Coding error attempting to write lora low ranks "
+            "outside range of buffer");
 
         auto const writeWeightsPtr = weightsPointersPtr + weightsPointersPtrOffset;
         auto const writeAdapterSizesPtr = adapterSizesPtr + adapterSizesPtrOffset;
@@ -159,6 +157,4 @@ void LoraManager::insertInputTensors(TensorMap& inputTensors, TensorPtr weightsP
     }
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

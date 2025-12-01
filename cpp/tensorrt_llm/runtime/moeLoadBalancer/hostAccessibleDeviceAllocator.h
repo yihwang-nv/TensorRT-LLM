@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include <map>
 #include <mutex>
 #include <shared_mutex>
@@ -25,9 +24,7 @@
 #include "gdrwrap.h"
 #include "topologyDetector.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class MoeLoadBalancer;
@@ -40,14 +37,16 @@ class HostAccessibleDeviceAllocatorTest;
 class HostAccessibleDeviceAllocator
 {
 public:
-    // Delete the copy constructor and copy assignment operator to prevent cloning.
+    // Delete the copy constructor and copy assignment operator to prevent
+    // cloning.
     HostAccessibleDeviceAllocator(HostAccessibleDeviceAllocator const&) = delete;
     void operator=(HostAccessibleDeviceAllocator const&) = delete;
 
     /**
      * @brief Get the single instance of the HostAccessibleDeviceAllocator.
      *
-     * @return HostAccessibleDeviceAllocator& Reference to the singleton instance.
+     * @return HostAccessibleDeviceAllocator& Reference to the singleton
+     *instance.
      */
     static HostAccessibleDeviceAllocator& getInstance();
 
@@ -61,7 +60,8 @@ public:
      * @brief Allocate host accessible memory on the device.
      *
      * @param memorySize The size of the memory to allocate.
-     * @param allowManagedFallback Whether allow fall back to managed memory if not supported.
+     * @param allowManagedFallback Whether allow fall back to managed memory if
+     *not supported.
      * @return void* Pointer to the allocated memory.
      */
     void* allocate(size_t memorySize);
@@ -76,8 +76,10 @@ public:
     /**
      * @brief Get the host-accessible pointer for a given device pointer.
      *
-     * @param devPtr The device pointer to look up. It can be a pointer inside a recorded allocation.
-     * @return void* The corresponding host-accessible pointer, or nullptr if not found.
+     * @param devPtr The device pointer to look up. It can be a pointer inside a
+     *recorded allocation.
+     * @return void* The corresponding host-accessible pointer, or nullptr if
+     *not found.
      */
     void* getHostPtr(void* devPtr);
 
@@ -137,7 +139,8 @@ private:
     void DecRefCount();
 
     /**
-     * @brief Record a device memory allocation and its corresponding host-accessible pointer.
+     * @brief Record a device memory allocation and its corresponding
+     *host-accessible pointer.
      *
      * @param devPtr The device pointer of the allocated memory.
      * @param memorySize The size of the allocated memory.
@@ -160,7 +163,8 @@ private:
      */
     AllocationInfo getAllocationInfoFromDevPtr(void const* devPtr);
 
-    // if GPU memory has NUMA id, then CPU can direct access that. We should use this.
+    // if GPU memory has NUMA id, then CPU can direct access that. We should use
+    // this.
     int mGpuMemNumaId = -1;
     // if Not, we should use GDRCopy
     gdr_t mGdrHandle = nullptr;
@@ -178,6 +182,4 @@ private:
     static bool mAllowManagedFallback;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

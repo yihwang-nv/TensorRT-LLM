@@ -32,9 +32,9 @@
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/reduceKernelUtils.cuh"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::mnnvl
+namespace mnnvl
 {
 
 using tensorrt_llm::common::isNegZero;
@@ -162,7 +162,8 @@ inline __device__ T blockReduceSumPartial(T val)
     if (warpId == 0)
     {
         val = (laneId < warpNum) ? smem[laneId] : (T) 0.f;
-        // Need to consider the corner case where we only have one warp and it is partial
+        // Need to consider the corner case where we only have one warp and it is
+        // partial
         val = (warpNum == 1) ? warpReduceSumPartial(val) : tensorrt_llm::common::warpReduceSum(val);
 
         if constexpr (SYNC)
@@ -218,7 +219,8 @@ inline __device__ T blockReduceSum(T val)
     }
 }
 
-// We have to define this again since the one in mathUtils.h is shadowed by the one from cudaUtils.h, which is a
+// We have to define this again since the one in mathUtils.h is shadowed by the
+// one from cudaUtils.h, which is a
 // host-only function!
 template <typename T>
 inline __device__ __host__ T divUp(T m, T n)
@@ -226,18 +228,20 @@ inline __device__ __host__ T divUp(T m, T n)
     return (m + n - 1) / n;
 }
 
-// A helper function to tune the grid configuration for fused oneshot and rmsnorm kernels
+// A helper function to tune the grid configuration for fused oneshot and
+// rmsnorm kernels
 // Return (block_size, cluster_size, loads_per_thread)
 std::tuple<int, int, int> adjustGridConfig(int numTokens, int dim, int eltsPerThread)
 {
-    // Start with preferred block_size and cluster_size
+// Start with preferred block_size and cluster_size
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
     int clusterSize = 8;
 #else
     int clusterSize = 1;
 #endif
     int blockSize = 128;
-    // ========================== Adjust the grid configuration ==========================
+    // ========================== Adjust the grid configuration
+    // ==========================
     int threadsNeeded = divUp(dim, eltsPerThread);
     int loadsPerThread = 1;
 
@@ -331,7 +335,8 @@ __global__ void __launch_bounds__(1024) oneshotAllreduceFusionKernel(T* outputPt
         return;
     }
 
-    // ==================== Broadcast tokens to each rank =============================
+    // ==================== Broadcast tokens to each rank
+    // =============================
     PackedVec<PackedType, T> val;
     val.packed = loadPacked<PackedType>(&shardPtr[threadOffset]);
 #pragma unroll
@@ -345,7 +350,8 @@ __global__ void __launch_bounds__(1024) oneshotAllreduceFusionKernel(T* outputPt
         = val.packed;
 
     flag.ctaArrive();
-    // ======================= Lamport Sync and clear the output buffer from previous iteration
+    // ======================= Lamport Sync and clear the output buffer from
+    // previous iteration
     // =============================
     flag.clearDirtyLamportBuf(inputPtrs[rank], -1);
 
@@ -402,12 +408,14 @@ __global__ void __launch_bounds__(1024) oneshotAllreduceFusionKernel(T* outputPt
 #endif
     if constexpr (RMSNormFusion)
     {
-        // =============================== Residual ===============================
+        // =============================== Residual
+        // ===============================
         PackedVec<PackedType, T> residualIn;
         residualIn.packed = *reinterpret_cast<PackedType const*>(&residualInPtr[threadOffset]);
         packedAccum += residualIn;
         *reinterpret_cast<PackedType*>(&prenormedPtr[threadOffset]) = packedAccum.packed;
-        // =============================== Rmsnorm ================================
+        // =============================== Rmsnorm
+        // ================================
         PackedVec<PackedType, T> gamma;
         gamma.packed = *reinterpret_cast<PackedType const*>(&gammaPtr[packedIdx * kELTS_PER_THREAD]);
 
@@ -420,7 +428,8 @@ __global__ void __launch_bounds__(1024) oneshotAllreduceFusionKernel(T* outputPt
         }
         float blockSum = blockReduceSum<float, true>(threadSum);
 
-        __shared__ float sharedVal[8]; // Temporary variable to share the sum within block
+        __shared__ float sharedVal[8]; // Temporary variable to share the sum
+                                       // within block
         float fullSum = blockSum;
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
         namespace cg = cooperative_groups;
@@ -475,7 +484,8 @@ void oneshotAllreduceFusionOp(AllReduceFusionParams const& params)
 #endif
 
     TLLM_LOG_DEBUG(
-        "[MNNVL AllReduceOneShot] Dispatch: grid size: (%d, %d, 1), block_size: %d, cluster_size: %d, "
+        "[MNNVL AllReduceOneShot] Dispatch: grid size: (%d, %d, 1), "
+        "block_size: %d, cluster_size: %d, "
         "loads_per_thread: %d, "
         "threads_needed: %d",
         numTokens, clusterSize, blockSize, clusterSize, loadsPerThread, divUp(tokenDim, eltsPerThread));
@@ -527,7 +537,7 @@ void oneshotAllreduceFusionOp(AllReduceFusionParams const& params)
 
         switch (params.nRanks)
         {
-            // FIXME: Do we need other world sizes?
+        // FIXME: Do we need other world sizes?
         case 2: DISPATCH_ALLREDUCE_KERNEL(2, T); return true;
         case 4: DISPATCH_ALLREDUCE_KERNEL(4, T); return true;
         case 8: DISPATCH_ALLREDUCE_KERNEL(8, T); return true;
@@ -611,7 +621,8 @@ __global__ __launch_bounds__(128) void twoshotAllreduceKernel(T* outputPtr, T co
 
     flag.clearDirtyLamportBuf(inputPtrs[rank], MNNVLTwoShotStage::SCATTER);
 
-    // =============================== Reduction and Broadcast ===============================
+    // =============================== Reduction and Broadcast
+    // ===============================
 
     if ((token % WorldSize) == rank)
     {
@@ -629,7 +640,7 @@ __global__ __launch_bounds__(128) void twoshotAllreduceKernel(T* outputPtr, T co
                 valuesLamport[r].packed = loadPackedVolatile<PackedType>(
                     &scatterBufLocal[localToken * tokenDim * WorldSize + r * tokenDim + packedIdx * kELTS_PER_THREAD]);
 
-                // Check validity across all elements
+// Check validity across all elements
 #pragma unroll
                 for (int i = 0; i < kLAMPORT_ELTS_PER_PACKED; i++)
                 {
@@ -689,15 +700,19 @@ __global__ __launch_bounds__(128) void twoshotAllreduceKernel(T* outputPtr, T co
                                 * kELT_SIZE),                        // Clear Size for scatter stage
             static_cast<uint32_t>(numTokens * tokenDim * kELT_SIZE), // Clear Size for broadcast stage
             0, 0});
-        // If not wait for results, we will rely on the following kernel to update the buffer
+        // If not wait for results, we will rely on the following kernel to update
+        // the buffer
     }
 }
 
 // This kernel works performant when loads_per_thread is 1.
-// For this mode, we are able to support up to 1024 (threads) x 8 (elements) = 8192 hidden dimension.
+// For this mode, we are able to support up to 1024 (threads) x 8 (elements) =
+// 8192 hidden dimension.
 // There are two options for further scaling up:
-//      1. Use CGA if supported. It expands the hidden dimension to 8k x 8 = 64k.
-//      2. Set loads_per_thread >1. Which can be used if CGA is not supported. Note that this will be limited by the
+//      1. Use CGA if supported. It expands the hidden dimension to 8k x 8 =
+// 64k.
+//      2. Set loads_per_thread >1. Which can be used if CGA is not supported.
+// Note that this will be limited by the
 //      shared memory size and register count.
 template <typename T_IN, typename T_OUT, int LoadsPerThread = 1>
 __global__ __launch_bounds__(1024) void rmsNormLamport(T_IN* outputPreNorm, T_OUT* outputNorm, T_IN* bufferInput,
@@ -741,7 +756,8 @@ __global__ __launch_bounds__(1024) void rmsNormLamport(T_IN* outputPreNorm, T_OU
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
     cudaTriggerProgrammaticLaunchCompletion();
 #endif
-    // The offset that current thread should load from. Note that the hidden dimension is split by CGA size and each
+    // The offset that current thread should load from. Note that the hidden
+    // dimension is split by CGA size and each
     // block loads a contiguous chunk;
     // The size of chunk that each block processes
     uint32_t const blockChunkSize = divUp(dim, clusterSize * kELTS_PER_LOAD) * kELTS_PER_LOAD;
@@ -794,7 +810,8 @@ __global__ __launch_bounds__(1024) void rmsNormLamport(T_IN* outputPreNorm, T_OU
                 float4 const* src4 = reinterpret_cast<float4 const*>(&input[offsets[i]]);
 
                 float4 value = loadPackedVolatile<float4>(src4);
-                // Assume that the 16B were written atomically, so we only need to check one value
+                // Assume that the 16B were written atomically, so we only need to check
+                // one value
                 valid &= !isNegZero(value.x);
                 *dst4 = value;
             }
@@ -832,7 +849,7 @@ __global__ __launch_bounds__(1024) void rmsNormLamport(T_IN* outputPreNorm, T_OU
 
     float fullSum = blockSum;
     __shared__ float sharedVal[8];
-    // Use CGA Reduction if supported
+// Use CGA Reduction if supported
 #if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900))
     int const numBlocks = cluster.num_blocks();
     if (numBlocks > 1)
@@ -908,7 +925,9 @@ void twoshotAllreduceFusionOp(AllReduceFusionParams const& params)
     };
 
     TLLM_LOG_DEBUG(
-        "[MNNVL AllReduceTwoShot] Dispatch: grid size: (%d, %d, 1), block_size: 128", numTokens, arNumBlocksPerToken);
+        "[MNNVL AllReduceTwoShot] Dispatch: grid size: (%d, %d, 1), "
+        "block_size: 128",
+        numTokens, arNumBlocksPerToken);
 
 #define LAUNCH_ALLREDUCE_KERNEL(WORLD_SIZE, T)                                                                         \
     TLLM_CUDA_CHECK(cudaLaunchKernelEx(&arConfig, &twoshotAllreduceKernel<WORLD_SIZE, T>, output, input, ucPtrs,       \
@@ -976,7 +995,8 @@ void twoshotAllreduceFusionOp(AllReduceFusionParams const& params)
         size_t const smemSize = 3 * rnBlockSize * iters * getDTypeSize(params.dType);
 
         TLLM_LOG_DEBUG(
-            "[MNNVL AllReduceTwoShotRMSNorm] Dispatch: grid size: (%d, %d, 1), block_size: %d, cluster_size: %d, "
+            "[MNNVL AllReduceTwoShotRMSNorm] Dispatch: grid size: (%d, "
+            "%d, 1), block_size: %d, cluster_size: %d, "
             "loads_per_thread: %d, "
             "threads_needed: %d",
             numTokens, rnClusterSize, rnBlockSize, rnClusterSize, rnLoadsPerThread, divUp(tokenDim, numEltsPerThread));
@@ -1026,12 +1046,14 @@ void twoshotAllreduceFusionOp(AllReduceFusionParams const& params)
             || (params.dType == nvinfer1::DataType::kHALF && dispatchRN((__nv_half*) nullptr));
         if (!launched)
         {
-            TLLM_CHECK_WITH_INFO(false, "[MNNVL AllReduceTwoShot] Failed to dispatch rmsnorm lamport kernel.");
+            TLLM_CHECK_WITH_INFO(false,
+                "[MNNVL AllReduceTwoShot] Failed to dispatch "
+                "rmsnorm lamport kernel.");
         }
 #undef RUN_RMSNORM_KERNEL
     }
 }
 
-} // namespace kernels::mnnvl
+} // namespace mnnvl
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

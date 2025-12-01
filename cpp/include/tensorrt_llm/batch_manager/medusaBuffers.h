@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #pragma once
 
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
@@ -26,9 +26,7 @@
 #include "tensorrt_llm/runtime/tllmRuntime.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 class MedusaBuffers
@@ -49,28 +47,35 @@ public:
         TensorMap& inputBuffers, TensorMap& outputBuffers, runtime::WorldConfig const& worldConfig) const;
 
 public:
-    TensorPtr medusaLogitsDevice; // [maxAcceptedDraftTokens, maxBatchSize, maxDraftTokens + 1, vocabSizePadded], on gpu
+    TensorPtr medusaLogitsDevice;            // [maxAcceptedDraftTokens, maxBatchSize,
+                                             // maxDraftTokens + 1, vocabSizePadded], on
+                                             // gpu
 
-    TensorPtr attentionPackedMaskDevice;     // [maxBatchSize, maxDraftTokens + 1, numPackedMasks], on gpu
-    TensorPtr attentionPackedMaskHost;       // [maxBatchSize, maxDraftTokens + 1, numPackedMasks], on pinned
+    TensorPtr attentionPackedMaskDevice;     // [maxBatchSize, maxDraftTokens + 1,
+                                             // numPackedMasks], on gpu
+    TensorPtr attentionPackedMaskHost;       // [maxBatchSize, maxDraftTokens + 1,
+                                             // numPackedMasks], on pinned
 
     TensorPtr medusaGenerationLengthsDevice; // [maxBatchSize], on gpu
     TensorPtr medusaGenerationLengthsHost;   // [maxBatchSize], on pinned
 
-    TensorPtr medusaPositionOffsetsDevice;   // [maxBatchSize, maxDraftTokens + 1], on gpu
-    TensorPtr medusaPositionOffsetsHost;     // [maxBatchSize, maxDraftTokens + 1], on pinned
+    TensorPtr medusaPositionOffsetsDevice;   // [maxBatchSize, maxDraftTokens +
+                                             // 1], on gpu
+    TensorPtr medusaPositionOffsetsHost;     // [maxBatchSize, maxDraftTokens + 1],
+                                             // on pinned
 
     TensorPtr medusaTreeIdsDevice;           // [maxBatchSize, maxDraftTokens + 1], on gpu
-    TensorPtr medusaTreeIdsHost;             // [maxBatchSize, maxDraftTokens + 1], on pinned
+    TensorPtr medusaTreeIdsHost;             // [maxBatchSize, maxDraftTokens + 1], on
+                                             // pinned
 
-    TensorPtr medusaPathsDevice;             // [maxBatchSize, maxDraftTokens + 1, maxAcceptedDraftTokens + 1], on gpu
-    TensorPtr medusaPathsHost;       // [maxBatchSize, maxDraftTokens + 1, maxAcceptedDraftTokens + 1], on pinned
+    TensorPtr medusaPathsDevice;             // [maxBatchSize, maxDraftTokens + 1,
+                                             // maxAcceptedDraftTokens + 1], on gpu
+    TensorPtr medusaPathsHost;               // [maxBatchSize, maxDraftTokens + 1,
+                                             // maxAcceptedDraftTokens + 1], on pinned
 
-    TensorPtr medusaUseSpecDecoding; // [1], on cpu
+    TensorPtr medusaUseSpecDecoding;         // [1], on cpu
 
-    std::vector<SizeType32> mTopKs;  // [maxAcceptedDraftTokens]
+    std::vector<SizeType32> mTopKs;          // [maxAcceptedDraftTokens]
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

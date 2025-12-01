@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/layers/defaultDecodingParams.h"
@@ -27,9 +26,7 @@
 #include <optional>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class SamplingConfig
@@ -147,7 +144,8 @@ public:
         topP = fuseValues<FloatType>(
             configs, [&configs](size_t ci) { return configs[ci].topP; }, layers::DefaultDecodingParams::getTopP());
 
-        // Generate a random seed for each samplingConfig with randomSeed == std::nullopt
+        // Generate a random seed for each samplingConfig with randomSeed ==
+        // std::nullopt
         randomSeed = std::vector<uint64_t>(configs.size());
         for (size_t ci = 0; ci < configs.size(); ++ci)
         {
@@ -249,7 +247,8 @@ public:
         if (!valid)
         {
             TLLM_LOG_WARNING(
-                "Requested beam width %d is incorrect. Must be > 0. To de-activate beam searching set beamWidth to 1.",
+                "Requested beam width %d is incorrect. Must be > 0. "
+                "To de-activate beam searching set beamWidth to 1.",
                 beamWidth);
         }
 
@@ -265,7 +264,8 @@ public:
             if (!valid)
             {
                 TLLM_LOG_WARNING(
-                    "Requested numReturnSequences %d is incorrect. In beam search, numReturnSequences should not "
+                    "Requested numReturnSequences %d is incorrect. In "
+                    "beam search, numReturnSequences should not "
                     "exceed the beam width %d.",
                     numReturnSequences.value(), beamWidth);
             }
@@ -342,7 +342,8 @@ public:
     SizeType32 beamWidth;
     std::optional<SizeType32> numReturnSequences;
 
-    // penalties, [1] for one request, [batchSize] for one batch, the same for other parameters below
+    // penalties, [1] for one request, [batchSize] for one batch, the same for
+    // other parameters below
     OptVec<FloatType> temperature;         // [1] or [batchSize]
     OptVec<FloatType> originalTemperature; // [1] or [batchSize]
     OptVec<SizeType32> minLength;          // [1] or [batchSize]
@@ -369,13 +370,16 @@ public:
     OptVec<FloatType> beamSearchDiversityRate;      // [1] or [batchSize]
     OptVec<FloatType> lengthPenalty;                // [1] or [batchSize]
     OptVec<SizeType32> earlyStopping;               // [1] or [batchSize]
-    OptVec<std::vector<SizeType32>> beamWidthArray; // [maxBeamWidthArrayLength] or [batchSize, maxBeamWidthArrayLength]
+    OptVec<std::vector<SizeType32>> beamWidthArray; // [maxBeamWidthArrayLength] or [batchSize,
+                                                    // maxBeamWidthArrayLength]
 
-    // speculative decoding, only the first value is used (in gptDecoderBatched.cpp)
+    // speculative decoding, only the first value is used (in
+    // gptDecoderBatched.cpp)
     OptVec<FloatType> draftAcceptanceThreshold; // [1] or [batchSize]
 
     // medusa params
-    OptVec<std::vector<SizeType32>> topKMedusaHeads; // [batchSize, maxMedusaHeads]
+    OptVec<std::vector<SizeType32>> topKMedusaHeads; // [batchSize,
+                                                     // maxMedusaHeads]
 
     std::optional<bool> normalizeLogProbs;
 
@@ -422,6 +426,4 @@ public:
     }
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

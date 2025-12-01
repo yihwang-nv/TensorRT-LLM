@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +28,6 @@
 #include "tensorrt_llm/batch_manager/microBatchScheduler.h"
 #include "tensorrt_llm/batch_manager/pauseRequests.h"
 #include "tensorrt_llm/batch_manager/peftCacheManager.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/nanobind/common/customCasters.h"
 #include "tensorrt_llm/runtime/decoderState.h"
 #include "tensorrt_llm/runtime/torch.h"

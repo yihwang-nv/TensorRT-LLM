@@ -23,9 +23,9 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::group_rms_norm
+namespace group_rms_norm
 {
 
 template </*number of inputs*/ int n>
@@ -48,13 +48,15 @@ struct GroupRMSParams
     cudaStream_t stream;
 };
 
-// Logistic regression model for predicting when the large batch kernel is faster
+// Logistic regression model for predicting when the large batch kernel is
+// faster
 struct Model
 {
     float batch_size;
     // Number of warps to launch for the base kernel
     float base_warps;
-    // Ratio of the concurrent_block_per_sm for the large batch kernel vs the base kernel
+    // Ratio of the concurrent_block_per_sm for the large batch kernel vs the base
+    // kernel
     float scheduling_efficiency_ratio;
     // Intercept of the logistic regression model
     float intercept;
@@ -76,6 +78,6 @@ void GroupRMSNormKernelLargeBatchLauncher(GroupRMSParams<n>& params);
 template <int n>
 void GroupRMSNormKernelLauncherWithHeuristic(GroupRMSParams<n>& params);
 
-} // namespace kernels::group_rms_norm
+} // namespace group_rms_norm
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

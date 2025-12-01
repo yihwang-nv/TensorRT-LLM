@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (out) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (out) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +25,8 @@
 
 using torch::Tensor;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -123,12 +125,13 @@ Tensor cuda_scaled_mm(Tensor const& mat_a, Tensor const& mat_b, Tensor const& sc
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "cuda_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor scale_b, Tensor? bias,"
+        "cuda_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scale_a, Tensor "
+        "scale_b, Tensor? bias,"
         " ScalarType? out_dtype, bool to_userbuffers=False) -> (Tensor out)");
 }
 

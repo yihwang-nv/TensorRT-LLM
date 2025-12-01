@@ -16,7 +16,6 @@
  */
 #include "gptAttentionCommon.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/decoderXQARunner.h"
 #include "tensorrt_llm/kernels/gptKernels.h"
 #include <NvInferRuntimePlugin.h>
@@ -174,7 +173,8 @@ GPTAttentionPluginCommon::GPTAttentionPluginCommon(void const* data, size_t leng
 
     uint32_t decoderXQARunnerResourceSerializedSize;
     read(d, decoderXQARunnerResourceSerializedSize);
-    mResource->merge(DecoderXQARunnerResource(d, decoderXQARunnerResourceSerializedSize), /*initialize=*/true);
+    mResource->merge(DecoderXQARunnerResource(d, decoderXQARunnerResourceSerializedSize),
+        /*initialize=*/true);
     d += decoderXQARunnerResourceSerializedSize;
 
     mCpGroup.clear();
@@ -285,7 +285,8 @@ void GPTAttentionPluginCommon::serializeCommon(void* buffer) const noexcept
     write(d, mCpSize);
     write(d, mCpRank);
 
-    // An uint32_t that specifies the size of the serialized buffer, followed by the actual content.
+    // An uint32_t that specifies the size of the serialized buffer, followed by
+    // the actual content.
     uint32_t decoderXQARunnerResourceSerializedSize = mResource->getSerializationSize();
     write(d, decoderXQARunnerResourceSerializedSize);
     mResource->serialize(d, decoderXQARunnerResourceSerializedSize);

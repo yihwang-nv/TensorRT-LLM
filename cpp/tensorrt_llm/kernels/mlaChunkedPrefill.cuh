@@ -17,16 +17,17 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/kvCacheUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 // merged_attn [q_total_len, H=128, D=128] (T)
-// merged_softmax_sum [q_total_len, H, 2] (float), the first part is the max value for each
+// merged_softmax_sum [q_total_len, H, 2] (float), the first part is the max
+// value for each
 // row of P = QK^T, the second part is the softmax sum
-// if merge_op[b] == 0, we just skip this batch, if merge_op[b] == 1, we merge the pre-attn and curr-attn, if
+// if merge_op[b] == 0, we just skip this batch, if merge_op[b] == 1, we merge
+// the pre-attn and curr-attn, if
 // merge_op[b]
-// == 2, we only copy curr_attn and curr_softmax_sum to merged_attn and merged_softmax_sum
+// == 2, we only copy curr_attn and curr_softmax_sum to merged_attn and
+// merged_softmax_sum
 template <typename T>
 void invokeMergeAttnWithSoftmax(T* merged_attn, float* merged_softmax_stats, T const* pre_attn,
     float const* pre_softmax_stats, T const* curr_attn, float const* curr_softmax_stats, int const batch_size,
@@ -38,6 +39,5 @@ template <typename T, typename TCache>
 void invokeMLALoadChunkedKV(T* output_kv_ptr, T* output_k_pe_ptr, KVBlockArray const& kv_cache, int const num_contexts,
     int64_t const* cu_ctx_chunked_len, int64_t const* chunked_ld_global_offset, int lora_size, int rope_size,
     int max_seq_len, float const* kv_scale_quant_orig_ptr, cudaStream_t stream);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -30,10 +30,7 @@
 #include "tensorrt_llm/cutlass_extensions/include/cutlass_extensions/gemm/kernel/default_splitk_gemm_grouped.h"
 #include "tensorrt_llm/cutlass_extensions/include/cutlass_extensions/gemm/kernel/splitk_gemm_grouped.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 int64_t inline getGemmCoordSize(int64_t problemCount)
 {
@@ -89,8 +86,10 @@ void splitkGroupedGemm_(std::vector<cutlass::gemm::GemmCoord> problemSizes, std:
         cutlass::gemm::GemmShape<M1, N1, K1>, cutlass::gemm::GemmShape<M2, N2, K2>, cutlass::gemm::GemmShape<16, 8, 16>,
         cutlass::epilogue::thread::LinearCombination<ElementOutput, kAlignmentC, ElementAccumulator,
             ElementAccumulator>,
-        // NOTE: Threadblock swizzling is currently not supported by CUTLASS's grouped kernels.
-        // This parameter is passed in at present to match the APIs of other kernels. The parameter
+        // NOTE: Threadblock swizzling is currently not supported by CUTLASS's
+        // grouped kernels.
+        // This parameter is passed in at present to match the APIs of other
+        // kernels. The parameter
         // is unused within the kernel.
         cutlass::gemm::threadblock::GemmSplitKHorizontalThreadblockSwizzle, kStages,
         cutlass::gemm::kernel::GroupScheduleMode::kDeviceOnly>::GemmKernel;
@@ -291,6 +290,4 @@ void splitkGroupedGemm(std::vector<cutlass::gemm::GemmCoord> const& problemSizes
     }
 }
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

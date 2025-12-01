@@ -16,8 +16,10 @@
 
 // Implemented by Haotian Tang and Shang Yang.
 // @article{lin2024qserve,
-//   title={QServe: W4A8KV4 Quantization and System Co-design for Efficient LLM Serving},
-//   author={Lin*, Yujun and Tang*, Haotian and Yang*, Shang and Zhang, Zhekai and Xiao, Guangxuan and Gan, Chuang and
+//   title={QServe: W4A8KV4 Quantization and System Co-design for Efficient LLM
+// Serving},
+//   author={Lin*, Yujun and Tang*, Haotian and Yang*, Shang and Zhang, Zhekai
+// and Xiao, Guangxuan and Gan, Chuang and
 //   Han, Song}, journal={arXiv preprint arXiv:2405.04532}, year={2024}
 // }
 
@@ -26,10 +28,8 @@
 #include <cuda_fp16.h>
 #include <cuda_pipeline_primitives.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 namespace qserve
 {
 
@@ -127,14 +127,13 @@ inline __device__ void ldmatrix_m8n8_x4_trans_b16(int8_t* shared_warp, int ax0_0
 inline __device__ void cp_async_cg_A(uint32_t smem_int_ptr, uint4 const* __restrict__ src, bool mask)
 {
     int const cp_size = 16;
-    asm volatile("{"
-                "  .reg .pred p;"
-                "  setp.ne.b32 p, %0, 0;"
-                "  @p cp.async.cg.shared.global" L2_CACHEHINT(128) " [%1], [%2], %3;"
-                "}" ::"r"((int)mask),
-                "r"(smem_int_ptr),
-                "l"(src),
-                "n"(cp_size));
+    asm volatile(
+      "{"
+      "  .reg .pred p;"
+      "  setp.ne.b32 p, %0, 0;"
+      "  @p cp.async.cg.shared.global" L2_CACHEHINT(128) " [%1], [%2], %3;"
+                                                         "}" ::"r"((int)mask),
+      "r"(smem_int_ptr), "l"(src), "n"(cp_size));
 }
 
 __device__ inline void mma_m16n8k32(void* C_warp, void* A_shared_warp, void* B_shared_warp)
@@ -605,6 +604,5 @@ void QServeGemmRunner::gemmPerChannel(ParamsPerChannel const& params, cudaStream
 }
 
 } // namespace qserve
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

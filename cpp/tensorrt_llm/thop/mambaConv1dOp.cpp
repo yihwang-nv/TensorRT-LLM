@@ -21,7 +21,8 @@
 namespace th = torch;
 namespace tk = tensorrt_llm::kernels;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -33,7 +34,8 @@ std::tuple<th::Tensor, th::Tensor> mamba_conv1d(th::Tensor const& input, th::Ten
     int64_t const post_stride, bool const remove_padding, bool const apply_silu, bool const is_paged_state)
 {
     // tensors info: [shapes] x [dtype]
-    // input: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_padding x [float16, float32, bfloat16]
+    // input: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_padding x
+    // [float16, float32, bfloat16]
     // conv_weight: [1, dconv, dim] x [float16, float32, bfloat16]
     // conv_bias: [dim] x [float16, float32, bfloat16]
     // conv_state: [batch_size, dconv-1, dim] x [float16, float32, bfloat16]
@@ -175,7 +177,7 @@ std::tuple<th::Tensor, th::Tensor> mamba_conv1d(th::Tensor const& input, th::Ten
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {

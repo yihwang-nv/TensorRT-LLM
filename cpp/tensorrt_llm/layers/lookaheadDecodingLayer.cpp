@@ -16,7 +16,6 @@
 
 #include "lookaheadDecodingLayer.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
@@ -35,9 +34,7 @@
 #include <memory>
 #include <tuple>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 using namespace tensorrt_llm::common;
@@ -144,7 +141,8 @@ void LookaheadDecodingLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWidth
     {
         auto& algoConfigs = setupParams->algoConfigs;
         TLLM_CHECK_WITH_INFO(algoConfigs.size() == 1 || algoConfigs.size() == static_cast<size_t>(batchSize),
-            "Lookahead runtime configuration size should be either 1 or batchSize");
+            "Lookahead runtime configuration size should be "
+            "either 1 or batchSize");
 
         for (auto bi = 0; bi < batchSize; bi++)
         {
@@ -249,13 +247,16 @@ void LookaheadDecodingLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutputs
     params.tokensPerStep = bufferCast<SizeType32>(*inputs->curTokensPerStep.value());
 
     TLLM_LOG_DEBUG(
-        "invokeBatchTopKSampling: maxBatchSize=%d, batchSize=%d, maxTopK=%d, maxTokensPerStep=%d, maxSeqLen=%d, "
+        "invokeBatchTopKSampling: maxBatchSize=%d, batchSize=%d, "
+        "maxTopK=%d, maxTokensPerStep=%d, maxSeqLen=%d, "
         "vocabSizePadded=%d",
         params.maxBatchSize, params.batchSize, params.maxTopK, params.maxTokensPerStep, params.maxSeqLen,
         params.vocabSizePadded);
 
-    // Sample multiple tokens per request and store them to separate to be accepted/rejected later
-    // Sequence length is not modified, endIds is not checked, outputLogProbs are not supported.
+    // Sample multiple tokens per request and store them to separate to be
+    // accepted/rejected later
+    // Sequence length is not modified, endIds is not checked, outputLogProbs
+    // are not supported.
     // Finished state is not set.
     invokeBatchTopKSampling(params, getStream());
 
@@ -437,7 +438,8 @@ void LookaheadDecodingLayer<T>::forwardSyncCPU(
 
     mBufferManager->copy(*mCpuAlgo->mNumNewTokens, *outputs->numNewTokens.value());
     mBufferManager->copy(*mCpuAlgo->mPathsOffsetsBatch, *outputs->pathsOffsets);
-    mBufferManager->copy(*mCpuAlgo->mNumNewTokensCumSum, *outputs->numNewTokensCumSum); //
+    mBufferManager->copy(*mCpuAlgo->mNumNewTokensCumSum,
+        *outputs->numNewTokensCumSum); //
     mBufferManager->copy(*mCpuAlgo->mNextDraftTokens, *outputs->nextDraftTokens);
 
     for (SizeType32 bi = 0; bi < batchSize; bi++)
@@ -464,6 +466,4 @@ void LookaheadDecodingLayer<T>::forwardSyncCPU(
 template class LookaheadDecodingLayer<float>;
 template class LookaheadDecodingLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

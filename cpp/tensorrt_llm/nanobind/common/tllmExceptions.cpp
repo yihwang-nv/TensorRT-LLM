@@ -15,16 +15,13 @@
  */
 
 #include "tllmExceptions.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/tllmException.h"
 #include <nanobind/nanobind.h>
 
 namespace tc = tensorrt_llm::common;
 namespace nb = nanobind;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace nanobind::common
+namespace tensorrt_llm::nanobind::common
 {
 
 void initExceptionsBindings(nb::module_& m)
@@ -53,7 +50,8 @@ void initExceptionsBindings(nb::module_& m)
             }
             catch (const tc::RequestSpecificException& e)
             {
-                // Create a Python exception with the request ID and error code information
+                // Create a Python exception with the request ID and error code
+                // information
                 nb::object py_exc = nb::cast(e);
                 nb::object request_id = nb::cast(e.getRequestId());
                 nb::object error_code = nb::cast(static_cast<uint32_t>(e.getErrorCode()));
@@ -67,6 +65,4 @@ void initExceptionsBindings(nb::module_& m)
         });
 }
 
-} // namespace nanobind::common
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::nanobind::common

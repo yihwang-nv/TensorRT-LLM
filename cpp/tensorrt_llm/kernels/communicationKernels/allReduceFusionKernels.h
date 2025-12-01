@@ -25,9 +25,9 @@
 #include "tensorrt_llm/kernels/quantization.h"
 #include "tensorrt_llm/runtime/ipcUtils.h"
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ar_fusion
+namespace ar_fusion
 {
 template <typename DType>
 struct ElemsPerAccess;
@@ -61,7 +61,8 @@ enum class AllReduceFusionPattern : int
     kARResidualRMSNorm = 1,
     kARResidualRMSNormFP8Quant = 2,
     kARResidualRMSNormFP4Quant = 3,
-    // The difference between these two and the standard version is that the NormOut version outputs the result of the
+    // The difference between these two and the standard version is that the
+    // NormOut version outputs the result of the
     // norm.
     kARResidualRMSNormOutFP8Quant = 4,
     kARResidualRMSNormOutFP4Quant = 5
@@ -142,6 +143,6 @@ struct AllReduceFusionParams
 };
 
 void allreduce_fusion_op(AllReduceFusionParams const& params);
-} // namespace kernels::ar_fusion
+} // namespace ar_fusion
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

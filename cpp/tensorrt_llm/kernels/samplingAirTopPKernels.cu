@@ -37,10 +37,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 using IdxT = int;
 using AccT = float;
@@ -55,30 +52,40 @@ struct alignas(128) Counter
     // The original length of the input
     IdxT oriLen;
 
-    // We are processing the values in multiple passes, from most significant to least
-    // significant. In each pass, we keep the length of input (`len`) and the `sum` of
+    // We are processing the values in multiple passes, from most significant to
+    // least
+    // significant. In each pass, we keep the length of input (`len`) and the
+    // `sum` of
     // current pass, and update them at the end of the pass.
     AccT sum;
     IdxT len;
     float p;
 
-    //  `previousLen` is the length of input in previous pass. Note that `previousLen`
-    //  rather than `len` is used for the filtering step because filtering is indeed for
+    //  `previousLen` is the length of input in previous pass. Note that
+    // `previousLen`
+    //  rather than `len` is used for the filtering step because filtering is
+    // indeed for
     //  previous pass.
     IdxT previousLen;
 
-    // We determine the bits of the k_th value inside the mask processed by the pass. The
-    // already known bits are stored in `kthValueBits`. It's used to discriminate a
-    // element is a result (written to `out`), a candidate for next pass (written to
-    // `outBuf`), or not useful (discarded). The bits that are not yet processed do not
+    // We determine the bits of the k_th value inside the mask processed by the
+    // pass. The
+    // already known bits are stored in `kthValueBits`. It's used to discriminate
+    // a
+    // element is a result (written to `out`), a candidate for next pass (written
+    // to
+    // `outBuf`), or not useful (discarded). The bits that are not yet processed
+    // do not
     // matter for this purpose.
     typename cub::Traits<T>::UnsignedBits kthValueBits;
 
-    // Record how many elements have passed filtering. It's used to determine the position
+    // Record how many elements have passed filtering. It's used to determine the
+    // position
     // in the `outBuf` where an element should be written.
     alignas(128) IdxT filterCnt;
 
-    // For a row inside a batch, we may launch multiple thread blocks. This counter is
+    // For a row inside a batch, we may launch multiple thread blocks. This
+    // counter is
     // used to determine if the current block is the last running block.
     alignas(128) uint32_t finishedBlockCnt;
 };
@@ -103,7 +110,8 @@ constexpr __host__ __device__ IntType alignTo(IntType a, IntType b)
 }
 
 //! \brief Calculate the number of buckets based on the number of bits per pass.
-//! \tparam BitsPerPass. If BitsPerPass==11, the number of buckets is 2048. If BitsPerPass==8, the number of buckets is
+//! \tparam BitsPerPass. If BitsPerPass==11, the number of buckets is 2048. If
+// BitsPerPass==8, the number of buckets is
 //! 256.
 template <int BitsPerPass>
 __host__ __device__ int constexpr calcNumBuckets()
@@ -112,7 +120,8 @@ __host__ __device__ int constexpr calcNumBuckets()
 }
 
 //! \brief Calculate the number of passes based on the number of bits per pass.
-//! \tparam BitsPerPass. If BitsPerPass==11, the number of passes is 3. If BitsPerPass==8, the number of passes is 4.
+//! \tparam BitsPerPass. If BitsPerPass==11, the number of passes is 3. If
+// BitsPerPass==8, the number of passes is 4.
 template <typename T, int BitsPerPass>
 __host__ __device__ int constexpr calcNumPasses()
 {
@@ -120,8 +129,10 @@ __host__ __device__ int constexpr calcNumPasses()
 }
 
 /**
- * This implementation processes input from the most to the least significant bit (Bit 0 is the least
- * significant (rightmost)). This way, we can skip some passes in the end at the cost of having an unsorted output.
+ * This implementation processes input from the most to the least significant
+ * bit (Bit 0 is the least
+ * significant (rightmost)). This way, we can skip some passes in the end at the
+ * cost of having an unsorted output.
  */
 template <typename T, int BitsPerPass>
 __device__ int constexpr calcStartBit(int pass)
@@ -230,10 +241,10 @@ __device__ float calcHalfValue(uint32_t count, uint32_t exponent, uint32_t sign,
 {
     constexpr uint32_t numTotalBits = 64; // The bit number of uint64_t
     constexpr uint32_t numOffset = 16;    // The bits number difference between float and half data type
-    constexpr uint32_t numTotalMantissaHalf
-        = getNumTotalMantissa<half>();    // The bit number of mantissa for half data type
-    constexpr uint32_t numTotalMantissaFloat
-        = getNumTotalMantissa<float>();   // The bit number of mantissa for float data type
+    constexpr uint32_t numTotalMantissaHalf = getNumTotalMantissa<half>();   // The bit number of mantissa for half data
+                                                                             // type
+    constexpr uint32_t numTotalMantissaFloat = getNumTotalMantissa<float>(); // The bit number of mantissa for float
+                                                                             // data type
 
     uint64_t extraInMatissa = (bitSum >> numTotalMantissaHalf);
 
@@ -250,7 +261,8 @@ __device__ float calcHalfValue(uint32_t count, uint32_t exponent, uint32_t sign,
         numDeNorm = numTotalMantissaHalf - (numTotalBits - __clzll(bitSum));
     }
     exponent = exponent + ((numExtra + numNorm + 127 - 15 - numDeNorm) << numTotalMantissaHalf);
-    // As extra bits (extraInMatissa) need to be part of the mantissa, we have to move the current
+    // As extra bits (extraInMatissa) need to be part of the mantissa, we have to
+    // move the current
     // mantissa within the range of [0-23]bits.
     // This is the only step cause precision loss
     uint32_t mantissa;
@@ -298,7 +310,8 @@ __device__ float calcFloatValue(uint32_t count, uint32_t exponent, uint64_t bitS
     numExtra = numTotalBits - __clzll(extraInMatissa);
     numNorm = (exponent == 0) ? 0 : -1;
     exponent = exponent + ((numExtra + numNorm) << numTotalMantissa);
-    // As extra integers need to be part of the mantissa, we have to move the current
+    // As extra integers need to be part of the mantissa, we have to move the
+    // current
     // mantissa within the range of [0-23]bits.
     // This is the only step cause precision loss
     uint32_t mantissa;
@@ -340,9 +353,11 @@ __device__ constexpr void calcAtomicAdd(HisT* dst, T value)
         }
         else
         {
-            // Have to use reinterpret_cast() to convert uint64_t to "unsigned long long"
+            // Have to use reinterpret_cast() to convert uint64_t to "unsigned long
+            // long"
             // Otherwise, the complication will report the follow error:
-            //"error: no instance of overloaded function "atomicAdd" matches the argument list
+            //"error: no instance of overloaded function "atomicAdd" matches the
+            // argument list
             // argument types are: (uint64_t *, uint64_t)"
             atomicAdd(reinterpret_cast<unsigned long long*>(dst), static_cast<HisT>(mantissa));
         }
@@ -398,18 +413,23 @@ __device__ int calcBucket(T x, int startBit, uint32_t mask, bool selectMin)
 
 /**
  * This function calculate the bufLen, which is the size of buffer.
- * When the number of candidates for next pass exceeds the bufLen, we choose not to store the candidates. Otherwise, we
+ * When the number of candidates for next pass exceeds the bufLen, we choose not
+ * to store the candidates. Otherwise, we
  * will load candidates from the original input data.
  */
 template <typename T, typename IdxT>
 __host__ __device__ IdxT calcBufLen(IdxT len)
 {
     // This ratio is calculated based on the element number.
-    // If we choose to write the buffers, it means (sizeof(T)+sizeof(IdxT))*bufLen bytes of storing and loading.
-    // To ensure we do not access more than len*sizeof(T) bytes. bufLen should be smaller than:
-    // len*sizeof(T)/2*(sizeof(T) + sizeof(IdxT)) = len/(2 + sizeof(IdxT) * 2 / sizeof(T))).
+    // If we choose to write the buffers, it means (sizeof(T)+sizeof(IdxT))*bufLen
+    // bytes of storing and loading.
+    // To ensure we do not access more than len*sizeof(T) bytes. bufLen should be
+    // smaller than:
+    // len*sizeof(T)/2*(sizeof(T) + sizeof(IdxT)) = len/(2 + sizeof(IdxT) * 2 /
+    // sizeof(T))).
     IdxT constexpr ratio = 2 + sizeof(IdxT) * 2 / sizeof(T);
-    // Even such estimation is too conservative (due to the global coalescing access). So based on our experiments, we
+    // Even such estimation is too conservative (due to the global coalescing
+    // access). So based on our experiments, we
     // further decrease bufLen by 1/8
     IdxT bufLen = len / (ratio * 8);
 
@@ -455,7 +475,8 @@ __host__ __device__ void setBufPointers(T const* in, IdxT const* inIdx, T* buf1,
     }
 }
 
-//! \brief Map a Func over the input data, using vectorized load instructions if possible.
+//! \brief Map a Func over the input data, using vectorized load instructions if
+// possible.
 //! \tparam T element type
 //! \tparam IdxT indexing type
 //! \tparam Func void (T x, IdxT idx)
@@ -529,7 +550,8 @@ __device__ void vectorizedProcess(size_t threadRank, size_t numThreads, T const*
 }
 
 /**
- * Fused filtering of the current pass and building histogram for the next pass (see steps 4 & 1 in `airTopPSampling`
+ * Fused filtering of the current pass and building histogram for the next pass
+ * (see steps 4 & 1 in `airTopPSampling`
  * description).
  */
 template <typename T, typename IdxT, typename AccT, typename HisT, int BitsPerPass, bool isDeterministic = false>
@@ -631,9 +653,11 @@ __device__ __forceinline__ void filterAndHistogram(T const* inBuf, IdxT const* i
         {
             if constexpr ((isDeterministic) && (std::is_same_v<T, float>) )
             {
-                // Have to use reinterpret_cast() to convert uint64_t to "unsigned long long"
+                // Have to use reinterpret_cast() to convert uint64_t to "unsigned
+                // long long"
                 // Otherwise, the complication will report the follow error:
-                //"error: no instance of overloaded function "atomicAdd" matches the argument list
+                //"error: no instance of overloaded function "atomicAdd" matches the
+                // argument list
                 // argument types are: (uint64_t *, uint64_t)"
                 atomicAdd(reinterpret_cast<unsigned long long*>(histogram + i), histogramSmem[i]);
             }
@@ -650,7 +674,8 @@ __device__ __forceinline__ void filterAndHistogram(T const* inBuf, IdxT const* i
 }
 
 /**
- *  Replace histogram with its own prefix sum (step 2 in `airTopPSampling` description)
+ *  Replace histogram with its own prefix sum (step 2 in `airTopPSampling`
+ * description)
  */
 template <typename IdxT, int BitsPerPass, int BlockSize>
 __device__ void scan(IdxT volatile* histogram, IdxT* histogramOut)
@@ -728,11 +753,13 @@ __device__ void epilogue(T const value, IdxT const index, float* outputLogProbs,
         {
             finishedOutput[batchId].setFinishedEOS();
         }
-        // Do not increase seq len when EOS is generated. Seq len should always contain only tokens to be outputted
+        // Do not increase seq len when EOS is generated. Seq len should always
+        // contain only tokens to be outputted
     }
     else if (sequenceLengths != nullptr)
     {
-        // We don't need to set output finished state as it is assumed to be in non finished state
+        // We don't need to set output finished state as it is assumed to be in non
+        // finished state
         sequenceLengths[batchId] += 1;
     }
 }
@@ -864,7 +891,8 @@ __device__ void lastFilter(T const* inBuf, IdxT const* inIdxBuf, IdxT currentLen
                 } // end histogram
                 __syncthreads();
 
-                scan<IdxT, BitsPerPass, BlockSize>(countHistogram, countHistogram); // prefix sum
+                scan<IdxT, BitsPerPass, BlockSize>(countHistogram,
+                    countHistogram); // prefix sum
                 __syncthreads();
                 // Locate the bucket
                 for (int i = threadIdx.x; i < numBuckets; i += blockDim.x)
@@ -899,39 +927,55 @@ __device__ void lastFilter(T const* inBuf, IdxT const* inIdxBuf, IdxT currentLen
 
 /******************************Kernel**********************************/
 /**
- * We call this parallel top-p algorithm AIR Top-P, because this method is based on our previous work called AIR Top-K.
- * Details about AIR Top-K can be found here https://dl.acm.org/doi/10.1145/3581784.360706, the open-source code is here
+ * We call this parallel top-p algorithm AIR Top-P, because this method is based
+ *on our previous work called AIR Top-K.
+ * Details about AIR Top-K can be found here
+ *https://dl.acm.org/doi/10.1145/3581784.360706, the open-source code is here
  * https://github.com/rapidsai/raft/blob/main/cpp/include/raft/matrix/detail/select_radix.cuh
  *
- * It is expected to call this kernel multiple times (passes), in each pass we process a radix,
+ * It is expected to call this kernel multiple times (passes), in each pass we
+ *process a radix,
  * going from the most significant towards the least significant bits (MSD).
  *
  * Conceptually, each pass consists of 4 steps:
  *
  * 1. Calculate histogram
  *      First, transform bits into a digit, the value of which is in the range
- *      [0, 2^{BITS_PER_PASS}-1]. Then count the frequency of each digit value along with the summation of corresponding
- * elements and the result is a countHistogram and histogram. That is, countHistogram[i] contains the count of inputs
+ *      [0, 2^{BITS_PER_PASS}-1]. Then count the frequency of each digit value
+ *along with the summation of corresponding
+ * elements and the result is a countHistogram and histogram. That is,
+ *countHistogram[i] contains the count of inputs
  * having value i.
  *
  * 2. Scan the histogram
- *      Inclusive prefix sum is computed for the histogram. After this step, histogram[i] contains
+ *      Inclusive prefix sum is computed for the histogram. After this step,
+ *histogram[i] contains
  *      the prefix-sum of inputs having value <= i.
  *
- * 3. Find the bucket j of the histogram that just exceed the p*total_sum value falls into
+ * 3. Find the bucket j of the histogram that just exceed the p*total_sum value
+ *falls into
  *
  * 4. Filtering
- *      Input elements whose digit value <j are the top-p elements. Since the k-th value must be in
- *      the bucket j, we write all elements in bucket j into a intermediate buffer out_buf. For the
- *      next pass, these elements are used as input, and we update the counter->sum accordingly. T
+ *      Input elements whose digit value <j are the top-p elements. Since the
+ *k-th value must be in
+ *      the bucket j, we write all elements in bucket j into a intermediate
+ *buffer out_buf. For the
+ *      next pass, these elements are used as input, and we update the
+ *counter->sum accordingly. T
  *
- * In the implementation, the filtering step is delayed to the next pass so the filtering and
- * histogram computation are fused. In this way, inputs are read once rather than twice.
+ * In the implementation, the filtering step is delayed to the next pass so the
+ *filtering and
+ * histogram computation are fused. In this way, inputs are read once rather
+ *than twice.
  *
- * During the filtering step, we won't write candidates (elements in bucket j) to `out_buf` if the
- * number of candidates is larger than the length of `out_buf` (this could happen when the leading
- * bits of input values are almost the same). And then in the next pass, inputs are read from `in`
- * rather than from `in_buf`. The benefit is that we can save the cost of writing candidates and
+ * During the filtering step, we won't write candidates (elements in bucket j)
+ *to `out_buf` if the
+ * number of candidates is larger than the length of `out_buf` (this could
+ *happen when the leading
+ * bits of input values are almost the same). And then in the next pass, inputs
+ *are read from `in`
+ * rather than from `in_buf`. The benefit is that we can save the cost of
+ *writing candidates and
  * their indices.
  */
 template <typename T, typename IdxT, typename AccT, typename HisT, int BitsPerPass, int BlockSize,
@@ -978,8 +1022,10 @@ __global__ void airTopPSampling(Counter<T, IdxT, AccT>* counters, HisT* histogra
     {
         currentSum = 0;
         previousLen = counter->len;
-        // Need to do this so setting counter->previousLen for the next pass is correct.
-        // This value is meaningless for pass 0, but it's fine because pass 0 won't be the
+        // Need to do this so setting counter->previousLen for the next pass is
+        // correct.
+        // This value is meaningless for pass 0, but it's fine because pass 0 won't
+        // be the
         // last pass in this implementation so pass 0 won't hit the "if (pass ==
         // numPasses - 1)" branch.
         currentLen = counter->len;
@@ -1066,16 +1112,20 @@ __global__ void airTopPSampling(Counter<T, IdxT, AccT>* counters, HisT* histogra
                     [[maybe_unused]] float bucketValueFloat;
                     if constexpr (std::is_same_v<T, half>)
                     {
-                        // To acquire the summation in single-precision format, we need to get the original exponent
-                        // value first counter->kthValueBits stores the bits selected by previous pass, which contains
+                        // To acquire the summation in single-precision format, we need
+                        // to get the original exponent
+                        // value first counter->kthValueBits stores the bits selected by
+                        // previous pass, which contains
                         // the bit corresponds to the exponent value
                         uint16_t bucketValue = counter->kthValueBits;
 
-                        // For the first pass, different bucket indices correspond to different exponents.
+                        // For the first pass, different bucket indices correspond to
+                        // different exponents.
                         // The bucket index can be used to deduce the exponent.
                         if (pass == 0)
                         {
-                            // Right shift the bucket index with startBit bits (5 bits for half-precision when pass==0),
+                            // Right shift the bucket index with startBit bits (5 bits for
+                            // half-precision when pass==0),
                             // so that the bucket index fills the bit related to exponent.
                             bucketValue = i << startBit;
                         }
@@ -1088,13 +1138,16 @@ __global__ void airTopPSampling(Counter<T, IdxT, AccT>* counters, HisT* histogra
                     }
                     else
                     {
-                        // To acquire the summation in single-precision format, we need to get the original exponent
+                        // To acquire the summation in single-precision format, we need to
+                        // get the original exponent
                         // value first
                         uint32_t bucketValue = counter->kthValueBits;
                         if (pass == 0)
                         {
-                            // Right shift the bucket index with startBit bits (22 bits for single-precision when
-                            // pass==0), so that the bucket index fills the bit related to exponent.
+                            // Right shift the bucket index with startBit bits (22 bits for
+                            // single-precision when
+                            // pass==0), so that the bucket index fills the bit related to
+                            // exponent.
                             bucketValue = i << startBit;
                         }
                         bucketValueFloat = twiddleOut<T>(bucketValue, false);
@@ -1109,7 +1162,8 @@ __global__ void airTopPSampling(Counter<T, IdxT, AccT>* counters, HisT* histogra
             }
         }
 
-        // To avoid the error related to the prefix sum from cub, we find the bucket sequentially.
+        // To avoid the error related to the prefix sum from cub, we find the bucket
+        // sequentially.
         int constexpr WARP_SIZE = 32;
         int constexpr WARP_COUNT = numBuckets / WARP_SIZE;
         namespace cg = cooperative_groups;
@@ -1186,7 +1240,8 @@ __global__ void airTopPSampling(Counter<T, IdxT, AccT>* counters, HisT* histogra
             }
 
             counter->sum = currentSum - prev;         // how many values still are there to find
-            counter->len = countHistogram[targetIdx]; // cur - prev; // number of values in next pass
+            counter->len = countHistogram[targetIdx]; // cur - prev; // number of
+                                                      // values in next pass
             typename cub::Traits<T>::UnsignedBits bucket = targetIdx;
             int startBit = calcStartBit<T, BitsPerPass>(pass);
             counter->kthValueBits |= bucket << startBit;
@@ -1213,9 +1268,12 @@ __global__ void airTopPSampling(Counter<T, IdxT, AccT>* counters, HisT* histogra
         if (pass == numPasses - 1)
         {
             // Used when isDeterministic==true
-            // idxBuf1 and idxBuf2 are ping-pong buffers used in previous iterations to store candidates.
-            // In the last pass (pass==2 for single-precision and pass==1 for half-precision),
-            // we reuse the buffer didn't store the candidates (idxBuf1 for single-precision and idxBuf2 for
+            // idxBuf1 and idxBuf2 are ping-pong buffers used in previous iterations
+            // to store candidates.
+            // In the last pass (pass==2 for single-precision and pass==1 for
+            // half-precision),
+            // we reuse the buffer didn't store the candidates (idxBuf1 for
+            // single-precision and idxBuf2 for
             // half-precision) to help find the correct index of the result.
             [[maybe_unused]] IdxT* lastIdxBuf
                 = (pass % 2 == 0) ? idxBuf1 + bufLen * batchId : idxBuf2 + bufLen * batchId;
@@ -1287,7 +1345,8 @@ __global__ void airTopPInitialize(Counter<T, IdxT, AccT>* counters, int const ba
 }
 
 /*
- *  Calculate the number of blocks based on the batchSize and len to avoid tailing effect.
+ *  Calculate the number of blocks based on the batchSize and len to avoid
+ * tailing effect.
  */
 template <typename T>
 uint32_t calcAirTopPBlockNum(int batchSize, int len, int smCnt, bool isDeterministic)
@@ -1296,8 +1355,10 @@ uint32_t calcAirTopPBlockNum(int batchSize, int len, int smCnt, bool isDetermini
     int constexpr BlockSize = 512;
     int constexpr VECTORIZED_READ_SIZE = 16;
     static_assert(VECTORIZED_READ_SIZE / sizeof(T) >= 1);
-    TLLM_CHECK_WITH_INFO(
-        smCnt > 0, "AIR Top-P needs the count of multiprocessor to calculate the proper block dimension settings");
+    TLLM_CHECK_WITH_INFO(smCnt > 0,
+        "AIR Top-P needs the count of multiprocessor "
+        "to calculate the proper block dimension "
+        "settings");
 
     int activeBlocks;
     if (isDeterministic)
@@ -1385,7 +1446,8 @@ void invokeAirTopPSamplingWithDeterministicPara(TopPSamplingKernelParams<T> cons
     TLLM_CHECK_WITH_INFO(((std::is_same_v<T, half>) &&(params.vocabSizePadded < pow(2, 22)) && isDeterministic)
             || ((std::is_same_v<T, float>) &&(params.vocabSizePadded < pow(2, 41)) && isDeterministic)
             || (!isDeterministic),
-        "For Deterministic AIR Top-P, the maximum vocab_size we support is pow(2,22) for half-precision and pow(2,41) "
+        "For Deterministic AIR Top-P, the maximum vocab_size we support is "
+        "pow(2,22) for half-precision and pow(2,41) "
         "for single-precision");
 
     IdxT const vocabSize = params.vocabSizePadded;
@@ -1467,6 +1529,5 @@ template size_t getAirTopPWorkspaceSize<half>(int32_t batchSize, int32_t vocabSi
 
 template uint32_t calcAirTopPBlockNum<float>(int batchSize, int len, int smCnt, bool isDeterministic);
 template uint32_t calcAirTopPBlockNum<half>(int batchSize, int len, int smCnt, bool isDeterministic);
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

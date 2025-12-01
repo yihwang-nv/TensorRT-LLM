@@ -15,7 +15,6 @@
  */
 #include "gemmAllReducePlugin.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/cutlass_kernels/cutlass_type_conversion.h"
 #include "tensorrt_llm/plugins/common/pluginUtils.h"
 
@@ -26,9 +25,7 @@ static char const* GEMM_ALLREDUCE_PLUGIN_NAME = "GemmAllReduce";
 template <nvinfer1::DataType T>
 using CutlassType = ::tensorrt_llm::kernels::cutlass_kernels::CutlassType<T>;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 template <typename K, typename V, DataType ElementA, DataType ElementB, DataType ElementD>
 static std::pair<K, V> makeEntry()
@@ -38,12 +35,13 @@ static std::pair<K, V> makeEntry()
         {
             using GemmTraits
                 = cutlass_kernels::GemmTypes<typename CutlassType<ElementA>::type, typename CutlassType<ElementB>::type,
-                    typename CutlassType<ElementD>::type,                                         // C, unused
+                    typename CutlassType<ElementD>::type, // C, unused
                     typename CutlassType<ElementD>::type,
-                    std::conditional_t<ElementA == DataType::kFP4, cutlass::float_ue4m3_t, void>, // SFA
-                    std::conditional_t<ElementB == DataType::kFP4, cutlass::float_ue4m3_t, void>, // SFB
-                    cutlass::layout::RowMajor, cutlass::layout::ColumnMajor,
-                    cutlass::layout::RowMajor,                                                    // C, unused
+                    std::conditional_t<ElementA == DataType::kFP4, cutlass::float_ue4m3_t,
+                        void>,                                                                          // SFA
+                    std::conditional_t<ElementB == DataType::kFP4, cutlass::float_ue4m3_t,
+                        void>,                                                                          // SFB
+                    cutlass::layout::RowMajor, cutlass::layout::ColumnMajor, cutlass::layout::RowMajor, // C, unused
                     cutlass::layout::RowMajor>;
             return new cutlass_kernels::GemmAllReduceImplRunner<GemmTraits>();
         }};
@@ -66,7 +64,8 @@ static std::map<K, V> getTypedInstantiators()
 GemmAllReducePlugin::GemmAllReducePlugin(GemmAllReducePluginOptions const& options)
     : mOptions(options)
     , mGemmId(GemmIdCore(options.maxProblemShape.n, options.maxProblemShape.k, options.typeD))
-    , mProfiler(mGemmPluginProfileManager.createGemmPluginProfiler(/*inference=*/options.deserialize))
+    , mProfiler(mGemmPluginProfileManager.createGemmPluginProfiler(
+          /*inference=*/options.deserialize))
 {
     // construct mapping of input/output pos to argument
     int argIdx = 0;
@@ -134,9 +133,10 @@ void GemmAllReducePlugin::allocatePersistentWorkspace()
 
 LaunchConfig GemmAllReducePlugin::getStaticHeuristicLaunchConfig(int M) const
 {
-    using namespace tensorrt_llm::cutlass_extensions;
+    using namespace tensorrt_llm::kernels::cutlass_extensions;
     // This is only applicable when we swap and transpose A & B.
-    // When M is small we want to select tile that best fits it to maximize MMA efficiency.
+    // When M is small we want to select tile that best fits it to maximize MMA
+    // efficiency.
     auto filterByM = [&](std::vector<LaunchConfig> candidateConfigs)
     {
         std::vector<LaunchConfig> result;
@@ -501,7 +501,8 @@ int GemmAllReducePlugin::initialize() noexcept
     if (isBuilding() && mProfiler->useProfiler())
     {
         // TODO (xsimmons): interfaces between GemmPluginProfiler and Plugin
-        // needs to be relooked at - current interface implicitly assigns runner to profiler
+        // needs to be relooked at - current interface implicitly assigns runner
+        // to profiler
         // object in profileTactics()
         assert(mOptions.maxProblemShape.isInitialized());
         mProfiler->profileTactics(mGemm, mOptions.typeD, mOptions.maxProblemShape, mGemmId);
@@ -511,7 +512,8 @@ int GemmAllReducePlugin::initialize() noexcept
 
 void GemmAllReducePlugin::terminate() noexcept
 {
-    if (isBuilding()) // need this otherwise getComm will crash during build phase
+    if (isBuilding()) // need this otherwise getComm will crash during build
+                      // phase
     {
         return;
     }
@@ -567,10 +569,13 @@ void GemmAllReducePlugin::serialize(void* buffer) const noexcept
     write(end, mOptions.alphaIsPtr);
     TLLM_CHECK(end == begin + getSerializationSize());
 
-    // Profiler MNK->kernel mappings need to be deterministic and consistent across ranks
+    // Profiler MNK->kernel mappings need to be deterministic and consistent
+    // across ranks
     // to ensure correct functionality (unlike standalone GEMMs).
-    // Since by default each rank will generate and serialize its own profiler mapping
-    // this can lead to different mappings between ranks which will result in fatal
+    // Since by default each rank will generate and serialize its own profiler
+    // mapping
+    // this can lead to different mappings between ranks which will result in
+    // fatal
     // error. Therefore only generate and use profiler mapping for single rank.
     if (mProfiler->useProfiler() && COMM_SESSION.getRank() == 0)
     {
@@ -691,7 +696,8 @@ IPluginV2* GemmAllReducePluginCreator::createPlugin(char const* name, PluginFiel
 
     try
     {
-        // GemmAllReducePluginCreator is unique and shared for an engine generation
+        // GemmAllReducePluginCreator is unique and shared for an engine
+        // generation
         auto* obj = new GemmAllReducePlugin(options);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
@@ -721,6 +727,4 @@ IPluginV2* GemmAllReducePluginCreator::deserializePlugin(
     return nullptr;
 }
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

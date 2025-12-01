@@ -19,15 +19,14 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 __global__ void delayStreamKernel(long long delay_micro_secs)
 {
     for (int i = 0; i < delay_micro_secs; ++i)
     {
-        // The largest delay __nanosleep can do is 1 millisecond, thus we use for loop to achieve longer delay.
+        // The largest delay __nanosleep can do is 1 millisecond, thus we use for
+        // loop to achieve longer delay.
         __nanosleep(1000);
     }
 }
@@ -37,6 +36,5 @@ void invokeDelayStreamKernel(long long delay_micro_secs, cudaStream_t stream)
     delayStreamKernel<<<1, 1, 0, stream>>>(delay_micro_secs);
     check_cuda_error(cudaGetLastError());
 }
-} // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

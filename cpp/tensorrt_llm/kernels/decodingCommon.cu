@@ -26,10 +26,7 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 __global__ void curandInitialize(curandState_t* state, int const* batchSlots, int const size, uint64_t const randomSeed)
 {
@@ -119,7 +116,8 @@ __global__ void addBiasSoftMax(T* logits, T** logitsPtrs, T* probs, float* outpu
             }
             else
             {
-                // Compute biased logit if the request has not finished, or `endIds` is nullptr
+                // Compute biased logit if the request has not finished, or `endIds` is
+                // nullptr
                 logit += (bias != nullptr) ? bias[tid] : T{0.0f};
             }
         }
@@ -142,7 +140,8 @@ __global__ void addBiasSoftMax(T* logits, T** logitsPtrs, T* probs, float* outpu
         }
         __syncthreads();
 
-        // `probs == nullptr` is specialization for Beam-Search, which needs log and writes output to`logitsPtrs`
+        // `probs == nullptr` is specialization for Beam-Search, which needs log and
+        // writes output to`logitsPtrs`
         float sumVal = 0.0f;
         int const offset = (probs != nullptr) ? ((batchIdxLogits * maxBeamWidth + beamIdx) * vocabSizePadded) : 0;
         T* dst = (probs != nullptr) ? probs : logitsPtr;
@@ -150,7 +149,8 @@ __global__ void addBiasSoftMax(T* logits, T** logitsPtrs, T* probs, float* outpu
         {
             auto value = __expf(static_cast<float>(logitsPtr[tid]) - sMaxVal);
             // minP : probability of token proportional to the max token
-            // compare minP against exp(logit - maxVal) / exp(maxVal - maxVal) = exp(logit - maxVal)
+            // compare minP against exp(logit - maxVal) / exp(maxVal - maxVal) =
+            // exp(logit - maxVal)
             if (value < minP)
             {
                 value = 0.0;
@@ -198,7 +198,8 @@ void invokeAddBiasSoftMax(BiasSoftmaxParams<T> const params, cudaStream_t stream
 
     dim3 grid(params.batchSize, params.maxBeamWidth);
     auto const vocabRoundedToWarp = roundUp(params.vocabSize, 32);
-    dim3 block(std::min(vocabRoundedToWarp, 1024)); // vocabSize is usually larger than 1024
+    dim3 block(std::min(vocabRoundedToWarp,
+        1024)); // vocabSize is usually larger than 1024
     addBiasSoftMax<<<grid, block, 0, stream>>>(params.logits, params.logitsPtrs, params.probs, params.outputEntropy,
         params.bias, params.temperatures, params.endIds, params.finished, params.beamWidths, params.batchSlots,
         params.minPs, params.maxBatchSize, params.maxBeamWidth, params.vocabSize, params.vocabSizePadded,
@@ -238,6 +239,4 @@ template void invokeScatterDecodingParams(
 template void invokeScatterDecodingParams(
     int32_t const* src, int32_t scalar, int32_t* dst, int const* batchSlots, int batchSize, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

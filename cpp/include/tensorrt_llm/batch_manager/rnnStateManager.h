@@ -16,15 +16,12 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager::rnn_state_manager
+namespace tensorrt_llm::batch_manager::rnn_state_manager
 {
 
 class RnnStateManager
@@ -44,13 +41,18 @@ public:
         runtime::ITensor& dstPointers, SizeType32 dstSlotOffset, SizeType32 seqSlotIdx, SizeType32 beamWidth) const;
 
 private:
-    // If we need support beam search, we may need mMaxBeamWidth + 1 slots and use separate input / output states.
-    TensorPtr pagedRnnStates;  // [local_nb_layers, max_seq_num * max_beam_width, state_size, rnn_hidden_size] or
-                               // [local_nb_layers, max_seq_num * max_beam_width, num_heads, state_size, rnn_head_size]
-    TensorPtr pagedConvStates; // [local_nb_layers, max_seq_num * max_beam_width, conv_kernel - 1, rnn_hidden_size]
+    // If we need support beam search, we may need mMaxBeamWidth + 1 slots and
+    // use separate input / output states.
+    TensorPtr pagedRnnStates; // [local_nb_layers, max_seq_num * max_beam_width,
+                              // state_size, rnn_hidden_size] or
+    // [local_nb_layers, max_seq_num * max_beam_width, num_heads, state_size,
+    // rnn_head_size]
+    TensorPtr pagedConvStates;           // [local_nb_layers, max_seq_num *
+                                         // max_beam_width, conv_kernel - 1,
+                                         // rnn_hidden_size]
 
-    TensorPtr rnnStatePtrs;    // [layer_count]
-    TensorPtr convStatePtrs;   // [layer_count]
+    TensorPtr rnnStatePtrs;              // [layer_count]
+    TensorPtr convStatePtrs;             // [layer_count]
 
     std::vector<TensorPtr> rnnStatePtr;  // [1]
     std::vector<TensorPtr> convStatePtr; // [1]
@@ -60,6 +62,4 @@ private:
     SizeType32 mBeamSlotsPerSequence = 0;
 };
 
-} // namespace batch_manager::rnn_state_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager::rnn_state_manager

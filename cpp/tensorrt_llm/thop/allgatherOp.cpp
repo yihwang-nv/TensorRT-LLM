@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +36,8 @@
 
 using tensorrt_llm::pg_utils::PgHelper;
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -197,7 +199,8 @@ public:
         {
             auto [output, work] = run(input, sizes, true);
             output_list.push_back(output);
-            work_list.push_back(work); // Hold work objects (input & output tensors) until endCoalescing wait finished
+            work_list.push_back(work); // Hold work objects (input & output tensors)
+                                       // until endCoalescing wait finished
         }
         if (auto work = mProcessGroup->endCoalescing(c10::DeviceType::CUDA))
         {
@@ -288,15 +291,18 @@ std::vector<torch::Tensor> allgather_list_pg(torch::TensorList input_list, torch
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def("allgather(Tensor input, SymInt[]? sizes, int[] group) -> Tensor");
     m.def(
-        "allgather_pg(Tensor input, SymInt[]? sizes, int[] group, __torch__.torch.classes.c10d.ProcessGroup "
+        "allgather_pg(Tensor input, SymInt[]? sizes, int[] group, "
+        "__torch__.torch.classes.c10d.ProcessGroup "
         "process_group) -> Tensor");
-    m.def("allgather_list(Tensor[] input_list, SymInt[]? sizes, int[] group) -> Tensor[]");
+    m.def(
+        "allgather_list(Tensor[] input_list, SymInt[]? sizes, int[] group) -> "
+        "Tensor[]");
     m.def(
         "allgather_list_pg(Tensor[] input_list, SymInt[]? sizes, int[] group, "
         "__torch__.torch.classes.c10d.ProcessGroup process_group) -> Tensor[]");

@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/runtime/utils/numpyUtils.h"
 
+#include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/memoryUtils.h"
 #include "tensorrt_llm/common/stringUtils.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
-#include "tensorrt_llm/runtime/utils/numpyUtils.h"
 #include <NvInferRuntime.h>
 
 #include <sstream>
@@ -32,9 +31,7 @@
 
 namespace tc = tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::utils
+namespace tensorrt_llm::runtime::utils
 {
 
 std::string getNumpyTypeDesc(nvinfer1::DataType type)
@@ -46,9 +43,12 @@ std::string getNumpyTypeDesc(nvinfer1::DataType type)
     if (type == dt::kBF16)
     {
         TLLM_LOG_WARNING(
-            "getNumpyTypeDesc(TYPE_BF16) returns an invalid type 'x' since Numpy doesn't "
-            "support bfloat16 as of now, it will be properly extended if numpy supports. "
-            "Please refer for the discussions https://github.com/numpy/numpy/issues/19808.");
+            "getNumpyTypeDesc(TYPE_BF16) returns an invalid type "
+            "'x' since Numpy doesn't "
+            "support bfloat16 as of now, it will be properly "
+            "extended if numpy supports. "
+            "Please refer for the discussions "
+            "https://github.com/numpy/numpy/issues/19808.");
     }
 
     return type_map.count(type) > 0 ? type_map.at(type) : "x";
@@ -198,7 +198,8 @@ int parseNpyHeader(FILE*& f_ptr, uint32_t header_len, nvinfer1::DataType& type, 
 
 void saveNpy(BufferManager const& manager, ITensor const& tensor, std::string const& filename)
 {
-    // Save tensor to NPY 1.0 format (see https://numpy.org/neps/nep-0001-npy-format.html)
+    // Save tensor to NPY 1.0 format (see
+    // https://numpy.org/neps/nep-0001-npy-format.html)
     auto const tensorSize = tensor.getSize();
     auto const& shape = tensor.getShape();
     auto const where = tensor.getMemoryType();
@@ -243,7 +244,9 @@ void saveNpy(BufferManager const& manager, ITensor const& tensor, std::string co
     }
     header_stream << ")}";
     int base_length = 6 + 4 + static_cast<int>(header_stream.str().size());
-    int pad_length = 16 * ((base_length + 1 + 15) / 16); // Take ceiling of base_length + 1 (for '\n' ending)
+    int pad_length = 16 * ((base_length + 1 + 15) / 16); // Take ceiling of
+                                                         // base_length + 1 (for
+                                                         // '\n' ending)
     for (int i = 0; i < pad_length - base_length; ++i)
     {
         header_stream << ((i == pad_length - base_length - 1) ? "\n" : "\x20");
@@ -265,6 +268,4 @@ void saveNpy(BufferManager const& manager, ITensor const& tensor, std::string co
     fclose(f_ptr);
 }
 
-} // namespace runtime::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::utils

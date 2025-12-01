@@ -23,9 +23,9 @@
 #include <array>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 
 using namespace tensorrt_llm::runtime;
@@ -205,19 +205,26 @@ void updateKVCacheDraftTokenLocationBatched(KVCacheBuffer const* kvCacheBuffers,
 
 /*!
  * Update KV cache for parallel decoding algorithms.
- * In following examples, we assume we have 2 sequences, accepted count is [3, 2]
- * @tparam KVCacheBuffer : Type of KV cache, should be LinearKVCache or KVBlockArray
+ * In following examples, we assume we have 2 sequences, accepted count is [3,
+ * 2]
+ * @tparam KVCacheBuffer : Type of KV cache, should be LinearKVCache or
+ * KVBlockArray
  * @param kvCacheBuffers : list of KVCacheBuffer object
- * @param seqAcceptedDraftTokenOffsets : Array of length seqCount + 1, like [0, 3, 5]
- * @param packedAcceptedDraftTokensIndices : Array of length seqAcceptedDraftTokenOffsets[seqCount], each value is in
+ * @param seqAcceptedDraftTokenOffsets : Array of length seqCount + 1, like [0,
+ * 3, 5]
+ * @param packedAcceptedDraftTokensIndices : Array of length
+ * seqAcceptedDraftTokenOffsets[seqCount], each value is in
  * range [0, maxDraftTokenCount - 1]
- * @param pastKeyValueLengths : Array of length seqCount, meaning how many tokens are already in KV cache
+ * @param pastKeyValueLengths : Array of length seqCount, meaning how many
+ * tokens are already in KV cache
  * @param seqCount : Count of sequence
  * @param numKVHeads : Number of KV heads
  * @param sizeInBytesPerKVHead : Size of each KV head
  * @param rewindDraftTokenCommonCount : Common count to rewind
- * @param rewindDraftTokenSeparateAdjustments : Separate adjustment to rewind for each sequence, if nullptr, just use
- * rewindDraftTokenCommonCount, else use rewindDraftTokenSeparateAdjustments[i] + rewindDraftTokenCommonCount
+ * @param rewindDraftTokenSeparateAdjustments : Separate adjustment to rewind
+ * for each sequence, if nullptr, just use
+ * rewindDraftTokenCommonCount, else use rewindDraftTokenSeparateAdjustments[i]
+ * + rewindDraftTokenCommonCount
  * @param stream : CUDA stream to use.
  */
 template <typename KVCacheBuffer>
@@ -337,6 +344,6 @@ void updateKVBlockArrayDraftTokenLocationSeparateRewind(SizeType32 const* seqAcc
         canUseOneMoreBlock, stream);
 }
 
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

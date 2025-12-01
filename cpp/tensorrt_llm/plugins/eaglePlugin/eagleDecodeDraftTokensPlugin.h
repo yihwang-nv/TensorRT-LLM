@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +17,13 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/plugins/common/plugin.h"
 #include <cassert>
 #include <set>
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class EagleDecodeDraftTokensPlugin : public BasePlugin
@@ -90,11 +88,14 @@ private:
         // [batch_size, max_decoding_draft_tokens]
         INPUT_CURRENT_EXPAND_INDICES,
 
-        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x max_decoding_draft_tokens]
+        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x
+        // max_decoding_draft_tokens]
         INPUT_ALL_LAYERS_SCORES,
-        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x max_decoding_draft_tokens]
+        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x
+        // max_decoding_draft_tokens]
         INPUT_ALL_LAYERS_DRAFT_TOKEN_IDS,
-        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x max_decoding_draft_tokens]
+        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x
+        // max_decoding_draft_tokens]
         INPUT_ALL_LAYERS_DRAFT_TOKEN_IDS_PREDECESSOR
     };
 
@@ -115,11 +116,14 @@ private:
         // [batch_size, max_decoding_draft_tokens]
         OUTPUT_NEXT_EXPAND_INDICES,
 
-        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x max_decoding_draft_tokens]
+        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x
+        // max_decoding_draft_tokens]
         OUTPUT_ALL_LAYERS_SCORES,
-        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x max_decoding_draft_tokens]
+        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x
+        // max_decoding_draft_tokens]
         OUTPUT_ALL_LAYERS_DRAFT_TOKEN_IDS,
-        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x max_decoding_draft_tokens]
+        // [batch_size, num_eagle_layers, max_decoding_draft_tokens x
+        // max_decoding_draft_tokens]
         OUTPUT_ALL_LAYERS_DRAFT_TOKEN_IDS_PREDECESSOR
     };
 
@@ -174,6 +178,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

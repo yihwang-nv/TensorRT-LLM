@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
 #include "tensorrt_llm/runtime/iBuffer.h"
 #include "tensorrt_llm/runtime/iTensor.h"
@@ -31,9 +30,7 @@
 
 class BufferManagerTest;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 /// @brief Forward declaration as only used through pointer.
@@ -52,7 +49,8 @@ public:
 
     //! \brief Construct a BufferManager.
     //!
-    //! \param[in] cudaStream The cuda stream to use for all operations on GPU (allocation, de-allocation, copying,
+    //! \param[in] cudaStream The cuda stream to use for all operations on GPU
+    //(allocation, de-allocation, copying,
     //! etc.).
     explicit BufferManager(CudaStreamPtr stream, bool trimPool = false);
 
@@ -67,16 +65,20 @@ public:
 
     static auto constexpr kBYTE_TYPE = nvinfer1::DataType::kUINT8;
 
-    //! \brief Allocates an `IBuffer` of the given size on the GPU, using cudaMallocAsync.
+    //! \brief Allocates an `IBuffer` of the given size on the GPU, using
+    // cudaMallocAsync.
     [[nodiscard]] IBufferPtr gpu(std::size_t size, nvinfer1::DataType type = kBYTE_TYPE) const;
 
-    //! \brief Allocates an `ITensor` of the given dimensions on the GPU, using cudaMallocAsync.
+    //! \brief Allocates an `ITensor` of the given dimensions on the GPU, using
+    // cudaMallocAsync.
     [[nodiscard]] ITensorPtr gpu(nvinfer1::Dims dims, nvinfer1::DataType type = kBYTE_TYPE) const;
 
-    //! \brief Allocates an `IBuffer` of the given size on the GPU, using cudaMalloc.
+    //! \brief Allocates an `IBuffer` of the given size on the GPU, using
+    // cudaMalloc.
     [[nodiscard]] static IBufferPtr gpuSync(std::size_t size, nvinfer1::DataType type = kBYTE_TYPE);
 
-    //! \brief Allocates an `ITensor` of the given dimensions on the GPU, using cudaMalloc.
+    //! \brief Allocates an `ITensor` of the given dimensions on the GPU, using
+    // cudaMalloc.
     [[nodiscard]] static ITensorPtr gpuSync(nvinfer1::Dims dims, nvinfer1::DataType type = kBYTE_TYPE);
 
     //! \brief Allocates an `IBuffer` of the given size on the CPU.
@@ -91,10 +93,12 @@ public:
     //! \brief Allocates a pinned `ITensor` of the given dimensions on the CPU.
     [[nodiscard]] static ITensorPtr pinned(nvinfer1::Dims dims, nvinfer1::DataType type = kBYTE_TYPE);
 
-    //! \brief Allocates a pinned `IBuffer` of the given size on the CPU in the default memory pool.
+    //! \brief Allocates a pinned `IBuffer` of the given size on the CPU in the
+    // default memory pool.
     [[nodiscard]] static IBufferPtr pinnedPool(std::size_t size, nvinfer1::DataType type = kBYTE_TYPE);
 
-    //! \brief Allocates a pinned `ITensor` of the given dimensions on the CPU in the default memory pool.
+    //! \brief Allocates a pinned `ITensor` of the given dimensions on the CPU
+    // in the default memory pool.
     [[nodiscard]] static ITensorPtr pinnedPool(nvinfer1::Dims dims, nvinfer1::DataType type = kBYTE_TYPE);
 
     //! \brief Allocates an `IBuffer` of the given size in UVM.
@@ -114,13 +118,15 @@ public:
     [[nodiscard]] ITensorPtr allocate(
         MemoryType memoryType, nvinfer1::Dims dims, nvinfer1::DataType type = kBYTE_TYPE) const;
 
-    //! \brief Create an empty `IBuffer` of the given memory type. It may be resized later.
+    //! \brief Create an empty `IBuffer` of the given memory type. It may be
+    // resized later.
     [[nodiscard]] IBufferPtr emptyBuffer(MemoryType memoryType, nvinfer1::DataType type = kBYTE_TYPE) const
     {
         return allocate(memoryType, 0, type);
     }
 
-    //! \brief Create an empty `ITensor` of the given memory type. It may be reshaped later.
+    //! \brief Create an empty `ITensor` of the given memory type. It may be
+    // reshaped later.
     [[nodiscard]] ITensorPtr emptyTensor(MemoryType memoryType, nvinfer1::DataType type = kBYTE_TYPE) const
     {
         return allocate(memoryType, ITensor::makeShape({}), type);
@@ -153,13 +159,16 @@ public:
     //! \brief Copy `src` to `dst`.
     void copy(IBuffer const& src, IBuffer& dst) const;
 
-    //! \brief Copy `src` into a new `IBuffer` with a potentially different memory type.
+    //! \brief Copy `src` into a new `IBuffer` with a potentially different
+    // memory type.
     [[nodiscard]] IBufferPtr copyFrom(IBuffer const& src, MemoryType memoryType) const;
 
-    //! \brief Copy `src` into a new `ITensor` with a potentially different memory type.
+    //! \brief Copy `src` into a new `ITensor` with a potentially different
+    // memory type.
     [[nodiscard]] ITensorPtr copyFrom(ITensor const& src, MemoryType memoryType) const;
 
-    //! \brief Copy `src` into a new `IBuffer` with a potentially different memory type.
+    //! \brief Copy `src` into a new `IBuffer` with a potentially different
+    // memory type.
     template <typename T>
     [[nodiscard]] IBufferPtr copyFrom(std::vector<T> const& src, MemoryType memoryType) const
     {
@@ -168,7 +177,8 @@ public:
         return buffer;
     }
 
-    //! \brief Copy `src` into a new `ITensor` with a potentially different memory type.
+    //! \brief Copy `src` into a new `ITensor` with a potentially different
+    // memory type.
     template <typename T>
     [[nodiscard]] ITensorPtr copyFrom(T* src, nvinfer1::Dims dims, MemoryType memoryType) const
     {
@@ -177,7 +187,8 @@ public:
         return buffer;
     }
 
-    //! \brief Copy `src` into a new `ITensor` with a potentially different memory type.
+    //! \brief Copy `src` into a new `ITensor` with a potentially different
+    // memory type.
     template <typename T>
     [[nodiscard]] ITensorPtr copyFrom(std::vector<T> const& src, nvinfer1::Dims dims, MemoryType memoryType) const
     {
@@ -199,7 +210,8 @@ public:
     //! \brief The current size of the memory free in the memory pool.
     [[nodiscard]] std::size_t memoryPoolFree() const;
 
-    //! \brief Try to trim the memory reserved by the pool to `size` bytes. This synchronizes implicitly with the
+    //! \brief Try to trim the memory reserved by the pool to `size` bytes. This
+    // synchronizes implicitly with the
     //! stream.
     void memoryPoolTrimTo(std::size_t size);
 
@@ -211,6 +223,4 @@ private:
     bool const mTrimPool;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

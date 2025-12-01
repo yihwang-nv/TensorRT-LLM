@@ -25,7 +25,8 @@
 
 #include <cstdint>
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -56,8 +57,9 @@ void runGemm(at::Tensor& out, at::Tensor const& mat1, at::Tensor const& mat2, at
     float* mat2ScalePtr = static_cast<float*>(mat2Scale.data_ptr());
     float* outScalePtr = globalScale.data_ptr<float>();
 
-    runner.run(m, n, k, mat1.const_data_ptr(), nullptr, mat2.const_data_ptr(), /* bScale */ mat2ScalePtr,
-        out.data_ptr(), outScalePtr, /* cScalePtr */ nullptr, workspace.data_ptr(), stream.stream(), mat1.get_device());
+    runner.run(m, n, k, mat1.const_data_ptr(), nullptr, mat2.const_data_ptr(),
+        /* bScale */ mat2ScalePtr, out.data_ptr(), outScalePtr,
+        /* cScalePtr */ nullptr, workspace.data_ptr(), stream.stream(), mat1.get_device());
 }
 
 at::Tensor fp4_fp8_gemm_impl(at::Tensor const& mat1, at::Tensor const& mat2, at::Tensor const& mat2Scale,
@@ -115,12 +117,13 @@ at::Tensor fp4_fp8_gemm_trtllmgen(at::Tensor const& mat1, at::Tensor const& mat2
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
     m.def(
-        "fp4_fp8_gemm_trtllmgen(Tensor mat1, Tensor mat2, Tensor mat2Scale, Tensor globalScale, "
+        "fp4_fp8_gemm_trtllmgen(Tensor mat1, Tensor mat2, Tensor mat2Scale, "
+        "Tensor globalScale, "
         "ScalarType? out_dtype=None) -> Tensor");
 }
 

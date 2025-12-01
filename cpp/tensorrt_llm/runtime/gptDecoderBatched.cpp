@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-#include "tensorrt_llm/batch_manager/decoderBuffers.h"
-#include "tensorrt_llm/batch_manager/llmRequest.h"
+#include "tensorrt_llm/runtime/gptDecoderBatched.h"
 
 #include "common.h"
 #include "decoderState.h"
 #include "iBuffer.h"
+#include "tensorrt_llm/batch_manager/decoderBuffers.h"
+#include "tensorrt_llm/batch_manager/llmRequest.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 #include "tensorrt_llm/kernels/decodingKernels.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/cudaEvent.h"
-#include "tensorrt_llm/runtime/gptDecoderBatched.h"
 
 #include <algorithm>
 #include <cassert>
@@ -226,7 +225,8 @@ std::pair<DecodingInput, DecodingOutput> prepareGatherTree(
     dOutput.logProbsTiled = dJointOutput.logProbsTiled;
     if (streaming)
     {
-        // in case of streaming we shouldn't overwrite the data in beamHypotheses, since the beam search kernels expect
+        // in case of streaming we shouldn't overwrite the data in beamHypotheses,
+        // since the beam search kernels expect
         // ungathered data but the kernels in gatherTree write in-place.
         // Thus, we need to make a copy of the beamHypotheses
         auto const& beamSearchBuffers = decoderState.getBeamSearchBuffers();
@@ -240,7 +240,8 @@ std::pair<DecodingInput, DecodingOutput> prepareGatherTree(
 }
 } // namespace
 
-// TODO call this at the end of forward if mFinished[i] changes from false to true?
+// TODO call this at the end of forward if mFinished[i] changes from false to
+// true?
 CudaEvent GptDecoderBatched::finalize(decoder::DecoderState const& decoderState, SizeType32 batchSlot,
     SamplingConfig const& samplingConfig, bool streaming) const
 {

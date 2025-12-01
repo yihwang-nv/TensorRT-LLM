@@ -16,14 +16,11 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/runtime/common.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class LoraModule
@@ -64,7 +61,6 @@ public:
         , mOutDimFirst(outDimFirst)
         , mInTpSplitDim(inTpSplitDim)
         , mOutTpSplitDim(outTpSplitDim)
-
     {
     }
 
@@ -294,6 +290,4 @@ inline std::ostream& operator<<(std::ostream& output, LoraModule const& module)
                   << "inTpSplitDim=" << module.inTpSplitDim() << ", "
                   << "outTpSplitDim=" << module.outTpSplitDim() << ")";
 }
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

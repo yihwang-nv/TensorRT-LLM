@@ -25,15 +25,12 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
-/// @brief Populate the start and end profiling iteration indexes from the provided environment variables
-/// Try to set from envVarName first, and if that fails, try to set from legacyEnvVarName
+/// @brief Populate the start and end profiling iteration indexes from the
+/// provided environment variables
+/// Try to set from envVarName first, and if that fails, try to set from
+/// legacyEnvVarName
 /// Env variable values are expected to be in the format "1,2,3-5,6-8,9"
 std::pair<std::unordered_set<int32_t>, std::unordered_set<int32_t>> populateIterationIndexes(
     std::string const& envVarName, std::optional<std::string> const& legacyEnvVarName = std::nullopt);
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

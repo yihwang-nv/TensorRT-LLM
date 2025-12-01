@@ -15,16 +15,13 @@
  */
 
 #include "runtimeUtils.h"
-#include "tensorrt_llm/common/assert.h"
 
-#include "tensorrt_llm/common/config.h"
+#include "tensorrt_llm/common/assert.h"
 
 #include <cassert>
 #include <cstddef>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::utils
+namespace tensorrt_llm::runtime::utils
 {
 
 int initDevice(WorldConfig const& worldConfig)
@@ -34,7 +31,8 @@ int initDevice(WorldConfig const& worldConfig)
     return device;
 }
 
-// follows https://github.com/NVIDIA/TensorRT/blob/release/8.6/samples/common/sampleEngines.cpp
+// follows
+// https://github.com/NVIDIA/TensorRT/blob/release/8.6/samples/common/sampleEngines.cpp
 std::vector<uint8_t> loadEngine(std::string const& enginePath)
 {
     std::ifstream engineFile(enginePath, std::ios::binary);
@@ -82,6 +80,4 @@ void insertTensorSlices(
     }
 }
 
-} // namespace runtime::utils
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::utils

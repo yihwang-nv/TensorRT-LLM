@@ -32,10 +32,7 @@
 
 using namespace tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 template <typename T>
 __device__ void copyChunkedHiddenStates(T const* srcPtr, T* dstPtr, int const numElement)
@@ -70,20 +67,24 @@ __global__ void mtpPrepareDrafterInputsKernel(int const numMTPModules, int const
     int* returnInputIds, T* returnHiddenStates)
 {
     /*
-        In a batch of request: context request (at the beginning) + generation requests
+        In a batch of request: context request (at the beginning) + generation
+       requests
         numGenerationRequest = batchSize - numContextRequest
 
         inputIds: [N]
-            - N = sum(all numContextRequest's prompts) + numGenerationRequest * (numMTPModules + 1)
+            - N = sum(all numContextRequest's prompts) + numGenerationRequest *
+       (numMTPModules + 1)
         seqLens: [batchSize]
         mtpPastHiddenStatesPtrs: [maxNumRequests][numMTPModules, hiddenSize]
         mtpPastTokensPtrs: [maxNumRequests][numMTPModules]
         hiddenStates: [N, hiddenSize]
-            - N = sum(all numContextRequest's prompts) + numGenerationRequest * (numMTPModules + 1) (from target model)
+            - N = sum(all numContextRequest's prompts) + numGenerationRequest *
+       (numMTPModules + 1) (from target model)
         acceptedTokens: [batchSize, numMTPModules + 1]
         numAcceptedTokens: [batchSize]
         returnInputIds: [N]
-            - N = sum(all numContextRequest's prompts) + numGenerationRequest * numMTPModules
+            - N = sum(all numContextRequest's prompts) + numGenerationRequest *
+       numMTPModules
         returnHiddenStates: [N, hiddenSize]
     */
 
@@ -132,7 +133,8 @@ __global__ void mtpPrepareDrafterInputsKernel(int const numMTPModules, int const
             {
                 curReturnInputIdsPtr[ii] = curInputIdsPtr[ii + 1]; // +1 because of offset 1, prompt[1:]
             }
-            // Append the latest golden token, i.e., the first one in the accepted tokens list
+            // Append the latest golden token, i.e., the first one in the accepted
+            // tokens list
             curReturnInputIdsPtr[curSeqLen - 1] = curAcceptedTokensPtr[0];
         }
 
@@ -161,8 +163,10 @@ template <typename T>
 void invokeMTPPrepareDrafterInputs(MTPPrepareDrafterInputsParam& params, cudaStream_t const stream)
 {
     int constexpr BLOCK_SIZE = 512;
-    TLLM_CHECK(
-        params.hiddenSize * sizeof(T) % 16 == 0); // Which is because we will use float4 to copy the hidden states.
+    TLLM_CHECK(params.hiddenSize * sizeof(T) % 16 == 0); // Which is because we
+                                                         // will use float4 to
+                                                         // copy the hidden
+                                                         // states.
 
     mtpPrepareDrafterInputsKernel<T><<<params.batchSize, BLOCK_SIZE, 0, stream>>>(params.numMTPModules,
         params.numContextRequest, params.hiddenSize, params.inputIds, params.seqLens,
@@ -186,7 +190,8 @@ __global__ void mtpGreedySampling(int const numMTPModules, int const batchSize, 
     int const vocabSize, T const* logits, int* targetTokens)
 {
     /*
-        In a batch of request: context request (at the beginning) + generation requests
+        In a batch of request: context request (at the beginning) + generation
+       requests
         numGenerationRequest = batchSize - numContextRequest
         numLogits = numContextRequest + numGenerationRequest * (numMTPModules + 1)
         allDraftToken = numGenerationRequest * numMTPModules
@@ -251,7 +256,8 @@ __global__ void mtpAcceptDraftToken(int const numMTPModules, int const batchSize
     int const* draftTokens, int* targetTokens, int* acceptedTokens, int* numAcceptedTokens)
 {
     /*
-        In a batch of request: context request (at the beginning) + generation requests
+        In a batch of request: context request (at the beginning) + generation
+       requests
         numGenerationRequest = batchSize - numContextRequest
         numLogits = numContextRequest + numGenerationRequest * (numMTPModules + 1)
         allDraftToken = numGenerationRequest * numMTPModules
@@ -345,7 +351,8 @@ __global__ void mtpUpdateHiddenStatesKernel(int const numMTPModules, int const b
     T** mtpPastHiddenStatesPtrs, int** mtpPastTokensPtrs, int const* numAcceptedTokens)
 {
     /*
-        In a batch of request: context request (at the beginning) + generation requests
+        In a batch of request: context request (at the beginning) + generation
+       requests
         numGenerationRequest = batchSize - numContextRequest
         allTokens = sum(all prompts) + numGenerationRequest * (numMTPModules + 1)
 
@@ -433,8 +440,10 @@ template <typename T>
 void invokeMTPUpdateHiddenStates(MTPUpdateHiddenStatesParam& params, cudaStream_t const stream)
 {
     int constexpr BLOCK_SIZE = 512;
-    TLLM_CHECK(
-        params.hiddenSize * sizeof(T) % 16 == 0); // Which is because we will use float4 to copy the hidden states.
+    TLLM_CHECK(params.hiddenSize * sizeof(T) % 16 == 0); // Which is because we
+                                                         // will use float4 to
+                                                         // copy the hidden
+                                                         // states.
 
     mtpUpdateHiddenStatesKernel<T><<<params.batchSize, BLOCK_SIZE, 0, stream>>>(params.numMTPModules, params.batchSize,
         params.numContextRequest, params.hiddenSize, params.inputIds, params.seqLens,
@@ -457,7 +466,8 @@ __global__ void mtpRelaxedAcceptanceKernel(int const numMTPModules, int const ba
     int* numAcceptedTokens, int* acceptedTokens)
 {
     /*
-        In a batch of request: context request (at the beginning) + generation requests
+        In a batch of request: context request (at the beginning) + generation
+       requests
         numGenerationRequest = batchSize - numContextRequest
 
         topKValue: [numGenerationRequest, numMTPModules+1, relaxedTopK]
@@ -561,6 +571,4 @@ template void invokeMTPRelaxedAcceptance<half>(MTPRelaxedAcceptanceParam& params
 template void invokeMTPRelaxedAcceptance<__nv_bfloat16>(MTPRelaxedAcceptanceParam& params, cudaStream_t stream);
 #endif
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

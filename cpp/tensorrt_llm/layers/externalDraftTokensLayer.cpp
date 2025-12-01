@@ -15,7 +15,6 @@
  */
 
 #include "externalDraftTokensLayer.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/kernels/decodingCommon.h"
@@ -34,9 +33,7 @@ using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::kernels;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace layers
+namespace tensorrt_llm::layers
 {
 
 template <typename T>
@@ -141,7 +138,8 @@ void ExternalDraftTokensLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWid
     auto const paramsSize = expandMatchElements(batchSize, runtimeTopK, runtimeTopP);
 
     TLLM_CHECK_WITH_INFO(paramsSize != 0,
-        fmtstr("ExternalDraftTokensLayer got parameter with unexpected size, want 1 or batchSize(%d), got"
+        fmtstr("ExternalDraftTokensLayer got parameter with unexpected size, "
+               "want 1 or batchSize(%d), got"
                "runtimeTopK.size() = %zu, runtimeTopP.size() = %zu",
             batchSize, runtimeTopK.size(), runtimeTopP.size()));
 
@@ -155,9 +153,11 @@ void ExternalDraftTokensLayer<T>::setup(SizeType32 batchSize, SizeType32 beamWid
     }
 
     // Update parameters on both device and host, so we can
-    // - determine whether we can skip launch TopK / TopP kernel by examine mSkipTopKDecodeHost / mSkipTopPDecodeHost
+    // - determine whether we can skip launch TopK / TopP kernel by examine
+    // mSkipTopKDecodeHost / mSkipTopPDecodeHost
     // - select best kernel by examine mRuntimeTopKHost
-    // without consulting device memory, or we'll have to do an expensive synchronization.
+    // without consulting device memory, or we'll have to do an expensive
+    // synchronization.
     SizeType32* topKsPtr = nullptr;
     float* topPsPtr = nullptr;
 
@@ -209,7 +209,8 @@ void ExternalDraftTokensLayer<T>::prepareInputs(
 {
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
-    // Fill the buffer for selected ids from sampling with zero. -1 will be set as a boundary if topP kernel is required
+    // Fill the buffer for selected ids from sampling with zero. -1 will be set
+    // as a boundary if topP kernel is required
     auto& outputIdsAfterSamplingTensor = const_cast<ITensor&>(*mOutputIdsAfterSampling);
     mBufferManager->setZero(outputIdsAfterSamplingTensor);
 
@@ -255,22 +256,29 @@ void ExternalDraftTokensLayer<T>::forwardAsync(std::shared_ptr<BaseDecodingOutpu
     prepareInputs(outputs, baseInputs);
 
     // The logits from target engine should go through samplings first.
-    // gptDecoderBatched.cpp is calling dynamic decoder step by step, in this step, dynamic Decoder already forwarded
-    // PenaltyLayer, BanWordsLayer. For (TopK > 0) && (TopK == 0 && TopP == 0), we invoke TopK sampling kernel. The same
+    // gptDecoderBatched.cpp is calling dynamic decoder step by step, in this
+    // step, dynamic Decoder already forwarded
+    // PenaltyLayer, BanWordsLayer. For (TopK > 0) && (TopK == 0 && TopP == 0),
+    // we invoke TopK sampling kernel. The same
     // logic is implemented in SamplingLayer.cpp
     getAllTopKs(outputs, baseInputs, workspace);
 
     // Only for (TopK == 0 && TopP > 0), we invoke TopP sampling
     getAllTopPs(outputs, baseInputs, workspace);
 
-    // After all selected tokens are filled in mOutputIdsAfterSampling by topK, topP kernels, token acceptance logics
-    // starts. First we mask the logits of unselected token id to -inf as HF's TopK, TopP implementation. We compute the
+    // After all selected tokens are filled in mOutputIdsAfterSampling by topK,
+    // topP kernels, token acceptance logics
+    // starts. First we mask the logits of unselected token id to -inf as HF's
+    // TopK, TopP implementation. We compute the
     // logit probs of draft and target and go through acceptance logics.
     acceptDraftTokens(outputs, baseInputs, workspace);
 
-    // If the token of the sequence is not accepted, a multinomial sampling is required for the bonus token.
-    // Multinomial sampling is achieved through TopP kernel with TopP = 1 and already weighted-sum target logits.
-    // The acceptance result of each batch is used as skipDecode in topP kernel. If is accepted, no sampling is needed
+    // If the token of the sequence is not accepted, a multinomial sampling is
+    // required for the bonus token.
+    // Multinomial sampling is achieved through TopP kernel with TopP = 1 and
+    // already weighted-sum target logits.
+    // The acceptance result of each batch is used as skipDecode in topP kernel.
+    // If is accepted, no sampling is needed
     // (early exit). Forwarding for the next step is also set in this kernel.
     multinomialSampling(outputs, baseInputs, workspace);
 
@@ -615,6 +623,4 @@ void ExternalDraftTokensLayer<T>::forwardAcceptedTokens(std::shared_ptr<BaseDeco
 template class ExternalDraftTokensLayer<float>;
 template class ExternalDraftTokensLayer<half>;
 
-} // namespace layers
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::layers

@@ -17,7 +17,6 @@
 
 // Rest of includes
 #include "mcastDeviceMemory.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaDriverWrapper.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
@@ -26,9 +25,7 @@
 #include <cstdint>
 #include <cuda_runtime_api.h>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 namespace
@@ -69,7 +66,8 @@ McastDeviceMemory::McastDeviceMemory(
     int const world_rank{tensorrt_llm::mpi::MpiComm::session().getRank()};
 
     TLLM_LOG_DEBUG(
-        "[McastDeviceMemory] World Rank: %u, Group Rank: %u, Group size: %u, GroupSplitColor: %u, isMultiNode: %d, "
+        "[McastDeviceMemory] World Rank: %u, Group Rank: %u, Group "
+        "size: %u, GroupSplitColor: %u, isMultiNode: %d, "
         "device_idx: %d, Signal pad offset: %zu",
         world_rank, mGroupRank, mGroupSize, splitColor, mIsMNNvlink, mDeviceIdx, mSignalPadOffset);
 
@@ -225,6 +223,4 @@ void McastDeviceMemory::allocNvlsMcastMem(size_t bufSize)
     mUcHandles = mNvlsHandle->ipc_uc_handles;
 }
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

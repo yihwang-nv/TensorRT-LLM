@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +22,6 @@
 #include "tensorrt_llm/batch_manager/medusaBuffers.h"
 #include "tensorrt_llm/batch_manager/utils/logitsThread.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/common/nvtxUtils.h"
 #include "tensorrt_llm/runtime/common.h"
@@ -42,9 +42,7 @@ namespace tc = tensorrt_llm::common;
 namespace te = tensorrt_llm::executor;
 namespace tr = tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 using SizeType32 = CreateNewDecoderRequests::SizeType32;
@@ -94,11 +92,13 @@ void copySequenceLengths(RequestVector const& contextRequests, DecoderInputBuffe
     }
 }
 
-/// @brief Retrieve the embedding bias from the request. This potentially makes a copy of the tensor
+/// @brief Retrieve the embedding bias from the request. This potentially
+/// makes a copy of the tensor
 /// to the appropriate type if the input tensor does not match it.
 [[nodiscard]] TensorPtr getEmbeddingBias(nvinfer1::DataType logitsType, TensorPtr const& tensor)
 {
-    // Check that embedding bias type is same as logits type. If so, we can return the tensor right away
+    // Check that embedding bias type is same as logits type. If so, we can
+    // return the tensor right away
     if (tensor->getDataType() == logitsType)
     {
         return tensor;
@@ -109,7 +109,8 @@ void copySequenceLengths(RequestVector const& contextRequests, DecoderInputBuffe
     {
         // Do a deep copy of the tensor to the expected type
         TLLM_LOG_WARNING(
-            "Embedding bias data type must be same as model logits type, will copy the tensor from float to half");
+            "Embedding bias data type must be same as model logits "
+            "type, will copy the tensor from float to half");
 
         TLLM_CHECK_WITH_INFO(
             tensor->getMemoryType() != MemoryType::kGPU, "Embedding bias tensor needs to be in CPU memory for casting");
@@ -185,8 +186,8 @@ void initializeInputLengths(DecodingInput& dJointInput, SizeType32 batchSlot, Si
     auto const maxNewTokens = maxNewTokensOpt.value_or(maxSequenceLength - inputLength - numDecodingDraftEngineTokens);
 
     TLLM_CHECK_WITH_INFO(inputLength + maxNewTokens + numDecodingDraftEngineTokens <= maxSequenceLength,
-        tc::fmtstr(
-            "Input length (%d) + max new tokens (%d) + draft tokens (%d) must be less than max sequence length (%d).",
+        tc::fmtstr("Input length (%d) + max new tokens (%d) + draft tokens "
+                   "(%d) must be less than max sequence length (%d).",
             inputLength, maxNewTokens, numDecodingDraftEngineTokens, maxSequenceLength));
 
     TensorPtr const sequenceLimitLength{
@@ -249,7 +250,8 @@ void initializeEmbeddingBias(DecodingInput& dJointInput, SizeType32 batchSlot,
         TLLM_CHECK(embeddingBiasTensor->getShape().nbDims == 2);
         TLLM_CHECK(embeddingBiasTensor->getShape().d[0] == 1);
         TLLM_CHECK_WITH_INFO(embeddingBiasTensor->getShape().d[1] == modelConfig.getVocabSize(),
-            "The embedding bias shape is not as expected. Expected last dimension to be same as vocab size: %d.",
+            "The embedding bias shape is not as expected. Expected last "
+            "dimension to be same as vocab size: %d.",
             modelConfig.getVocabSize());
         manager.copy(*embeddingBiasTensor, *embeddingBiasSlice);
     }
@@ -265,7 +267,8 @@ void setupWords(std::vector<runtime::ITensor::SharedPtr>& jointWordsLists,
 {
     if (requestWordsList.has_value())
     {
-        // Move to GPU and remove leading bs1 dimension since this is what decoderRequest expects
+        // Move to GPU and remove leading bs1 dimension since this is what
+        // decoderRequest expects
         TensorPtr wordsList = manager.copyFrom(*requestWordsList.value(), MemoryType::kGPU);
         wordsList->squeeze(0);
 
@@ -276,7 +279,8 @@ void setupWords(std::vector<runtime::ITensor::SharedPtr>& jointWordsLists,
         // FIXME: this is monotonically growing size
         jointMaxWordsLen = std::max(static_cast<SizeType32>(wordsLen), jointMaxWordsLen);
 
-        // NOTE: jointWordsList is not used in gptDecoder, but required to keep <name>WordsList's
+        // NOTE: jointWordsList is not used in gptDecoder, but required to keep
+        // <name>WordsList's
         // memory allocated
         jointWordsLists[batchSlot] = wordsList;
     }
@@ -345,7 +349,8 @@ void retrieveDraftLogits(TensorPtr& draftLogitsHost, std::shared_ptr<runtime::IT
         // reqDraftLogits contains metadata for fast-logits path; validate size.
         auto constexpr fastLogitsInfoSize = sizeof(te::SpeculativeDecodingFastLogitsInfo);
         TLLM_CHECK_WITH_INFO(reqDraftLogits->getSizeInBytes() >= fastLogitsInfoSize,
-            "Draft logits metadata buffer is too small to hold SpeculativeDecodingFastLogitsInfo.");
+            "Draft logits metadata buffer is too small to hold "
+            "SpeculativeDecodingFastLogitsInfo.");
         te::SpeculativeDecodingFastLogitsInfo fastLogitsInfo{};
         std::memcpy(&fastLogitsInfo, reqDraftLogits->data(), fastLogitsInfoSize);
         utils::targetModelReceiveLogits(draftLogitsHost, fastLogitsInfo, modelConfig.getLogitsDtype());
@@ -363,7 +368,8 @@ void retrieveDraftLogits(TensorPtr& draftLogitsHost, std::shared_ptr<runtime::IT
     else
     {
         TLLM_CHECK_WITH_INFO(worldConfig.isTensorParallel(),
-            "Fast logits path requires tensor-parallel broadcast for non-leader ranks.");
+            "Fast logits path requires tensor-parallel "
+            "broadcast for non-leader ranks.");
 
         // Get logits from leader rank
         auto const& commSession = COMM_SESSION;
@@ -377,7 +383,8 @@ void retrieveDraftLogits(TensorPtr& draftLogitsHost, std::shared_ptr<runtime::IT
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 };
 
-//! @brief Setups decoder internal tensors for new request in Draft model Sps mode
+//! @brief Setups decoder internal tensors for new request in Draft model Sps
+// mode
 void newRequestDraftTokensExternal(DecodingInput& jointDecodingInput, SizeType32 batchIdx, LlmRequest const& llmReq,
     SizeType32 numDecodingEngineTokens, runtime::ModelConfig const& modelConfig, WorldConfig const& worldConfig,
     bool speculativeDecodingFastLogits, bool isLeaderInOrchMode, CudaStream const& decoderStream)
@@ -448,8 +455,10 @@ void newRequestMedusa(DecodingInput& jointDecodingInput, SizeType32 batchIdx, Ll
     TLLM_LOG_TRACE("%s start", __PRETTY_FUNCTION__);
 
     llmReq.mSamplingConfig.topKMedusaHeads = {medusaBuffers.mTopKs};
-    // FIXME: we must set medusa paths and tree ids not from seq slot, but from llmRequest?
-    // When multiple microbatches buffers are used, runtime buffers can not be addressed with seqSlot.
+    // FIXME: we must set medusa paths and tree ids not from seq slot, but from
+    // llmRequest?
+    // When multiple microbatches buffers are used, runtime buffers can not be
+    // addressed with seqSlot.
     auto medusaPaths = ITensor::slice(medusaBuffers.medusaPathsDevice, 0, 1);
     auto medusaTreeIds = ITensor::slice(medusaBuffers.medusaTreeIdsDevice, 0, 1);
 
@@ -459,7 +468,8 @@ void newRequestMedusa(DecodingInput& jointDecodingInput, SizeType32 batchIdx, Ll
 
     TensorPtr curTokensPerStepSlice
         = ITensor::slice(constPointerCast(medusaInputs->medusaCurTokensPerStep), batchIdx, 1);
-    // Context phase Medusa processes 1 token only, new value from targetTokensPerStep will be filled at the end
+    // Context phase Medusa processes 1 token only, new value from
+    // targetTokensPerStep will be filled at the end
     // of first decoder
     runtime::kernels::invokeFill(*curTokensPerStepSlice, 1, decoderStream);
     TensorPtr targetTokensPerStepSlice
@@ -495,7 +505,8 @@ void newRequestLookahead(DecodingInput& jointDecodingInput, DecodingOutput& join
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-//! @brief Setups decoder internal tensors for new Explicit draft tokens request
+//! @brief Setups decoder internal tensors for new Explicit draft tokens
+// request
 void newRequestExplicitDraftTokens(
     DecodingOutput& jointDecodingOutput, SizeType32 batchIdx, LlmRequest const& llmReq, CudaStream const& runtimeStream)
 {
@@ -568,7 +579,8 @@ void newRequestEagle(DecodingOutput& jointDecodingOutput, SizeType32 batchIdx, L
             eagleChoicesOpt.value_or(eagleModule->getDefaultEagleChoices()), topKs, nullptr, nullptr, nullptr,
             draftPathsHostSlice, nullptr, {eagleModule->getMaxNonLeafNodesPerLayer()});
         TLLM_CHECK_WITH_INFO(depth == modelConfig.getSpeculativeDecodingModule().getMaxDraftPathLen(),
-            "EAGLE-1 requires Eagle-tree depth being equal to the the number of build-time EAGLE layers.");
+            "EAGLE-1 requires Eagle-tree depth being equal to the the number of "
+            "build-time EAGLE layers.");
 
         manager.copy(*draftPathsHostSlice, *draftPathsSlice);
     }
@@ -576,7 +588,8 @@ void newRequestEagle(DecodingOutput& jointDecodingOutput, SizeType32 batchIdx, L
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
 
-//! @brief Setups decoder internal tensors for new speculative decoding request
+//! @brief Setups decoder internal tensors for new speculative decoding
+// request
 void newRequestSpeculativeDecoding(DecodingInput& jointDecodingInput, DecodingOutput& jointDecodingOutput,
     SizeType32 batchIdx, LlmRequest& llmReq, SpeculativeDecodingMode const& speculativeDecodingMode,
     SizeType32 numDecodingEngineTokens, SizeType32 maxDecodingEngineTokens,
@@ -673,7 +686,8 @@ CreateNewDecoderRequests::createDecoderRequests(RequestVector const& finishedCon
         auto const beamWidth = samplingConfig.beamWidth;
         auto const maxBeamWidth = decoderState.getMaxBeamWidth();
         TLLM_CHECK_WITH_INFO(beamWidth <= maxBeamWidth,
-            tc::fmtstr("Beam width (%d) must be smaller than maxBeamWidth (%d) passed to decoder setup function.",
+            tc::fmtstr("Beam width (%d) must be smaller than maxBeamWidth (%d) "
+                       "passed to decoder setup function.",
                 beamWidth, maxBeamWidth));
         decoderState.setBeamWidth(batchSlot, beamWidth);
 
@@ -752,6 +766,4 @@ CreateNewDecoderRequests::createDecoderRequests(RequestVector const& finishedCon
     return {std::move(lookaheadPrompt), std::move(lookaheadAlgoConfigs)};
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

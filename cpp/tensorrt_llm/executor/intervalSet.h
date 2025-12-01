@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,12 +18,9 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/types.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace executor
+namespace tensorrt_llm::executor
 {
 
 /// @brief An interval inclusive on both ends.
@@ -40,7 +38,8 @@ bool operator<(Interval<T> const& a, Interval<T> const& b)
     return a.lowerEnd < b.lowerEnd;
 }
 
-/// @brief A container to store unique numbers, represented as a vector of ordered and disjoint intervals.
+/// @brief A container to store unique numbers, represented as a vector of
+/// ordered and disjoint intervals.
 template <typename NumType>
 class IntervalSet
 {
@@ -70,7 +69,8 @@ public:
         return false;
     }
 
-    /// @brief Insert a number into set. Do nothing if the number is already in the set.
+    /// @brief Insert a number into set. Do nothing if the number is already in
+    /// the set.
     void insert(NumType num)
     {
         auto intervalToAdd = Interval<NumType>{num, num};
@@ -90,7 +90,8 @@ public:
 
         if ((!iterAtEnd && iter->lowerEnd == num) || (!iterAtBegin && num <= (iter - 1)->upperEnd))
         {
-            // Number falls within the current interval or previous interval. No need to add again.
+            // Number falls within the current interval or previous interval. No
+            // need to add again.
             return;
         }
 
@@ -102,12 +103,14 @@ public:
         }
         else if (!iterAtBegin && (iter - 1)->upperEnd + 1 == num)
         {
-            // Number is adjacent to the upper end of the previous interval. Merge left.
+            // Number is adjacent to the upper end of the previous interval. Merge
+            // left.
             (iter - 1)->upperEnd = num;
         }
         else if (!iterAtEnd && iter->lowerEnd - 1 == num)
         {
-            // Number is adjacent to the lower end of the current interval. Merge right.
+            // Number is adjacent to the lower end of the current interval. Merge
+            // right.
             iter->lowerEnd = num;
         }
         else
@@ -141,6 +144,4 @@ private:
     SizeType32 mNumElements{0};
 };
 
-} // namespace executor
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::executor

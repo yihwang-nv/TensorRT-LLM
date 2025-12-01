@@ -21,7 +21,8 @@
 
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -29,7 +30,8 @@ namespace torch_ext
 /**
  * @brief Attention operation for TensorRT-LLM
  *
- * This function performs multi-head attention computation in-place, supporting both
+ * This function performs multi-head attention computation in-place, supporting
+ *both
  * context and generation phases with various optimization features including:
  * - Fused QKV processing
  * - KV cache management
@@ -74,4 +76,4 @@ void attention(torch::Tensor q, std::optional<torch::Tensor> k, std::optional<to
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm

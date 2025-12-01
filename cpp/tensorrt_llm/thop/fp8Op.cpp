@@ -27,7 +27,8 @@
 #define TORCH_IS_AT_LEAST_v190
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -239,8 +240,8 @@ std::tuple<Tensor, Tensor> quantize_mxe4m3_host(Tensor x_fp32, bool is_sf_swizzl
     int hidden_dim = data_shape[1];
     int groups_per_hidden_dim = hidden_dim / sf_vec_size;
 
-    Tensor fp8_tensor = at::detail::empty_cpu(
-        {num_tokens, hidden_dim}, at::ScalarType::Byte, /* pinned */ true, at::MemoryFormat::Contiguous);
+    Tensor fp8_tensor = at::detail::empty_cpu({num_tokens, hidden_dim}, at::ScalarType::Byte,
+        /* pinned */ true, at::MemoryFormat::Contiguous);
     int64_t sf_size = is_sf_swizzled_layout
         ? tensorrt_llm::computeSwizzledLayoutSFSize(num_tokens, hidden_dim / sf_vec_size)
         : tensorrt_llm::computeLinearLayoutSFSize(num_tokens, hidden_dim / sf_vec_size);
@@ -292,8 +293,8 @@ Tensor dequantize_mxe4m3_host(Tensor value_e4m3, Tensor scale_ue8m08sf, bool is_
     auto scale_shape = scale_ue8m08sf.sizes();
     TORCH_CHECK(data_shape.size() == 2, "value_e4m3 should be 2D tensor.");
     TORCH_CHECK(scale_shape.size() == 1, "scale_ue8m08sf should be 1D tensor.");
-    Tensor float_tensor = at::detail::empty_cpu(
-        {data_shape[0], data_shape[1]}, at::ScalarType::Float, /* pinned */ true, at::MemoryFormat::Contiguous);
+    Tensor float_tensor = at::detail::empty_cpu({data_shape[0], data_shape[1]}, at::ScalarType::Float,
+        /* pinned */ true, at::MemoryFormat::Contiguous);
 
     int hidden_dim = data_shape[1];
     int groups_per_hidden_dim = hidden_dim / sf_vec_size;
@@ -373,7 +374,7 @@ Tensor symmetric_dequantize_per_tensor(Tensor input, Tensor scales)
 
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 // Utility methods that may be useful for preprocessing weights in torch.
 TORCH_LIBRARY_FRAGMENT(tensorrt_llm, m)
@@ -381,9 +382,15 @@ TORCH_LIBRARY_FRAGMENT(tensorrt_llm, m)
     m.def("quantize_e4m3_weight(Tensor weight) -> (Tensor, Tensor)");
     m.def("quantize_e4m3_activation(Tensor activation) -> (Tensor, Tensor)");
     m.def("quantize_e4m3_per_tensor(Tensor input) -> (Tensor, Tensor)");
-    m.def("static_quantize_e4m3_weight(Tensor weight, Tensor scales) -> (Tensor, Tensor)");
-    m.def("static_quantize_e4m3_activation(Tensor activation, Tensor scales) -> (Tensor, Tensor)");
-    m.def("static_quantize_e4m3_per_tensor(Tensor input, Tensor scales) -> (Tensor, Tensor)");
+    m.def(
+        "static_quantize_e4m3_weight(Tensor weight, Tensor scales) -> (Tensor, "
+        "Tensor)");
+    m.def(
+        "static_quantize_e4m3_activation(Tensor activation, Tensor scales) -> "
+        "(Tensor, Tensor)");
+    m.def(
+        "static_quantize_e4m3_per_tensor(Tensor input, Tensor scales) -> "
+        "(Tensor, Tensor)");
     m.def("dequantize_e4m3_weight(Tensor weight, Tensor scales) -> Tensor");
     m.def("dequantize_e4m3_activation(Tensor activation, Tensor scales) -> Tensor");
     m.def("dequantize_e4m3_per_tensor(Tensor input, Tensor scales) -> Tensor");

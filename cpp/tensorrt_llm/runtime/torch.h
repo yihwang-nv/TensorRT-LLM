@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/logger.h"
 #include "tensorrt_llm/runtime/cudaStream.h"
 #include "tensorrt_llm/runtime/iTensor.h"
@@ -27,9 +26,7 @@
 
 #include <stdexcept>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class Torch
@@ -41,7 +38,8 @@ public:
                                        .pinned_memory((*tensor).getMemoryType() == MemoryType::kPINNEDPOOL)
                                        .dtype(TorchUtils::dataType((*tensor).getDataType()))
                                        .layout(at::kStrided);
-        return at::for_blob(tensor->data(), TorchUtils::shape(tensor->getShape())) // NOLINT(*-use-after-move)
+        return at::for_blob(tensor->data(),
+            TorchUtils::shape(tensor->getShape())) // NOLINT(*-use-after-move)
             .options(tensorOptions)
             .deleter(
                 [ptr = std::move(tensor)](void* data) mutable
@@ -70,6 +68,4 @@ private:
     Torch() = default;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

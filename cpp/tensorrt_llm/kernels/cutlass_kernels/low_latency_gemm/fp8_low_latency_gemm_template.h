@@ -63,12 +63,9 @@
 #include <stdexcept>
 
 namespace tk = tensorrt_llm::common;
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 namespace cutlass_kernels
 {
@@ -88,18 +85,20 @@ size_t genericFp8LowLatencyGemmKernelLauncherSm90(__nv_fp8_e4m3 const* A, __nv_f
     using namespace cute;
 
     // A matrix configuration
-    using ElementA = cutlass::float_e4m3_t;            // Element type for A matrix operand
-    using LayoutA = cutlass::layout::RowMajor;         // Layout type for A matrix operand
-    constexpr int AlignmentA
-        = 128 / cutlass::sizeof_bits<ElementA>::value; // Memory access granularity/alignment of A matrix in units of
-                                                       // elements (up to 16 bytes)
+    using ElementA = cutlass::float_e4m3_t;                                 // Element type for A matrix operand
+    using LayoutA = cutlass::layout::RowMajor;                              // Layout type for A matrix operand
+    constexpr int AlignmentA = 128 / cutlass::sizeof_bits<ElementA>::value; // Memory access
+                                                                            // granularity/alignment of A
+                                                                            // matrix in units of
+                                                                            // elements (up to 16 bytes)
 
     // B matrix configuration
-    using ElementB = cutlass::float_e4m3_t;            // Element type for B matrix operand
-    using LayoutB = cutlass::layout::ColumnMajor;      // Layout type for B matrix operand
-    constexpr int AlignmentB
-        = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access granularity/alignment of B matrix in units of
-                                                       // elements (up to 16 bytes)
+    using ElementB = cutlass::float_e4m3_t;                                 // Element type for B matrix operand
+    using LayoutB = cutlass::layout::ColumnMajor;                           // Layout type for B matrix operand
+    constexpr int AlignmentB = 128 / cutlass::sizeof_bits<ElementB>::value; // Memory access
+                                                                            // granularity/alignment of B
+                                                                            // matrix in units of
+                                                                            // elements (up to 16 bytes)
 
     using ElementOutput_ =
         typename cutlass::platform::conditional<cutlass::platform::is_same<T, half>::value, cutlass::half_t, T>::type;
@@ -112,11 +111,12 @@ size_t genericFp8LowLatencyGemmKernelLauncherSm90(__nv_fp8_e4m3 const* A, __nv_f
 #endif
 
     // C matrix configuration
-    using ElementC = ElementOutput;                    // Element type for C and D matrix operands
-    using LayoutC = cutlass::layout::ColumnMajor;      // Layout type for C and D matrix operands
-    constexpr int AlignmentC
-        = 128 / cutlass::sizeof_bits<ElementC>::value; // Memory access granularity/alignment of C matrix in units of
-                                                       // elements (up to 16 bytes)
+    using ElementC = ElementOutput;                                         // Element type for C and D matrix operands
+    using LayoutC = cutlass::layout::ColumnMajor;                           // Layout type for C and D matrix operands
+    constexpr int AlignmentC = 128 / cutlass::sizeof_bits<ElementC>::value; // Memory access
+                                                                            // granularity/alignment of C
+                                                                            // matrix in units of
+                                                                            // elements (up to 16 bytes)
 
     // D matrix configuration
     using ElementD = ElementC;
@@ -124,9 +124,10 @@ size_t genericFp8LowLatencyGemmKernelLauncherSm90(__nv_fp8_e4m3 const* A, __nv_f
     constexpr int AlignmentD = AlignmentC;
 
     // / Core kernel configurations
-    using ElementAccumulator = float;    // Element type for internal accumulation
-    using ElementCompute = float;        // Element type for epilogue computation
-    using ArchTag = cutlass::arch::Sm90; // Tag indicating the minimum SM that supports the intended feature
+    using ElementAccumulator = float;                     // Element type for internal accumulation
+    using ElementCompute = float;                         // Element type for epilogue computation
+    using ArchTag = cutlass::arch::Sm90;                  // Tag indicating the minimum SM that
+                                                          // supports the intended feature
     using OperatorClass = cutlass::arch::OpClassTensorOp; // Operator class tag
     using TileShape = ThreadblockShape;                   // Threadblock-level tile size
     using ClusterShape = ClusterShape_;                   // Shape of the threadblocks in a cluster
@@ -214,7 +215,9 @@ size_t genericFp8LowLatencyGemmKernelLauncherSm90(__nv_fp8_e4m3 const* A, __nv_f
     auto can_implement = gemm.can_implement(arguments);
     if (can_implement != cutlass::Status::kSuccess)
     {
-        std::string errMsg = "Fp8LowLatencyGemm cutlass kernel not implemented given the params. Error: "
+        std::string errMsg
+            = "Fp8LowLatencyGemm cutlass kernel not implemented "
+              "given the params. Error: "
             + std::string(cutlassGetStatusString(can_implement));
         throw std::runtime_error("[TensorRT LLM Error][Fp8LowLatencyGemm Runner] " + errMsg);
     }
@@ -235,7 +238,9 @@ size_t genericFp8LowLatencyGemmKernelLauncherSm90(__nv_fp8_e4m3 const* A, __nv_f
     return gemm.get_workspace_size(arguments);
 #else  // COMPILE_HOPPER_TMA_GEMMS
     throw std::runtime_error(
-        "[TensorRT LLM Error][genericFp8LowLatencyGemmKernelLauncherSm90] Please recompile with support for hopper by "
+        "[TensorRT LLM "
+        "Error][genericFp8LowLatencyGemmKernelLauncherSm90] "
+        "Please recompile with support for hopper by "
         "passing 90-real as an arch to build_wheel.py.");
 #endif // COMPILE_HOPPER_TMA_GEMMS
 }
@@ -264,7 +269,10 @@ size_t dispatchLowLatencyGemmCultassKernelSchedSm90(__nv_fp8_e4m3 const* A, __nv
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][dispatchLowLatencyGemmCultassKernelSchedSm90] Config "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner]["
+            "dispatchLowLatencyGemmCultassKernelSchedSm90] "
+            "Config "
             "is "
             "invalid for low latency fp8 gemm");
         break;
@@ -300,7 +308,10 @@ size_t dispatchLowLatencyGemmClusterShapeSm90(__nv_fp8_e4m3 const* A, __nv_fp8_e
 
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][dispatchLowLatencyGemmClusterShapeSm90] Config is "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner]["
+            "dispatchLowLatencyGemmClusterShapeSm90] Config "
+            "is "
             "invalid for low latency fp8 gemm");
         break;
     }
@@ -369,19 +380,25 @@ size_t dispatchLowLatencyGemmToCutlassSm90(__nv_fp8_e4m3 const* A, __nv_fp8_e4m3
         break;
     case tkc::CutlassTileConfigSM90::Undefined:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][dispatchLowLatencyGemmToCutlassSm90] gemm config "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner]["
+            "dispatchLowLatencyGemmToCutlassSm90] gemm config "
             "undefined.");
         break;
     case tkc::CutlassTileConfigSM90::ChooseWithHeuristic:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][dispatchLowLatencyGemmToCutlassSm90] gemm config "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner]["
+            "dispatchLowLatencyGemmToCutlassSm90] gemm config "
             "should have "
             "already been set by "
             "heuristic.");
         break;
     default:
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][dispatchLowLatencyGemmToCutlassSm90] Config is "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner]["
+            "dispatchLowLatencyGemmToCutlassSm90] Config is "
             "invalid for low latency fp8 gemm");
         break;
     }
@@ -413,7 +430,9 @@ size_t CutlassLowLatencyFp8GemmRunner<T>::dispatchToArch(__nv_fp8_e4m3 const* A,
     {
 
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][GEMM Dispatch] dtype unsupported for CUTLASS Low "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner][GEMM "
+            "Dispatch] dtype unsupported for CUTLASS Low "
             "Latency Gemm");
     }
     return 0;
@@ -499,7 +518,9 @@ std::vector<ConfigType> CutlassLowLatencyFp8GemmRunner<T>::getConfigs() const
     if (mSm != 90)
     {
         throw std::runtime_error(
-            "[TensorRT LLM Error][CutlassLowLatencyFp8GemmRunner][GEMM Dispatch] Arch unsupported for CUTLASS FP8 Low "
+            "[TensorRT LLM "
+            "Error][CutlassLowLatencyFp8GemmRunner][GEMM "
+            "Dispatch] Arch unsupported for CUTLASS FP8 Low "
             "Latency GEMM");
     }
     tkc::CutlassGemmConfig::CandidateConfigTypeParam config_type_param
@@ -552,6 +573,5 @@ std::vector<ConfigType> CutlassLowLatencyFp8GemmRunner<T>::getConfigs() const
 }
 
 }; // namespace cutlass_kernels
-}; // namespace kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

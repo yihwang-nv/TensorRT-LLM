@@ -25,9 +25,9 @@
 #include <cuda_fp4.h>
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::cutlass_kernels
+namespace cutlass_kernels
 {
 
 // Blackwell arch
@@ -42,7 +42,8 @@ constexpr bool isValidSM120MOESpecialisation()
                    && cutlass::platform::is_same<WeightType, __nv_fp4_e2m1>::value))
         && cutlass::platform::is_same<EpilogueTag, cutlass_extensions::EpilogueOpDefault>::value;
 #else
-    return false; // CUTLASS_ARCH_MMA_SM100_SUPPORTED is set when Blackwell kernels are enabled
+    return false; // CUTLASS_ARCH_MMA_SM100_SUPPORTED is set when Blackwell
+                  // kernels are enabled
 #endif
 }
 
@@ -57,7 +58,8 @@ constexpr bool isValidBlackwellMOESpecialisation()
                    && cutlass::platform::is_same<WeightType, __nv_fp4_e2m1>::value))
         && cutlass::platform::is_same<EpilogueTag, cutlass_extensions::EpilogueOpDefault>::value;
 #else
-    return false; // CUTLASS_ARCH_MMA_SM100_SUPPORTED is set when Blackwell kernels are enabled
+    return false; // CUTLASS_ARCH_MMA_SM100_SUPPORTED is set when Blackwell
+                  // kernels are enabled
 #endif
 }
 
@@ -78,7 +80,8 @@ constexpr bool isValidHopperMOESpecialisation()
 #endif
         && cutlass::platform::is_same<EpilogueTag, cutlass_extensions::EpilogueOpDefault>::value;
 #else
-    return false; // CUTLASS_ARCH_MMA_MODIFIABLE_TMA_SM90_SUPPORTED is set when Hopper kernels are enabled
+    return false; // CUTLASS_ARCH_MMA_MODIFIABLE_TMA_SM90_SUPPORTED is set when
+                  // Hopper kernels are enabled
 #endif
 }
 
@@ -106,6 +109,6 @@ constexpr bool isValidAmpereMOESpecialisation()
 #endif
 }
 
-} // namespace kernels::cutlass_kernels
+} // namespace cutlass_kernels
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

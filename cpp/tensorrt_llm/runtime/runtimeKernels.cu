@@ -16,7 +16,6 @@
  */
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/kernels/kvCacheIndex.h"
 #include "tensorrt_llm/kernels/speculativeDecoding/kvCacheUpdateKernels.h"
@@ -28,9 +27,7 @@
 using namespace tensorrt_llm::runtime;
 namespace tc = tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime::kernels
+namespace tensorrt_llm::runtime::kernels
 {
 
 namespace
@@ -235,9 +232,12 @@ void invokeTileTensor(ITensor& output, ITensor const& input, SizeType32 const be
         inputRowSize, outputRowSize, static_cast<uint32_t>(beamWidth));
 }
 
-// In the following kernel, we launch a grid with (microBatchSize * beamWidth, outputLen) blocks of threads. Each thread
-// block copies a `vocabSizePadded` length logits tensor from the "inputLogits (microBatchSize, beamWidth,
-// vocabSizePadded)" to the "outputGenerationLogits (batchSize, beamWidth, outputLen, vocabSizePadded)"
+// In the following kernel, we launch a grid with (microBatchSize * beamWidth,
+// outputLen) blocks of threads. Each thread
+// block copies a `vocabSizePadded` length logits tensor from the "inputLogits
+// (microBatchSize, beamWidth,
+// vocabSizePadded)" to the "outputGenerationLogits (batchSize, beamWidth,
+// outputLen, vocabSizePadded)"
 template <typename T>
 __global__ void mergeLogitsFragmentsKernel(T* output, T** fragmentsVector, int const outputLen, int firstBatchSlotIdx,
     int beamWidth, int vocabSizePadded, int stepOffset)
@@ -485,6 +485,4 @@ void invokeUpdateKVBlockArrayDraftTokenLocation(ITensor const& seqAcceptedDraftT
         bufferCast<SizeType32>(batchSlots), maxKVCacheLen, maxBlocksPerSeq, tokensPerBlock, canUseOneMoreBlock, stream);
 }
 
-} // namespace runtime::kernels
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime::kernels

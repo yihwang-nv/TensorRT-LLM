@@ -24,9 +24,6 @@
 
 TRTLLM_NAMESPACE_BEGIN
 
-namespace common
-{
-
 // cudaMemcpyAsync with extra check via ASan for D2H copy
 cudaError_t cudaMemcpyAsyncSanitized(
     void* dst, void const* src, size_t count, enum cudaMemcpyKind kind, cudaStream_t stream = nullptr);
@@ -38,7 +35,6 @@ template <typename T>
 void deviceMemSetZero(T* ptr, size_t size);
 
 template <typename T>
-
 void deviceFree(T*& ptr);
 
 template <typename T>
@@ -64,11 +60,12 @@ int loadWeightFromBin(T* ptr, std::vector<size_t> shape, std::string filename,
     TRTLLMCudaDataType model_file_type = TRTLLMCudaDataType::FP32);
 
 // template<typename T>
-// int loadWeightFromBinAndQuantizeForWeightOnly(int8_t*             quantized_weight_ptr,
+// int loadWeightFromBinAndQuantizeForWeightOnly(int8_t* quantized_weight_ptr,
 //                                               T*                  scale_ptr,
 //                                               std::vector<size_t> shape,
 //                                               std::string         filename,
-//                                               TRTLLMCudaDataType  model_file_type = TRTLLMCudaDataType::FP32);
+//                                               TRTLLMCudaDataType
+// model_file_type = TRTLLMCudaDataType::FP32);
 
 void invokeCudaD2DcpyHalf2Float(float* dst, half* src, size_t const size, cudaStream_t stream);
 void invokeCudaD2DcpyFloat2Half(half* dst, float* src, size_t const size, cudaStream_t stream);
@@ -88,10 +85,14 @@ void invokeCudaCast(T_OUT* dst, T_IN const* const src, size_t const size, cudaSt
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// The following functions implement conversion of multi-dimensional indices to an index in a flat array.
-// The shape of the Tensor dimensions is passed as one array (`dims`), the indices are given as individual arguments.
-// For examples on how to use these functions, see their tests `test_memory_utils.cu`.
-// All of these functions can be evaluated at compile time by recursive template expansion.
+// The following functions implement conversion of multi-dimensional indices to
+// an index in a flat array.
+// The shape of the Tensor dimensions is passed as one array (`dims`), the
+// indices are given as individual arguments.
+// For examples on how to use these functions, see their tests
+// `test_memory_utils.cu`.
+// All of these functions can be evaluated at compile time by recursive template
+// expansion.
 
 template <typename TDim, typename T, typename TIndex>
 __inline__ __host__ __device__ std::enable_if_t<std::is_pointer<TDim>::value, T> constexpr flat_index(
@@ -163,9 +164,12 @@ __inline__ __host__ __device__ T constexpr flat_index(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// These are simpler functions for multi-dimensional index conversion. Indices and dimensions are passed as individual
-// arguments. These functions are more suitable for usage inside kernels than the corresponding flat_index functions
-// which require arrays as arguments. Usage examples can be found in `test_memory_utils.cu`. The functions can be
+// These are simpler functions for multi-dimensional index conversion. Indices
+// and dimensions are passed as individual
+// arguments. These functions are more suitable for usage inside kernels than
+// the corresponding flat_index functions
+// which require arrays as arguments. Usage examples can be found in
+// `test_memory_utils.cu`. The functions can be
 // evaluated at compile time.
 
 template <typename T, typename TIndex>
@@ -292,7 +296,5 @@ AlignedPointersUnpacker inline calcAlignedPointers(
     calcAlignedPointers(unpacker.alignedPointers, p, sizes, ALIGN_BYTES);
     return unpacker;
 }
-
-} // namespace common
 
 TRTLLM_NAMESPACE_END

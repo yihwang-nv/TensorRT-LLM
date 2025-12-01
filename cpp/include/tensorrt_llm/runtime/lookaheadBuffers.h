@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/modelConfig.h"
 #include "tensorrt_llm/runtime/tllmRuntime.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class LookaheadDecodingBuffers
@@ -36,7 +33,8 @@ public:
         SizeType32 maxNumSequences, SizeType32 maxTokensPerStep, BufferManager const& bufferManager);
     TensorPtr generationLengths; // [mMaxNumRequests]
     TensorPtr positionOffsets;   // [mMaxNumRequests, maxTokensPerStep]
-    TensorPtr packedMasks;       // [mMaxNumRequests, maxTokensPerStep, divUp(maxTokensPerStep, 32)]
+    TensorPtr packedMasks;       // [mMaxNumRequests, maxTokensPerStep,
+                                 // divUp(maxTokensPerStep, 32)]
     TensorPtr positionIds;
 };
 
@@ -63,10 +61,13 @@ public:
     void disableLookaheadDecoding();
 
 public:
-    TensorPtr cumSumLength;            // [1] the cumulative sum of generation length, on pinned
-    TensorPtr packedMasksDevice;       // [forwardBatchSize, tokensPerStep, numPackedMasks], on gpu
+    TensorPtr cumSumLength;            // [1] the cumulative sum of generation length, on
+                                       // pinned
+    TensorPtr packedMasksDevice;       // [forwardBatchSize, tokensPerStep,
+                                       // numPackedMasks], on gpu
     TensorPtr generationLengthsDevice; // [forwardBatchSize], on gpu
-    TensorPtr positionOffsetsDevice;   // [forwardBatchSize, tokensPerStep], on gpu
+    TensorPtr positionOffsetsDevice;   // [forwardBatchSize, tokensPerStep], on
+                                       // gpu
     TensorPtr positionIdsDevice;       // [forwardBatchSize, tokensPerStep], on gpu
 
     TensorPtr packedMaskHost;
@@ -83,6 +84,4 @@ public:
     TensorPtr batchSlotsHostCopy;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

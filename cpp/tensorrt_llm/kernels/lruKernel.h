@@ -19,10 +19,7 @@
 #include "tensorrt_llm/common/assert.h"
 #include "tensorrt_llm/common/config.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 struct lruParams
 {
@@ -56,6 +53,4 @@ void invokeRGLRU(lruParams& params, cudaStream_t stream);
 template <typename T>
 void invokeRGLRUUpdate(lruParams& params, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

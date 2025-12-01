@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +19,6 @@
 #include "tensorrt_llm/batch_manager/guidedDecoder.h"
 #include "tensorrt_llm/batch_manager/decoderBuffers.h"
 #include "tensorrt_llm/batch_manager/llmRequest.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/envUtils.h"
 #include "tensorrt_llm/kernels/logitsBitmask.h"
 
@@ -27,9 +27,7 @@
 
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 
 GuidedDecoder::GuidedDecoder(executor::GuidedDecodingConfig const& guidedDecodingConfig, SizeType32 maxNumSequences,
@@ -93,7 +91,8 @@ void GuidedDecoder::build(ScheduledRequests const& scheduledRequests)
                 auto const seqSlot = llmReq->mSeqSlot.value();
                 if (llmReq->isContextInitState() && llmReq->isFirstContextChunk())
                 {
-                    // The request is in the first context forward step (considering kv cache reuse).
+                    // The request is in the first context forward step (considering kv
+                    // cache reuse).
                     auto const& guideType = guidedDecodingParams->getGuideType();
                     auto const& guide = guidedDecodingParams->getGuide();
                     switch (guideType)
@@ -145,7 +144,8 @@ void GuidedDecoder::build(ScheduledRequests const& scheduledRequests)
                     continue;
                 }
 
-                // Fill the bitmask on host and asynchorously copy to device using mCopyBufferManager.
+                // Fill the bitmask on host and asynchorously copy to device using
+                // mCopyBufferManager.
                 auto const logitsBitmask = ITensor::at(mLogitsBitmask, {seqSlot});
                 auto const logitsBitmaskHost = ITensor::at(mLogitsBitmaskHost, {seqSlot});
 
@@ -164,10 +164,14 @@ void GuidedDecoder::execute(DecoderInputBuffers const& decoderInputBuffers, Buff
     auto const& stream = runtimeBufferManager.getStream();
 
     // Wait for mCopyBufferManager finishing the H2D copy of logitsBitmask
-    // TODO(enweiz): Move the H2D copy of logitsBitmaskPtrVec to buildGuidedDecoding.
-    // This may not bring too much perf gain because of the small size of logitsBitmaskPtrVec.
-    // TODO(enweiz): For chunked context, we currently build mask cache at the first context chunk, and apply
-    // the mask at the last context chunk. So, ideally we should sync the stream at the last context chunk.
+    // TODO(enweiz): Move the H2D copy of logitsBitmaskPtrVec to
+    // buildGuidedDecoding.
+    // This may not bring too much perf gain because of the small size of
+    // logitsBitmaskPtrVec.
+    // TODO(enweiz): For chunked context, we currently build mask cache at the
+    // first context chunk, and apply
+    // the mask at the last context chunk. So, ideally we should sync the stream
+    // at the last context chunk.
     CudaEvent event{};
     mCopyBufferManager.getStream().record(event);
     stream.wait(event);
@@ -224,6 +228,4 @@ void GuidedDecoder::execute(DecoderInputBuffers const& decoderInputBuffers, Buff
     }
 }
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

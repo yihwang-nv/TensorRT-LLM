@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,6 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cublasMMWrapper.h"
 #include "tensorrt_llm/common/quantization.h"
 #include "tensorrt_llm/kernels/fmhaDispatcher.h"
@@ -29,9 +29,7 @@
 #include <string>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace plugins
+namespace tensorrt_llm::plugins
 {
 
 class BertAttentionPlugin : public BasePlugin
@@ -116,7 +114,8 @@ private:
 #endif // ENABLE_MULTI_DEVICE
     cudaStream_t mNcclStream;
 
-    // The default copy constructor will leave them as nullptr. clone() shall initialize it.
+    // The default copy constructor will leave them as nullptr. clone() shall
+    // initialize it.
     UniqPtrWNullCopy<tensorrt_llm::kernels::FmhaDispatcher> mFmhaDispatcher;
     UniqPtrWNullCopy<tensorrt_llm::common::CublasMMWrapper> mCublasWrapper;
 };
@@ -142,6 +141,4 @@ private:
     static std::vector<nvinfer1::PluginField> mPluginAttributes;
 };
 
-} // namespace plugins
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::plugins

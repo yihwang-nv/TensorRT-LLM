@@ -15,7 +15,6 @@
  */
 
 #include "tensorrt_llm/runtime/layerProfiler.h"
-#include "tensorrt_llm/common/config.h"
 #include <iomanip>
 #include <iostream>
 #include <numeric>

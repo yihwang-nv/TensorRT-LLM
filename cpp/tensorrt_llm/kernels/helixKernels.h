@@ -24,10 +24,8 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels
-{
 template <typename T>
 struct HelixPostProcParams
 {
@@ -43,6 +41,4 @@ struct HelixPostProcParams
 template <typename T>
 void helixPostProcess(HelixPostProcParams<T> const& params, cudaStream_t stream);
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

@@ -36,7 +36,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace tkc = tensorrt_llm::cutlass_extensions;
+namespace tkc = tensorrt_llm::kernels::cutlass_extensions;
 #if defined(USING_OSS_CUTLASS_FP4_GEMM)
 using tensorrt_llm::kernels::cutlass_kernels::FP4GemmType;
 using tensorrt_llm::kernels::cutlass_kernels::CutlassFp4GemmRunner;
@@ -47,7 +47,8 @@ using tensorrt_llm::kernels::internal_cutlass_kernels::CutlassFp4GemmRunner;
 using tensorrt_llm::kernels::internal_cutlass_kernels::CutlassFp4GemmRunnerInterface;
 #endif
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace torch_ext
 {
@@ -123,9 +124,12 @@ void runGemm(at::Tensor& out, at::Tensor const& mat1, at::Tensor const& mat2, at
 // mat1: [B, M, K / 2], FLOAT4_E2M1X2 or [B, M, K], FLOAT8_E4M3FN
 // mat2: [B, N, K / 2], FLOAT4_E2M1X2
 // out: [B, M, N], fp16/bf16/fp32
-// mat1Scale: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
-// mat2Scale: ceil(N / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3 or UE8M0)
-// globalScale: [1], 1 / (((448 * 6) / mat1.abs().max()) * ((448 * 6) / mat2.abs().max()))
+// mat1Scale: ceil(M / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3
+// or UE8M0)
+// mat2Scale: ceil(N / 128) * 128 * ceil(K / sfVecSize / 4) * 4, SF_DTYPE (UE4M3
+// or UE8M0)
+// globalScale: [1], 1 / (((448 * 6) / mat1.abs().max()) * ((448 * 6) /
+// mat2.abs().max()))
 // B = 1 for GEMM op as a special case
 // Only W4A4_NVFP4 and W4A8_MXFP4_FP8 are currently supported
 at::Tensor fp4_bmm_impl(at::Tensor const& mat1, at::Tensor const& mat2, at::Tensor const& mat1Scale,
@@ -225,7 +229,8 @@ at::Tensor fp4_bmm(at::Tensor const& mat1, at::Tensor const& mat2, at::Tensor co
     at::Tensor const& mat2Scale, at::Tensor const& globalScale, int64_t fp4GemmType,
     std::optional<c10::ScalarType> out_dtype)
 {
-    // The functional version of this op does not do any profiling; use the profiler class below instead for
+    // The functional version of this op does not do any profiling; use the
+    // profiler class below instead for
     // better performance.
     // Note that we can still add a heuristic here.
     return fp4_bmm_impl(
@@ -312,7 +317,7 @@ private:
 };
 } // namespace torch_ext
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
 TORCH_LIBRARY_FRAGMENT(trtllm, m)
 {
@@ -322,10 +327,12 @@ TORCH_LIBRARY_FRAGMENT(trtllm, m)
         .def("get_num_configs", &tensorrt_llm::torch_ext::FP4GemmRunner::getNumConfigs);
 
     m.def(
-        "fp4_bmm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, Tensor globalScale, int fp4GemmType, "
+        "fp4_bmm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, "
+        "Tensor globalScale, int fp4GemmType, "
         "ScalarType? out_dtype=None) -> Tensor");
     m.def(
-        "fp4_gemm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor mat2Scale, Tensor globalScale, int fp4GemmType, "
+        "fp4_gemm(Tensor mat1, Tensor mat2, Tensor mat1Scale, Tensor "
+        "mat2Scale, Tensor globalScale, int fp4GemmType, "
         "ScalarType? out_dtype=None) -> Tensor");
 }
 

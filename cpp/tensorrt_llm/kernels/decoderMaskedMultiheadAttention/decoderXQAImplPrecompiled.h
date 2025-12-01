@@ -17,10 +17,7 @@
 #include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/decoderMaskedMultiheadAttention/decoderXQAImpl.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace kernels
-{
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
 class DecoderXQAImplPrecompiled : public DecoderXQAImpl
 {
@@ -47,6 +44,4 @@ private:
         XQAParams const& xqa_params, KVCacheBuffer const& kv_cache_buffer, cudaStream_t const& stream);
 };
 
-} // namespace kernels
-
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

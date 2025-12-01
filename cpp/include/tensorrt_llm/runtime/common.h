@@ -15,17 +15,13 @@
  */
 #pragma once
 
-#include "tensorrt_llm/common/config.h"
-
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 #define FMT_DIM "%ld"
@@ -66,6 +62,4 @@ using VecUniqueTokens = std::vector<UniqueToken>;
 template <typename T>
 using StringPtrMap = std::unordered_map<std::string, std::shared_ptr<T>>;
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

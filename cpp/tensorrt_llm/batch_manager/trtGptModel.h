@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+ *All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,6 @@
 
 #include "tensorrt_llm/batch_manager/peftCacheManager.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/stlUtils.h"
 #include "tensorrt_llm/executor/executor.h"
 #include "tensorrt_llm/executor/model.h"
@@ -31,9 +31,7 @@
 
 namespace tc = tensorrt_llm::common;
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace batch_manager
+namespace tensorrt_llm::batch_manager
 {
 enum class TrtGptModelType
 {
@@ -65,24 +63,29 @@ public:
         , mCudaGraphMode{executorConfig.getExtendedRuntimePerfKnobConfig().getCudaGraphMode()}
     {
         TLLM_CHECK_WITH_INFO(mMaxBeamWidth <= modelConfig.getMaxBeamWidth(),
-            "Runtime configured max beam width (%d) must not exceed engine max beam width (%d)", mMaxBeamWidth,
-            modelConfig.getMaxBeamWidth());
+            "Runtime configured max beam width (%d) must not "
+            "exceed engine max beam width (%d)",
+            mMaxBeamWidth, modelConfig.getMaxBeamWidth());
         TLLM_CHECK_WITH_INFO(mMaxBatchSize <= modelConfig.getMaxBatchSize(),
-            "Runtime configured max batch size (%d) must not exceed engine max batch size (%d)", mMaxBatchSize,
-            modelConfig.getMaxBatchSize());
+            "Runtime configured max batch size (%d) must not "
+            "exceed engine max batch size (%d)",
+            mMaxBatchSize, modelConfig.getMaxBatchSize());
         if (executorConfig.getEnableTrtOverlap())
         {
             if (mMaxBeamWidth > 1)
             {
                 mEnableTrtOverlap = false;
                 TLLM_LOG_WARNING(
-                    "TRT overlap is not supported with beam search (maxBeamWidth is set to %d) and will be disabled.",
+                    "TRT overlap is not supported with beam search "
+                    "(maxBeamWidth is set to %d) and will be disabled.",
                     mMaxBeamWidth);
             }
             if (!modelConfig.getSpeculativeDecodingMode().isNone())
             {
                 mEnableTrtOverlap = false;
-                TLLM_LOG_WARNING("TRT overlap is not supported with speculative decoding and will be disabled.");
+                TLLM_LOG_WARNING(
+                    "TRT overlap is not supported with speculative "
+                    "decoding and will be disabled.");
             }
         }
 
@@ -100,13 +103,15 @@ public:
                     warning = true;
                 }
                 TLLM_CHECK_WITH_INFO(mMaxAttentionWindowVec.back() > 0,
-                    "Attention window sizes (elements in maxAttentionWindowVec) must be > 0");
+                    "Attention window sizes (elements in "
+                    "maxAttentionWindowVec) must be > 0");
             }
             if (warning)
             {
                 TLLM_LOG_WARNING(
                     "The value of maxAttentionWindow cannot exceed mMaxSequenceLen. "
-                    "Therefore, it has been adjusted to match the value of mMaxSequenceLen.");
+                    "Therefore, it has been adjusted to match the value of "
+                    "mMaxSequenceLen.");
             }
         }
         else
@@ -144,7 +149,8 @@ public:
             if (executorConfig.getMaxNumTokens().value() > mMaxNumTokens.value())
             {
                 TLLM_LOG_WARNING(
-                    "Runtime configured max num tokens (%d) is larger than model max num tokens (%d) and will be "
+                    "Runtime configured max num tokens (%d) is larger "
+                    "than model max num tokens (%d) and will be "
                     "ignored.",
                     executorConfig.getMaxNumTokens().value(), mMaxNumTokens.value());
             }
@@ -162,29 +168,39 @@ public:
         {
             mMaxInputLen = mMaxSequenceLen - 1;
             TLLM_LOG_INFO(
-                "TRTGptModel maxInputLen: %d  = maxSequenceLen - 1 since chunked context is enabled", mMaxInputLen);
+                "TRTGptModel maxInputLen: %d  = maxSequenceLen - 1 since "
+                "chunked context is enabled",
+                mMaxInputLen);
             TLLM_LOG_INFO(
-                "TRTGptModel If model type is encoder, maxInputLen would be reset in trtEncoderModel to maxInputLen: "
+                "TRTGptModel If model type is encoder, maxInputLen would "
+                "be reset in trtEncoderModel to maxInputLen: "
                 "%d = maxSequenceLen.",
                 mMaxSequenceLen);
         }
         else if (modelConfig.getContextFMHA() && modelConfig.usePackedInput())
         {
-            TLLM_CHECK_WITH_INFO(
-                mMaxNumTokens, "Max number of tokens has to be set for context FMHA and usePackedInput case.");
+            TLLM_CHECK_WITH_INFO(mMaxNumTokens,
+                "Max number of tokens has to be "
+                "set for context FMHA and "
+                "usePackedInput case.");
             mMaxInputLen = std::min(mMaxSequenceLen - 1, mMaxNumTokens.value());
             TLLM_LOG_INFO(
-                "TRTGptModel maxInputLen: %d = min(maxSequenceLen - 1, maxNumTokens) since context FMHA "
+                "TRTGptModel maxInputLen: %d = min(maxSequenceLen - 1, "
+                "maxNumTokens) since context FMHA "
                 "and usePackedInput are enabled",
                 mMaxInputLen);
             TLLM_LOG_INFO(
-                "TRTGptModel If model type is encoder, maxInputLen would be reset in trtEncoderModel to maxInputLen: "
+                "TRTGptModel If model type is encoder, maxInputLen would "
+                "be reset in trtEncoderModel to maxInputLen: "
                 "min(maxSequenceLen, maxNumTokens).");
         }
         else
         {
             mMaxInputLen = modelConfig.getMaxInputLen();
-            TLLM_LOG_INFO("TRTGptModel maxInputLen: %d = max_input_len (in trtllm-build args)", mMaxInputLen);
+            TLLM_LOG_INFO(
+                "TRTGptModel maxInputLen: %d = max_input_len (in "
+                "trtllm-build args)",
+                mMaxInputLen);
         }
 
         // TODO: remove this when XQA JIT can be enabled for fp8 RNN models
@@ -311,7 +327,8 @@ protected:
     void setMaxAttentionWindowVec(std::vector<SizeType32> const& maxAttentionWindowVec)
     {
         TLLM_CHECK_WITH_INFO(maxAttentionWindowVec.size() == mMaxAttentionWindowVec.size(),
-            "The size of maxAttentionWindowVec must match the size of mMaxAttentionWindowVec");
+            "The size of maxAttentionWindowVec must match the "
+            "size of mMaxAttentionWindowVec");
         mMaxAttentionWindowVec = maxAttentionWindowVec;
         mMaxAttentionWindow = *std::max_element(std::begin(mMaxAttentionWindowVec), std::end(mMaxAttentionWindowVec));
     }
@@ -351,6 +368,4 @@ private:
     bool mCudaGraphMode;
 };
 
-} // namespace batch_manager
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::batch_manager

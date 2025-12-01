@@ -20,7 +20,8 @@
 #include "tensorrt_llm/common/dataType.h"
 #include "ub_allocator.h"
 
-TRTLLM_NAMESPACE_BEGIN
+namespace tensorrt_llm
+{
 
 namespace runtime::ub
 {
@@ -34,11 +35,11 @@ communicator* ub_comm();
 bool ub_supported();
 }; // namespace runtime::ub
 
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::ub
+namespace ub
 {
 using namespace tensorrt_llm::runtime::ub;
 void allreduce2_userbuff_inplace_launcher(int const handler, size_t const offset, size_t const elements,
@@ -60,6 +61,6 @@ int allreduce2_userbuff_inplace_rmsnorm_quant_fp4_launcher(int const handler, si
     int const out_handler, size_t const out_offset, int const scale_handler, size_t const scale_offset,
     size_t const elements, int const hidden_size, void* beta, void* gamma, float eps, float* scalefactor,
     void* residual_in, void* residual_out, nvinfer1::DataType dataType, communicator* comm, cudaStream_t stream);
-} // namespace kernels::ub
+} // namespace ub
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

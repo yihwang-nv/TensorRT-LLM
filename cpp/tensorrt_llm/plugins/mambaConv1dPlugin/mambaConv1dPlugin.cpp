@@ -1,5 +1,6 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION &
+ *AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,6 @@
 
 #include "mambaConv1dPlugin.h"
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include <algorithm>
 
 using namespace nvinfer1;
@@ -74,7 +74,8 @@ nvinfer1::IPluginV2DynamicExt* MambaConv1dPlugin::clone() const noexcept
 }
 
 // Outputs
-//     output_tensor: [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+//     output_tensor: [batch_size, seq_len, dim] or [num_tokens, dim] for
+// remove_input_padding
 //     state: [batch_size, dconv - 1, dim]
 nvinfer1::DimsExprs MambaConv1dPlugin::getOutputDimensions(
     int outputIndex, nvinfer1::DimsExprs const* inputs, int nbInputs, nvinfer1::IExprBuilder& exprBuilder) noexcept
@@ -152,16 +153,21 @@ int MambaConv1dPlugin::enqueueImpl(nvinfer1::PluginTensorDesc const* inputDesc,
     cudaStream_t stream)
 {
     // inputs
-    //     0.  input_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
-    //     1.  conv_state [batch_size, dconv - 1, dim] or host [1] containing only pointer for paged_state
+    //     0.  input_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
+    //     1.  conv_state [batch_size, dconv - 1, dim] or host [1] containing only
+    // pointer for paged_state
     //     2.  weight [dim, 1, dconv]
     //     3.  bias [dim]
-    //     4.  host_request_types [batch_size] int32. 0: context; 1: generation; 2: none.
+    //     4.  host_request_types [batch_size] int32. 0: context; 1: generation;
+    // 2: none.
     //     5.  last_token_ids [batch_size] int32
-    //     6.  host_context_lengths [batch_size] int32, optional for remove_input_padding
+    //     6.  host_context_lengths [batch_size] int32, optional for
+    // remove_input_padding
     //     7.  state_slot_mapping [batch_size] int32, optional
     // outputs
-    //     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for remove_input_padding
+    //     0. output_tensor [batch_size, seq_len, dim] or [num_tokens, dim] for
+    // remove_input_padding
     //     1. conv_state [batch_size, dconv - 1, dim]
     auto const batchSize = inputDesc[getHostRequestTypesIdx()].dims.d[0];
     int maxSeqLen;

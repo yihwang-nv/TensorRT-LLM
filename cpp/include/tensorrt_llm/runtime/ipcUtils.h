@@ -18,15 +18,12 @@
 #pragma once
 
 #include "common.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/kernels/customAllReduceKernels.h"
 #include "tensorrt_llm/runtime/bufferManager.h"
 #include "tensorrt_llm/runtime/iTensor.h"
 #include "tensorrt_llm/runtime/worldConfig.h"
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class IpcMemory
@@ -79,6 +76,4 @@ public:
 void lamportInitializeAll(void* buffer_0, void* buffer_1, void* buffer_2, size_t size);
 bool canAccessPeer(WorldConfig const& worldConfig);
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime

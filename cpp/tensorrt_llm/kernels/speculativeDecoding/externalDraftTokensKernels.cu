@@ -33,9 +33,9 @@
 using namespace tensorrt_llm::common;
 using namespace tensorrt_llm::runtime;
 
-TRTLLM_NAMESPACE_BEGIN
+TRTLLM_KERNELS_NAMESPACE_BEGIN
 
-namespace kernels::speculative_decoding
+namespace speculative_decoding
 {
 namespace
 {
@@ -46,7 +46,8 @@ __global__ void maskTargetLogitsKernel(T* targetLogits, SizeType32 const* batchS
     SizeType32* outputIdsAfterSampling, SizeType32* runtimeTopKDevicePtr, bool* maskBuffer)
 {
     /**
-     * @brief Masking the selected token to -inf as was done in Huggingface TopK/TopP Logits Warper
+     * @brief Masking the selected token to -inf as was done in Huggingface
+     * TopK/TopP Logits Warper
      * https://github.com/huggingface/transformers/blob/2e24ee4dfa39cc0bc264b89edbccc373c8337086/src/transformers/generation/logits_process.py#L533
      */
 
@@ -80,7 +81,8 @@ __global__ void maskTargetLogitsKernel(T* targetLogits, SizeType32 const* batchS
     for (SizeType32 vIdx = tid; vIdx < vocabSize; vIdx += static_cast<SizeType32>(blockDim.x))
     {
         if (outputIdsAfterSamplingPtr[vIdx] == -1)
-        { // we need to find the -1 boundary from returnAllTopP outputIds if topK == 0 or number of topP indices < topK
+        { // we need to find the -1 boundary from returnAllTopP outputIds if
+          // topK == 0 or number of topP indices < topK
             tokensToMask = vIdx;
         }
         maskBufferBatch[vIdx] = false;
@@ -137,7 +139,8 @@ __global__ void acceptDraftTokensKernel(T const* draftProbs, T* targetProbs, Siz
         {
             batchIsAccepted[batchSlot] = true;
 
-            // either finished or skip decode in previous step, this step don't need decoding
+            // either finished or skip decode in previous step, this step don't need
+            // decoding
             finishedOutput[batchSlot].setSkipDecoding();
 
             // if previous step is finished, write the state to next step too
@@ -235,12 +238,14 @@ __global__ void forwardAcceptedTokensKernel(SizeType32 batchSize, SizeType32 con
             if (outputIdsRequestPtr[outIdx] == endIds[batchSlot])
             {
                 finishedOutput[batchSlot].setFinishedEOS();
-                // Do not increase seq len when EOS is generated. Seq len should always contain only tokens to be
+                // Do not increase seq len when EOS is generated. Seq len should always
+                // contain only tokens to be
                 // outputted
             }
             else
             {
-                // We don't need to set output finished state as it is assumed to be in non finished state
+                // We don't need to set output finished state as it is assumed to be in
+                // non finished state
                 sequenceLengths[batchSlot] += 1;
             }
         }
@@ -318,6 +323,6 @@ void invokeForwardAcceptedTokens(SizeType32 batchSize, SizeType32 const* batchSl
     sync_check_cuda_error(stream);
     TLLM_LOG_TRACE("%s stop", __PRETTY_FUNCTION__);
 }
-} // namespace kernels::speculative_decoding
+} // namespace speculative_decoding
 
-TRTLLM_NAMESPACE_END
+TRTLLM_KERNELS_NAMESPACE_END

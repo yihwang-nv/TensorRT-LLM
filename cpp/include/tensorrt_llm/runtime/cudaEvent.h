@@ -17,7 +17,6 @@
 #pragma once
 
 #include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/config.h"
 #include "tensorrt_llm/common/cudaUtils.h"
 #include "tensorrt_llm/common/logger.h"
 
@@ -25,9 +24,7 @@
 
 #include <memory>
 
-TRTLLM_NAMESPACE_BEGIN
-
-namespace runtime
+namespace tensorrt_llm::runtime
 {
 
 class CudaEvent
@@ -37,7 +34,8 @@ public:
 
     //! Creates a new cuda event. The event will be destroyed in the destructor.
     //!
-    //! \param flags Flags for event creation. By default, event timing is disabled.
+    //! \param flags Flags for event creation. By default, event timing is
+    // disabled.
     explicit CudaEvent(unsigned int flags = cudaEventDisableTiming)
     {
         pointer event;
@@ -50,7 +48,8 @@ public:
     //! Pass an existing cuda event to this object.
     //!
     //! \param event The event to pass to this object.
-    //! \param ownsEvent Whether this object owns the event and destroys it in the destructor.
+    //! \param ownsEvent Whether this object owns the event and destroys it in
+    // the destructor.
     explicit CudaEvent(pointer event, bool ownsEvent = true)
     {
         TLLM_CHECK_WITH_INFO(event != nullptr, "event is nullptr");
@@ -102,6 +101,4 @@ private:
     EventPtr mEvent;
 };
 
-} // namespace runtime
-
-TRTLLM_NAMESPACE_END
+} // namespace tensorrt_llm::runtime
