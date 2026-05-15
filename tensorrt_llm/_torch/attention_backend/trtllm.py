@@ -2,7 +2,7 @@ import functools
 import math
 import os
 import weakref
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import torch
@@ -25,6 +25,7 @@ from .interface import (AttentionBackend, AttentionForwardArgs,
                         KVCacheParams, MLAParams, PositionalEmbeddingParams,
                         PredefinedAttentionMask, RopeParams,
                         merge_attention_forward_args)
+from .trtllm_attention_args import build_trtllm_attention_args
 
 # Enable TRTLLM-Gen attention backend via environment variable (default: on).
 _TRTLLM_ENABLE_TRTLLM_GEN_ATTENTION = (os.environ.get(
@@ -1026,10 +1027,13 @@ class TrtllmAttention(AttentionBackend[TrtllmAttentionMetadata]):
         self.kv_scale_orig_quant = 1.0 / self.kv_cache_scaling_factor
         if not skip_create_weights_in_init:
             self.update_quant_config(self.quant_config)
+        self._attention_op_args = None
 
     def update_quant_config(self, new_quant_config: Optional[QuantConfig]):
         self.quant_config = new_quant_config or QuantConfig()
         self.quant_mode = int(self.quant_config.layer_quant_mode)
+        if hasattr(self, "_attention_op_args"):
+            self._attention_op_args = None
 
         self.has_fp8_qdq = self.has_fp8_kv_cache = self.has_nvfp4 = False
         if self.quant_config is not None:
@@ -1127,6 +1131,7 @@ class TrtllmAttention(AttentionBackend[TrtllmAttentionMetadata]):
             self.rope_params.max_positions = required_max_positions
             self.rotary_inv_freq, self.rotary_cos_sin = (
                 self.rope_params.create_rope_const_params())
+            self._attention_op_args = None
 
     def _is_nvfp4_output_kernel_available(
         self,
@@ -1352,126 +1357,140 @@ class TrtllmAttention(AttentionBackend[TrtllmAttentionMetadata]):
         max_context_length = min(metadata.max_seq_len - 1,
                                  metadata.max_num_tokens)
 
-        helix_active = metadata.helix_position_offsets is not None
-        use_sage_attn = (forward_args.sage_attn_num_elts_per_blk_q > 0
-                         or forward_args.sage_attn_num_elts_per_blk_k > 0
-                         or forward_args.sage_attn_num_elts_per_blk_v > 0)
+        kv_cache_dtype = None
+        total_num_blocks = 0
+        kv_cache_manager = metadata.kv_cache_manager
+        if kv_cache_manager is not None:
+            kv_cache_dtype = kv_cache_manager.dtype
+            kv_factor = 1 if self.is_mla_enable else 2
+            blocks_in_primary_pool = getattr(kv_cache_manager,
+                                             "blocks_in_primary_pool", None)
+            if blocks_in_primary_pool is None:
+                blocks_per_window = getattr(kv_cache_manager,
+                                            "blocks_per_window", None)
+                if blocks_per_window:
+                    blocks_in_primary_pool = max(
+                        int(primary)
+                        for primary, _ in blocks_per_window.values())
+            if blocks_in_primary_pool is not None:
+                total_num_blocks = (int(blocks_in_primary_pool) *
+                                    kv_cache_manager.num_local_layers *
+                                    kv_factor)
+
+        op_args = build_trtllm_attention_args(
+            q,
+            k,
+            v,
+            output,
+            output_sf,
+            workspace,
+            metadata.kv_lens_cuda_runtime,
+            metadata.kv_lens_runtime,
+            metadata.host_total_kv_lens,
+            metadata.prompt_lens_cuda_runtime,
+            metadata.prompt_lens_cpu_runtime,
+            metadata.host_request_types_runtime,
+            metadata.kv_cache_block_offsets,
+            metadata.host_kv_cache_pool_pointers,
+            metadata.host_kv_cache_pool_mapping,
+            metadata.cache_indirection,
+            kv_scale_orig_quant,
+            kv_scale_quant_orig,
+            out_scale,
+            self.rotary_inv_freq,
+            self.rotary_cos_sin,
+            forward_args.latent_cache,
+            forward_args.q_pe,
+            metadata.block_ids_per_seq,
+            forward_args.attention_sinks,
+            is_fused_qkv,
+            update_kv_cache,
+            self.predicted_tokens_per_seq,
+            layer_idx,
+            self.num_heads,
+            self.num_kv_heads,
+            self.head_dim,
+            metadata.tokens_per_block,
+            metadata.max_num_requests,
+            max_context_length,
+            attention_window_size,
+            0,
+            metadata.beam_width,
+            int(mask_type),
+            self.quant_mode,
+            self.q_scaling,
+            self.position_embedding_type,
+            rotary_embedding_dim,
+            rotary_embedding_base,
+            rotary_embedding_scale_type,
+            rotary_embedding_scales,
+            rotary_embedding_max_position_info,
+            use_paged_context_fmha,
+            int(attention_input_type),
+            self.is_mla_enable,
+            forward_args.chunked_prefill_buffer_batch_size,
+            self.q_lora_rank,
+            self.kv_lora_rank,
+            self.qk_nope_head_dim,
+            self.qk_rope_head_dim,
+            self.v_head_dim,
+            self.rope_append,
+            mrope_rotary_cos_sin,
+            mrope_position_deltas,
+            helix_tensor_params,
+            self.attention_chunk_size,
+            forward_args.softmax_stats_tensor,
+            spec_decoding_bool_params,
+            spec_decoding_tensor_params,
+            sparse_kv_indices,
+            sparse_kv_offsets,
+            sparse_attn_indices,
+            sparse_attn_offsets,
+            sparse_attn_indices_block_size,
+            num_sparse_topk,
+            sparse_mla_topk_lens,
+            skip_softmax_threshold_scale_factor_prefill,
+            skip_softmax_threshold_scale_factor_decode,
+            self.skip_softmax_stat,
+            forward_args.cu_q_seqlens,
+            forward_args.cu_kv_seqlens,
+            forward_args.fmha_scheduler_counter,
+            forward_args.mla_bmm1_scale,
+            forward_args.mla_bmm2_scale,
+            forward_args.quant_q_buffer,
+            flash_mla_tile_scheduler_metadata,
+            flash_mla_num_splits,
+            forward_args.sage_attn_num_elts_per_blk_q,
+            forward_args.sage_attn_num_elts_per_blk_k,
+            forward_args.sage_attn_num_elts_per_blk_v,
+            forward_args.sage_attn_qk_int8,
+            num_contexts=metadata.num_contexts,
+            num_ctx_tokens=metadata.num_ctx_tokens,
+            kv_cache_dtype=kv_cache_dtype,
+            total_num_blocks=total_num_blocks,
+            compressed_kv_cache_pool_ptr=compressed_kv_cache_pool_ptr,
+            op_args=self._attention_op_args,
+        )
+        self._attention_op_args = op_args
+
+        required_workspace_size = thop.get_attention_workspace_size(op_args)
+        if op_args.workspace.numel() < required_workspace_size:
+            if (metadata.is_cuda_graph
+                    and torch.cuda.is_current_stream_capturing()):
+                raise RuntimeError(
+                    "Attention CUDA graph workspace is smaller than the "
+                    "required size.")
+            op_args.workspace.resize_(required_workspace_size)
 
         use_trtllm_gen = False
         if _TRTLLM_ENABLE_TRTLLM_GEN_ATTENTION:
             trtllm_gen_backend = self._get_trtllm_gen_backend()
-            trtllm_gen_forward_args = replace(forward_args,
-                                              output=output,
-                                              output_sf=output_sf)
-            use_trtllm_gen = trtllm_gen_backend.is_supported(
-                q,
-                metadata=metadata,
-                forward_args=trtllm_gen_forward_args,
-                mask_type=int(mask_type),
-                active_helix=helix_active,
-                use_sage_attn=use_sage_attn,
-            )[0]
+            use_trtllm_gen = trtllm_gen_backend.is_supported(op_args)[0]
 
         if use_trtllm_gen:
-            trtllm_gen_backend.attention(
-                q,
-                metadata=metadata,
-                forward_args=trtllm_gen_forward_args,
-                mask_type=int(mask_type),
-                use_paged_context_fmha=use_paged_context_fmha,
-            )
+            trtllm_gen_backend.attention(op_args)
         else:
-            thop.attention(
-                q,
-                k,
-                v,
-                output,
-                output_sf,
-                workspace,
-                metadata.kv_lens_cuda_runtime,
-                metadata.kv_lens_runtime,
-                metadata.host_total_kv_lens,
-                metadata.prompt_lens_cuda_runtime,
-                metadata.prompt_lens_cpu_runtime,
-                metadata.host_request_types_runtime,
-                metadata.kv_cache_block_offsets,
-                metadata.host_kv_cache_pool_pointers,
-                metadata.host_kv_cache_pool_mapping,
-                metadata.cache_indirection,
-                kv_scale_orig_quant,
-                kv_scale_quant_orig,
-                out_scale,
-                self.rotary_inv_freq,
-                self.rotary_cos_sin,
-                forward_args.latent_cache,
-                forward_args.q_pe,
-                metadata.block_ids_per_seq,
-                forward_args.attention_sinks,
-                is_fused_qkv,
-                update_kv_cache,
-                self.predicted_tokens_per_seq,
-                layer_idx,
-                self.num_heads,
-                self.num_kv_heads,
-                self.head_dim,
-                metadata.tokens_per_block,
-                metadata.max_num_requests,
-                max_context_length,
-                attention_window_size,
-                0,
-                metadata.beam_width,
-                int(mask_type),
-                self.quant_mode,
-                self.q_scaling,
-                self.position_embedding_type,
-                rotary_embedding_dim,
-                rotary_embedding_base,
-                rotary_embedding_scale_type,
-                rotary_embedding_scales,
-                rotary_embedding_max_position_info,
-                use_paged_context_fmha,
-                int(attention_input_type),
-                self.is_mla_enable,
-                forward_args.chunked_prefill_buffer_batch_size,
-                self.q_lora_rank,
-                self.kv_lora_rank,
-                self.qk_nope_head_dim,
-                self.qk_rope_head_dim,
-                self.v_head_dim,
-                self.rope_append,
-                mrope_rotary_cos_sin,
-                mrope_position_deltas,
-                helix_tensor_params,
-                self.attention_chunk_size,
-                forward_args.softmax_stats_tensor,
-                spec_decoding_bool_params,
-                spec_decoding_tensor_params,
-                sparse_kv_indices,
-                sparse_kv_offsets,
-                sparse_attn_indices,
-                sparse_attn_offsets,
-                sparse_attn_indices_block_size,
-                num_sparse_topk,
-                sparse_mla_topk_lens,
-                skip_softmax_threshold_scale_factor_prefill,
-                skip_softmax_threshold_scale_factor_decode,
-                self.skip_softmax_stat,
-                forward_args.cu_q_seqlens,
-                forward_args.cu_kv_seqlens,
-                forward_args.fmha_scheduler_counter,
-                forward_args.mla_bmm1_scale,
-                forward_args.mla_bmm2_scale,
-                forward_args.quant_q_buffer,
-                flash_mla_tile_scheduler_metadata,
-                flash_mla_num_splits,
-                forward_args.sage_attn_num_elts_per_blk_q,
-                forward_args.sage_attn_num_elts_per_blk_k,
-                forward_args.sage_attn_num_elts_per_blk_v,
-                forward_args.sage_attn_qk_int8,
-                num_contexts=metadata.num_contexts,
-                num_ctx_tokens=metadata.num_ctx_tokens,
-                compressed_kv_cache_pool_ptr=compressed_kv_cache_pool_ptr,
-            )
+            thop.attention(op_args)
 
         if self.print_skip_softmax_stat:
             total_blocks, skipped_blocks = self.skip_softmax_stat

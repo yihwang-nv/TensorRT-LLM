@@ -19,6 +19,8 @@
 #include <climits>
 #include <optional>
 #include <torch/extension.h>
+#include <utility>
+#include <vector>
 
 #include "tensorrt_llm/common/attentionOp.h"
 #include "tensorrt_llm/common/config.h"
@@ -32,6 +34,367 @@ TRTLLM_NAMESPACE_BEGIN
 namespace torch_ext
 {
 
+enum class AttentionInputType : int8_t
+{
+    Mixed,
+    ContextOnly,
+    GenerationOnly,
+};
+
+struct TrtllmRopeArgs
+{
+    TrtllmRopeArgs(int64_t positionEmbeddingType, int64_t rotaryEmbeddingDim, double rotaryEmbeddingBase,
+        int64_t rotaryEmbeddingScaleType, std::vector<double> rotaryEmbeddingScales,
+        std::vector<int64_t> rotaryEmbeddingMaxPositionInfo, std::optional<at::Tensor> rotaryInvFreq,
+        std::optional<at::Tensor> rotaryCosSin, std::optional<at::Tensor> mropeRotaryCosSin = std::nullopt,
+        std::optional<at::Tensor> mropePositionDeltas = std::nullopt)
+        : positionEmbeddingType(positionEmbeddingType)
+        , rotaryEmbeddingDim(rotaryEmbeddingDim)
+        , rotaryEmbeddingBase(rotaryEmbeddingBase)
+        , rotaryEmbeddingScaleType(rotaryEmbeddingScaleType)
+        , rotaryEmbeddingScales(std::move(rotaryEmbeddingScales))
+        , rotaryEmbeddingMaxPositionInfo(std::move(rotaryEmbeddingMaxPositionInfo))
+        , rotaryInvFreq(std::move(rotaryInvFreq))
+        , rotaryCosSin(std::move(rotaryCosSin))
+        , mropeRotaryCosSin(std::move(mropeRotaryCosSin))
+        , mropePositionDeltas(std::move(mropePositionDeltas))
+    {
+    }
+
+    int64_t const positionEmbeddingType;
+    int64_t const rotaryEmbeddingDim;
+    double const rotaryEmbeddingBase;
+    int64_t const rotaryEmbeddingScaleType;
+    std::vector<double> const rotaryEmbeddingScales;
+    std::vector<int64_t> const rotaryEmbeddingMaxPositionInfo;
+    std::optional<at::Tensor> const rotaryInvFreq;
+    std::optional<at::Tensor> const rotaryCosSin;
+    std::optional<at::Tensor> mropeRotaryCosSin;
+    std::optional<at::Tensor> mropePositionDeltas;
+};
+
+struct TrtllmQuantArgs
+{
+    TrtllmQuantArgs(std::optional<at::Tensor> kvScaleOrigQuant = std::nullopt,
+        std::optional<at::Tensor> kvScaleQuantOrig = std::nullopt, std::optional<at::Tensor> outScale = std::nullopt)
+        : kvScaleOrigQuant(std::move(kvScaleOrigQuant))
+        , kvScaleQuantOrig(std::move(kvScaleQuantOrig))
+        , outScale(std::move(outScale))
+    {
+    }
+
+    std::optional<at::Tensor> kvScaleOrigQuant;
+    std::optional<at::Tensor> kvScaleQuantOrig;
+    std::optional<at::Tensor> outScale;
+};
+
+struct TrtllmFmhaArgs
+{
+    TrtllmFmhaArgs(std::optional<at::Tensor> attentionSinks = std::nullopt,
+        std::optional<at::Tensor> softmaxStatsTensor = std::nullopt,
+        std::optional<at::Tensor> cuQSeqlens = std::nullopt, std::optional<at::Tensor> cuKvSeqlens = std::nullopt,
+        std::optional<at::Tensor> fmhaSchedulerCounter = std::nullopt, int64_t chunkedPrefillBufferBatchSize = 1)
+        : attentionSinks(std::move(attentionSinks))
+        , softmaxStatsTensor(std::move(softmaxStatsTensor))
+        , cuQSeqlens(std::move(cuQSeqlens))
+        , cuKvSeqlens(std::move(cuKvSeqlens))
+        , fmhaSchedulerCounter(std::move(fmhaSchedulerCounter))
+        , chunkedPrefillBufferBatchSize(chunkedPrefillBufferBatchSize)
+    {
+    }
+
+    std::optional<at::Tensor> attentionSinks;
+    std::optional<at::Tensor> softmaxStatsTensor;
+    std::optional<at::Tensor> cuQSeqlens;
+    std::optional<at::Tensor> cuKvSeqlens;
+    std::optional<at::Tensor> fmhaSchedulerCounter;
+    int64_t chunkedPrefillBufferBatchSize{1};
+};
+
+struct TrtllmKvCacheArgs
+{
+    TrtllmKvCacheArgs(std::optional<at::Tensor> blockOffsets, std::optional<at::Tensor> hostPoolPointers,
+        std::optional<at::Tensor> hostPoolMapping, std::optional<at::Tensor> cacheIndirection, int64_t tokensPerBlock,
+        nvinfer1::DataType dtype, int64_t kvFactor, int64_t totalNumBlocks,
+        std::optional<int64_t> compressedKvCachePoolPtr = std::nullopt)
+        : blockOffsets(std::move(blockOffsets))
+        , hostPoolPointers(std::move(hostPoolPointers))
+        , hostPoolMapping(std::move(hostPoolMapping))
+        , cacheIndirection(std::move(cacheIndirection))
+        , tokensPerBlock(tokensPerBlock)
+        , dtype(dtype)
+        , kvFactor(kvFactor)
+        , totalNumBlocks(totalNumBlocks)
+        , compressedKvCachePoolPtr(compressedKvCachePoolPtr)
+    {
+    }
+
+    std::optional<at::Tensor> blockOffsets;
+    std::optional<at::Tensor> hostPoolPointers;
+    std::optional<at::Tensor> hostPoolMapping;
+    std::optional<at::Tensor> cacheIndirection;
+    int64_t const tokensPerBlock;
+    nvinfer1::DataType const dtype;
+    int64_t const kvFactor;
+    int64_t const totalNumBlocks;
+    std::optional<int64_t> compressedKvCachePoolPtr;
+};
+
+struct TrtllmMlaArgs
+{
+    TrtllmMlaArgs(std::optional<int64_t> qLoraRank, int64_t kvLoraRank, int64_t qkNopeHeadDim, int64_t qkRopeHeadDim,
+        int64_t vHeadDim, bool ropeAppend, std::optional<at::Tensor> latentCache = std::nullopt,
+        std::optional<at::Tensor> qPe = std::nullopt, std::optional<at::Tensor> mlaBmm1Scale = std::nullopt,
+        std::optional<at::Tensor> mlaBmm2Scale = std::nullopt, std::optional<at::Tensor> quantQBuffer = std::nullopt)
+        : qLoraRank(qLoraRank)
+        , kvLoraRank(kvLoraRank)
+        , qkNopeHeadDim(qkNopeHeadDim)
+        , qkRopeHeadDim(qkRopeHeadDim)
+        , vHeadDim(vHeadDim)
+        , ropeAppend(ropeAppend)
+        , latentCache(std::move(latentCache))
+        , qPe(std::move(qPe))
+        , mlaBmm1Scale(std::move(mlaBmm1Scale))
+        , mlaBmm2Scale(std::move(mlaBmm2Scale))
+        , quantQBuffer(std::move(quantQBuffer))
+    {
+    }
+
+    std::optional<int64_t> const qLoraRank;
+    int64_t const kvLoraRank;
+    int64_t const qkNopeHeadDim;
+    int64_t const qkRopeHeadDim;
+    int64_t const vHeadDim;
+    bool const ropeAppend;
+    std::optional<at::Tensor> latentCache;
+    std::optional<at::Tensor> qPe;
+    std::optional<at::Tensor> mlaBmm1Scale;
+    std::optional<at::Tensor> mlaBmm2Scale;
+    std::optional<at::Tensor> quantQBuffer;
+};
+
+struct TrtllmSageArgs
+{
+    TrtllmSageArgs(int64_t numEltsPerBlkQ, int64_t numEltsPerBlkK, int64_t numEltsPerBlkV, bool qkInt8)
+        : numEltsPerBlkQ(numEltsPerBlkQ)
+        , numEltsPerBlkK(numEltsPerBlkK)
+        , numEltsPerBlkV(numEltsPerBlkV)
+        , qkInt8(qkInt8)
+    {
+    }
+
+    int64_t numEltsPerBlkQ;
+    int64_t numEltsPerBlkK;
+    int64_t numEltsPerBlkV;
+    bool qkInt8;
+};
+
+struct TrtllmSparseArgs
+{
+    TrtllmSparseArgs(std::optional<at::Tensor> sparseKvIndices = std::nullopt,
+        std::optional<at::Tensor> sparseKvOffsets = std::nullopt,
+        std::optional<at::Tensor> sparseAttnIndices = std::nullopt,
+        std::optional<at::Tensor> sparseAttnOffsets = std::nullopt, int64_t sparseAttnIndicesBlockSize = 0,
+        std::optional<int64_t> numSparseTopk = std::nullopt, std::optional<at::Tensor> sparseMlaTopkLens = std::nullopt)
+        : sparseKvIndices(std::move(sparseKvIndices))
+        , sparseKvOffsets(std::move(sparseKvOffsets))
+        , sparseAttnIndices(std::move(sparseAttnIndices))
+        , sparseAttnOffsets(std::move(sparseAttnOffsets))
+        , sparseAttnIndicesBlockSize(sparseAttnIndicesBlockSize)
+        , numSparseTopk(numSparseTopk)
+        , sparseMlaTopkLens(std::move(sparseMlaTopkLens))
+    {
+    }
+
+    std::optional<at::Tensor> sparseKvIndices;
+    std::optional<at::Tensor> sparseKvOffsets;
+    std::optional<at::Tensor> sparseAttnIndices;
+    std::optional<at::Tensor> sparseAttnOffsets;
+    int64_t sparseAttnIndicesBlockSize;
+    std::optional<int64_t> numSparseTopk;
+    std::optional<at::Tensor> sparseMlaTopkLens;
+};
+
+struct TrtllmSkipSoftmaxArgs
+{
+    TrtllmSkipSoftmaxArgs(std::optional<double> thresholdScaleFactorPrefill = std::nullopt,
+        std::optional<double> thresholdScaleFactorDecode = std::nullopt,
+        std::optional<at::Tensor> blockSkipStat = std::nullopt)
+        : thresholdScaleFactorPrefill(thresholdScaleFactorPrefill)
+        , thresholdScaleFactorDecode(thresholdScaleFactorDecode)
+        , blockSkipStat(std::move(blockSkipStat))
+    {
+    }
+
+    std::optional<double> thresholdScaleFactorPrefill;
+    std::optional<double> thresholdScaleFactorDecode;
+    std::optional<at::Tensor> blockSkipStat;
+};
+
+struct TrtllmSpecDecArgs
+{
+    TrtllmSpecDecArgs(bool useSpecDecoding, bool isSpecDecTree,
+        std::optional<at::Tensor> generationLengths = std::nullopt,
+        std::optional<at::Tensor> positionOffsets = std::nullopt, std::optional<at::Tensor> packedMask = std::nullopt,
+        std::optional<at::Tensor> blTreeMaskOffset = std::nullopt, std::optional<at::Tensor> blTreeMask = std::nullopt,
+        std::optional<at::Tensor> firstSparseMaskOffsetKv = std::nullopt)
+        : useSpecDecoding(useSpecDecoding)
+        , isSpecDecTree(isSpecDecTree)
+        , generationLengths(std::move(generationLengths))
+        , positionOffsets(std::move(positionOffsets))
+        , packedMask(std::move(packedMask))
+        , blTreeMaskOffset(std::move(blTreeMaskOffset))
+        , blTreeMask(std::move(blTreeMask))
+        , firstSparseMaskOffsetKv(std::move(firstSparseMaskOffsetKv))
+    {
+    }
+
+    bool useSpecDecoding;
+    bool isSpecDecTree;
+    std::optional<at::Tensor> generationLengths;
+    std::optional<at::Tensor> positionOffsets;
+    std::optional<at::Tensor> packedMask;
+    std::optional<at::Tensor> blTreeMaskOffset;
+    std::optional<at::Tensor> blTreeMask;
+    std::optional<at::Tensor> firstSparseMaskOffsetKv;
+};
+
+struct TrtllmHelixArgs
+{
+    TrtllmHelixArgs(at::Tensor positionOffsets, at::Tensor isInactiveRank)
+        : positionOffsets(std::move(positionOffsets))
+        , isInactiveRank(std::move(isInactiveRank))
+    {
+    }
+
+    at::Tensor positionOffsets;
+    at::Tensor isInactiveRank;
+};
+
+struct TrtllmFlashMlaArgs
+{
+    TrtllmFlashMlaArgs(at::Tensor tileSchedulerMetadata, at::Tensor numSplits)
+        : tileSchedulerMetadata(std::move(tileSchedulerMetadata))
+        , numSplits(std::move(numSplits))
+    {
+    }
+
+    at::Tensor tileSchedulerMetadata;
+    at::Tensor numSplits;
+};
+
+struct TrtllmAttentionArgs
+{
+    TrtllmAttentionArgs(at::Tensor q, std::optional<at::Tensor> k, std::optional<at::Tensor> v, at::Tensor output,
+        std::optional<at::Tensor> outputSf, at::Tensor workspace, int64_t numHeads, int64_t numKvHeads,
+        int64_t headSize, int64_t predictedTokensPerSeq, double qScaling, int64_t quantMode,
+        std::optional<int64_t> attentionChunkSize, int64_t sinkTokenLength, int64_t layerIdx, int64_t maskType,
+        int64_t attentionWindowSize, int64_t maxAttentionWindowSize, AttentionInputType attentionInputType,
+        bool isFusedQkv, bool updateKvCache, bool usePagedContextFmha, std::optional<at::Tensor> blockIdsPerSeq,
+        at::Tensor sequenceLength, at::Tensor hostPastKeyValueLengths, at::Tensor hostTotalKvLens,
+        at::Tensor contextLengths, at::Tensor hostContextLengths, at::Tensor hostRequestTypes, int64_t numContexts,
+        int64_t numCtxTokens, int64_t maxNumRequests, int64_t maxContextLength, int64_t beamWidth, TrtllmRopeArgs rope,
+        TrtllmQuantArgs quant, TrtllmFmhaArgs fmha, std::optional<TrtllmKvCacheArgs> kvCache = std::nullopt,
+        std::optional<TrtllmMlaArgs> mla = std::nullopt, std::optional<TrtllmSageArgs> sage = std::nullopt,
+        std::optional<TrtllmSparseArgs> sparse = std::nullopt,
+        std::optional<TrtllmSkipSoftmaxArgs> skipSoftmax = std::nullopt,
+        std::optional<TrtllmSpecDecArgs> specDec = std::nullopt, std::optional<TrtllmHelixArgs> helix = std::nullopt,
+        std::optional<TrtllmFlashMlaArgs> flashMla = std::nullopt)
+        : q(std::move(q))
+        , k(std::move(k))
+        , v(std::move(v))
+        , output(std::move(output))
+        , outputSf(std::move(outputSf))
+        , workspace(std::move(workspace))
+        , numHeads(numHeads)
+        , numKvHeads(numKvHeads)
+        , headSize(headSize)
+        , predictedTokensPerSeq(predictedTokensPerSeq)
+        , qScaling(qScaling)
+        , quantMode(quantMode)
+        , attentionChunkSize(attentionChunkSize)
+        , sinkTokenLength(sinkTokenLength)
+        , layerIdx(layerIdx)
+        , maskType(maskType)
+        , attentionWindowSize(attentionWindowSize)
+        , maxAttentionWindowSize(maxAttentionWindowSize)
+        , attentionInputType(attentionInputType)
+        , isFusedQkv(isFusedQkv)
+        , updateKvCache(updateKvCache)
+        , usePagedContextFmha(usePagedContextFmha)
+        , blockIdsPerSeq(std::move(blockIdsPerSeq))
+        , sequenceLength(std::move(sequenceLength))
+        , hostPastKeyValueLengths(std::move(hostPastKeyValueLengths))
+        , hostTotalKvLens(std::move(hostTotalKvLens))
+        , contextLengths(std::move(contextLengths))
+        , hostContextLengths(std::move(hostContextLengths))
+        , hostRequestTypes(std::move(hostRequestTypes))
+        , numContexts(numContexts)
+        , numCtxTokens(numCtxTokens)
+        , maxNumRequests(maxNumRequests)
+        , maxContextLength(maxContextLength)
+        , beamWidth(beamWidth)
+        , rope(std::move(rope))
+        , quant(std::move(quant))
+        , fmha(std::move(fmha))
+        , kvCache(std::move(kvCache))
+        , mla(std::move(mla))
+        , sage(std::move(sage))
+        , sparse(std::move(sparse))
+        , skipSoftmax(std::move(skipSoftmax))
+        , specDec(std::move(specDec))
+        , helix(std::move(helix))
+        , flashMla(std::move(flashMla))
+    {
+    }
+
+    at::Tensor q;
+    std::optional<at::Tensor> k;
+    std::optional<at::Tensor> v;
+    at::Tensor output;
+    std::optional<at::Tensor> outputSf;
+    at::Tensor workspace;
+    int64_t const numHeads;
+    int64_t const numKvHeads;
+    int64_t const headSize;
+    int64_t const predictedTokensPerSeq;
+    double const qScaling;
+    int64_t const quantMode;
+    std::optional<int64_t> const attentionChunkSize;
+    int64_t const sinkTokenLength;
+    int64_t layerIdx;
+    int64_t maskType;
+    int64_t attentionWindowSize;
+    int64_t maxAttentionWindowSize;
+    AttentionInputType attentionInputType;
+    bool isFusedQkv;
+    bool updateKvCache;
+    bool usePagedContextFmha;
+    std::optional<at::Tensor> blockIdsPerSeq;
+    at::Tensor sequenceLength;
+    at::Tensor hostPastKeyValueLengths;
+    at::Tensor hostTotalKvLens;
+    at::Tensor contextLengths;
+    at::Tensor hostContextLengths;
+    at::Tensor hostRequestTypes;
+    int64_t numContexts;
+    int64_t numCtxTokens;
+    int64_t maxNumRequests;
+    int64_t maxContextLength;
+    int64_t beamWidth;
+    TrtllmRopeArgs const rope;
+    TrtllmQuantArgs quant;
+    TrtllmFmhaArgs fmha;
+    std::optional<TrtllmKvCacheArgs> kvCache;
+    std::optional<TrtllmMlaArgs> mla;
+    std::optional<TrtllmSageArgs> sage;
+    std::optional<TrtllmSparseArgs> sparse;
+    std::optional<TrtllmSkipSoftmaxArgs> skipSoftmax;
+    std::optional<TrtllmSpecDecArgs> specDec;
+    std::optional<TrtllmHelixArgs> helix;
+    std::optional<TrtllmFlashMlaArgs> flashMla;
+};
+
 /**
  * @brief Attention operation for TensorRT-LLM
  *
@@ -44,46 +407,9 @@ namespace torch_ext
  * - Multi-layer attention (MLA)
  * - Speculative decoding
  */
-void attention(torch::Tensor q, std::optional<torch::Tensor> k, std::optional<torch::Tensor> v, torch::Tensor& output,
-    std::optional<torch::Tensor> output_sf, std::optional<torch::Tensor> workspace_, torch::Tensor sequence_length,
-    torch::Tensor host_past_key_value_lengths, torch::Tensor host_total_kv_lens, torch::Tensor context_lengths,
-    torch::Tensor host_context_lengths, torch::Tensor host_request_types,
-    std::optional<torch::Tensor> kv_cache_block_offsets, std::optional<torch::Tensor> host_kv_cache_pool_pointers,
-    std::optional<torch::Tensor> host_kv_cache_pool_mapping, std::optional<torch::Tensor> cache_indirection,
-    std::optional<torch::Tensor> kv_scale_orig_quant, std::optional<torch::Tensor> kv_scale_quant_orig,
-    std::optional<torch::Tensor> out_scale, std::optional<torch::Tensor> rotary_inv_freq,
-    std::optional<torch::Tensor> rotary_cos_sin, std::optional<torch::Tensor> latent_cache,
-    std::optional<torch::Tensor> q_pe, std::optional<torch::Tensor> block_ids_per_seq,
-    std::optional<torch::Tensor> attention_sinks, bool const is_fused_qkv, bool const update_kv_cache,
-    int64_t const predicted_tokens_per_seq, int64_t const layer_idx, int64_t const num_heads,
-    int64_t const num_kv_heads, int64_t const head_size, std::optional<int64_t> const tokens_per_block,
-    int64_t const max_num_requests, int64_t const max_context_length, int64_t const attention_window_size,
-    int64_t const sink_token_length, int64_t const beam_width, int64_t const mask_type, int64_t const quant_mode,
-    double const q_scaling, int64_t const position_embedding_type, int64_t const rotary_embedding_dim,
-    double const rotary_embedding_base, int64_t const rotary_embedding_scale_type,
-    std::vector<double> rotary_embedding_scales, std::vector<int64_t> rotary_embedding_max_position_info,
-    bool const use_paged_context_fmha, std::optional<int64_t> attention_input_type, bool is_mla_enable,
-    std::optional<int64_t> chunked_prefill_buffer_batch_size, std::optional<int64_t> q_lora_rank,
-    std::optional<int64_t> kv_lora_rank, std::optional<int64_t> qk_nope_head_dim,
-    std::optional<int64_t> qk_rope_head_dim, std::optional<int64_t> v_head_dim, std::optional<bool> rope_append,
-    std::optional<torch::Tensor> mrope_rotary_cos_sin, std::optional<torch::Tensor> mrope_position_deltas,
-    std::vector<std::optional<torch::Tensor>> helix_tensor_params, std::optional<int64_t> attention_chunk_size,
-    std::optional<torch::Tensor> softmax_stats_tensor, std::vector<bool> spec_decoding_bool_params,
-    std::vector<std::optional<torch::Tensor>> spec_decoding_tensor_params,
-    std::optional<torch::Tensor> sparse_kv_indices, std::optional<torch::Tensor> sparse_kv_offsets,
-    std::optional<torch::Tensor> sparse_attn_indices, std::optional<torch::Tensor> sparse_attn_offsets,
-    int64_t const sparse_attn_indices_block_size, std::optional<int64_t> num_sparse_topk,
-    std::optional<torch::Tensor> sparse_mla_topk_lens,
-    std::optional<double> skip_softmax_threshold_scale_factor_prefill,
-    std::optional<double> skip_softmax_threshold_scale_factor_decode, std::optional<torch::Tensor> skip_softmax_stat,
-    std::optional<torch::Tensor> cu_q_seqlens, std::optional<torch::Tensor> cu_kv_seqlens,
-    std::optional<torch::Tensor> fmha_scheduler_counter, std::optional<torch::Tensor> mla_bmm1_scale,
-    std::optional<torch::Tensor> mla_bmm2_scale, std::optional<torch::Tensor> quant_q_buffer,
-    std::optional<torch::Tensor> flash_mla_tile_scheduler_metadata = std::nullopt,
-    std::optional<torch::Tensor> flash_mla_num_splits = std::nullopt, int64_t sage_attn_num_elts_per_blk_q = 0,
-    int64_t sage_attn_num_elts_per_blk_k = 0, int64_t sage_attn_num_elts_per_blk_v = 0, bool sage_attn_qk_int8 = false,
-    int64_t num_contexts = 0, int64_t num_ctx_tokens = 0,
-    std::optional<int64_t> compressed_kv_cache_pool_ptr = std::nullopt);
+void attention(TrtllmAttentionArgs const& args);
+
+int64_t getAttentionWorkspaceSize(TrtllmAttentionArgs const& args);
 
 struct KvCachePoolPointers
 {

@@ -65,6 +65,7 @@ from tensorrt_llm._torch.attention_backend.interface import (
     PositionEmbeddingType,
     RopeParams,
 )
+from tensorrt_llm._torch.attention_backend.trtllm_attention_args import build_trtllm_attention_args
 from tensorrt_llm.bindings.internal import thop
 from tensorrt_llm.functional import AttentionMaskType
 from tensorrt_llm.quantization import QuantMode
@@ -1014,7 +1015,7 @@ def _handle_prefill_thop(
     # at the top of this function so the FMHA never sees nonzero past_kv here.
     # All real past_kv values in this branch are zero, so ``host_past_kv_lengths``
     # is passed directly (no separate zero buffer needed).
-    thop.attention(
+    op_args = build_trtllm_attention_args(
         q,  # q
         k,  # k
         v,  # v
@@ -1100,6 +1101,10 @@ def _handle_prefill_thop(
         num_contexts=pf,
         num_ctx_tokens=num_tokens,
     )
+    required_workspace_size = thop.get_attention_workspace_size(op_args)
+    if op_args.workspace.numel() < required_workspace_size:
+        op_args.workspace.resize_(required_workspace_size)
+    thop.attention(op_args)
 
     return output
 
@@ -1304,7 +1309,7 @@ def _handle_prefill_thop_cached_kv(
             chunk_total_kv, num_heads * qk_head_dim
         )
 
-        thop.attention(
+        op_args = build_trtllm_attention_args(
             q_2d,  # q
             chunk_k,  # k
             chunk_v,  # v
@@ -1391,6 +1396,10 @@ def _handle_prefill_thop_cached_kv(
             num_contexts=pf,
             num_ctx_tokens=num_tokens,
         )
+        required_workspace_size = thop.get_attention_workspace_size(op_args)
+        if op_args.workspace.numel() < required_workspace_size:
+            op_args.workspace.resize_(required_workspace_size)
+        thop.attention(op_args)
 
         torch.ops.trtllm.merge_chunked_attention_for_mla(
             output,
@@ -1423,7 +1432,7 @@ def _handle_prefill_thop_cached_kv(
         num_tokens, num_heads * qk_head_dim
     )
 
-    thop.attention(
+    op_args = build_trtllm_attention_args(
         q_2d,  # q
         new_k,  # k
         new_v,  # v
@@ -1509,6 +1518,10 @@ def _handle_prefill_thop_cached_kv(
         num_contexts=pf,
         num_ctx_tokens=num_tokens,
     )
+    required_workspace_size = thop.get_attention_workspace_size(op_args)
+    if op_args.workspace.numel() < required_workspace_size:
+        op_args.workspace.resize_(required_workspace_size)
+    thop.attention(op_args)
 
     torch.ops.trtllm.merge_chunked_attention_for_mla(
         output,
@@ -1681,7 +1694,7 @@ def _handle_decode_impl(
         spec_decoding_tensor_params.extend([None, None, None])
     mla_tensor_params = [None, None]
 
-    thop.attention(
+    op_args = build_trtllm_attention_args(
         fused_q_flat,  # q (fused Q for decode)
         None,  # k
         None,  # v
@@ -1767,6 +1780,10 @@ def _handle_decode_impl(
         num_contexts=num_prefill,
         num_ctx_tokens=0,  # ignored when attention_input_type=generation_only
     )
+    required_workspace_size = thop.get_attention_workspace_size(op_args)
+    if op_args.workspace.numel() < required_workspace_size:
+        op_args.workspace.resize_(required_workspace_size)
+    thop.attention(op_args)
 
     output_reshaped = output_latent.view(num_tokens, num_heads, kv_lora_rank)
     v_proj_result = torch.bmm(output_reshaped.transpose(0, 1), w_v_t)

@@ -33,6 +33,7 @@ from torch._ops import OpOverloadPacket
 from torch._subclasses import FakeTensor
 from torch.fx import GraphModule, Node
 
+from tensorrt_llm._torch.attention_backend.trtllm_attention_args import build_trtllm_attention_args
 from tensorrt_llm.bindings.internal import thop
 from tensorrt_llm.functional import AttentionMaskType
 from tensorrt_llm.quantization import QuantMode
@@ -666,7 +667,7 @@ def trtllm_mha_with_cache(
         scratch[0, :num_seq, :, :] = kv_cache_block_offsets[0, :num_seq, :, :]
         kv_cache_block_offsets = scratch
 
-    thop.attention(
+    op_args = build_trtllm_attention_args(
         qkv_fused,  # q (actually fused QKV)
         None,  # k (None when using fused QKV)
         None,  # v (None when using fused QKV)
@@ -752,6 +753,10 @@ def trtllm_mha_with_cache(
         num_contexts=_GlobalTrtllmPlanner.num_contexts,
         num_ctx_tokens=_GlobalTrtllmPlanner.num_ctx_tokens,
     )
+    required_workspace_size = thop.get_attention_workspace_size(op_args)
+    if op_args.workspace.numel() < required_workspace_size:
+        op_args.workspace.resize_(required_workspace_size)
+    thop.attention(op_args)
 
     if out is not None:
         if total_padded_tokens > num_tokens:
