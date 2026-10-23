@@ -73,6 +73,7 @@ from tensorrt_llm._torch._experimental.modeling_v2.catalog.moe.fp4_block_scale_m
 from tensorrt_llm._torch._experimental.modeling_v2.catalog.quantization.fp4_quantize import (
     fp4_quantize,
 )
+from tensorrt_llm._torch.attention.backends.fmha.phased import get_spec_decoding_position_offsets
 from tensorrt_llm._torch.attention.backends.interface import AttentionMetadata
 from tensorrt_llm._torch.attention.backends.trtllm import TrtllmAttentionMetadata
 from tensorrt_llm._torch.model_config import ModelConfig
@@ -279,7 +280,7 @@ _VISION_CALL_CONSTANTS = dict(
     use_spec_decoding=False,
     is_spec_dec_tree=False,
     spec_decoding_generation_lengths=None,
-    spec_decoding_position_offsets_for_cpp=None,
+    spec_decoding_position_offsets=None,
     spec_decoding_packed_mask=None,
     spec_decoding_bl_tree_mask_offset=None,
     spec_decoding_bl_tree_mask=None,
@@ -1661,7 +1662,7 @@ class PrefillTarget:
             kv_cache_block_offsets=md.kv_cache_block_offsets,
             host_kv_cache_pool_pointers=md.host_kv_cache_pool_pointers,
             host_kv_cache_pool_mapping=md.host_kv_cache_pool_mapping,
-            workspace_=md.effective_workspace,
+            workspace=md.effective_workspace,
             tokens_per_block=md.tokens_per_block,
             max_num_requests=md.max_num_requests,
             max_context_length=md.max_context_length,
@@ -1681,7 +1682,7 @@ class PrefillTarget:
             use_spec_decoding=md.use_spec_decoding,
             is_spec_dec_tree=md.is_spec_dec_tree,
             spec_decoding_generation_lengths=md.spec_decoding_generation_lengths,
-            spec_decoding_position_offsets_for_cpp=md.spec_decoding_position_offsets_for_cpp,
+            spec_decoding_position_offsets=get_spec_decoding_position_offsets(md),
             spec_decoding_packed_mask=md.spec_decoding_packed_mask,
             spec_decoding_bl_tree_mask_offset=md.spec_decoding_bl_tree_mask_offset,
             spec_decoding_bl_tree_mask=md.spec_decoding_bl_tree_mask,
@@ -2694,7 +2695,7 @@ class DecodeTarget:
             kv_cache_block_offsets=md.kv_cache_block_offsets,
             host_kv_cache_pool_pointers=md.host_kv_cache_pool_pointers,
             host_kv_cache_pool_mapping=md.host_kv_cache_pool_mapping,
-            workspace_=md.effective_workspace,
+            workspace=md.effective_workspace,
             tokens_per_block=md.tokens_per_block,
             max_num_requests=md.max_num_requests,
             max_context_length=md.max_context_length,
@@ -2714,7 +2715,7 @@ class DecodeTarget:
             use_spec_decoding=md.use_spec_decoding,
             is_spec_dec_tree=md.is_spec_dec_tree,
             spec_decoding_generation_lengths=md.spec_decoding_generation_lengths,
-            spec_decoding_position_offsets_for_cpp=md.spec_decoding_position_offsets_for_cpp,
+            spec_decoding_position_offsets=get_spec_decoding_position_offsets(md),
             spec_decoding_packed_mask=md.spec_decoding_packed_mask,
             spec_decoding_bl_tree_mask_offset=md.spec_decoding_bl_tree_mask_offset,
             spec_decoding_bl_tree_mask=md.spec_decoding_bl_tree_mask,
@@ -3568,7 +3569,7 @@ class VisionTower:
     def __init__(self, core: Qwen4ExpTp1ModelingV2) -> None:
         self.core = core
         self._w = _vision_views(core)
-        # Persistent scratch: `thop_attention` grows `workspace_` in place; never
+        # Persistent scratch: `thop_attention` grows `workspace` in place; never
         # the engine's own workspace.
         self._ws: torch.Tensor | None = None
 
@@ -3638,7 +3639,7 @@ class VisionTower:
             attn_out = thop_attention(
                 q=qkv,
                 output=attn_out,
-                workspace_=self._ws,
+                workspace=self._ws,
                 sequence_length=dev_lens,
                 host_past_key_value_lengths=host_lens,
                 host_total_kv_lens=host_total,
