@@ -1694,6 +1694,28 @@ class TrtllmAttention(AttentionBackend[TrtllmAttentionMetadata]):
     skip_softmax_stat: torch.Tensor
     quant_mode: QuantMode
 
+    # Layer state the native attention op reads through FmhaParams.attn. The
+    # generator (scripts/generate_fmha_params.py) collects these annotations;
+    # attributes assigned from an annotated __init__ parameter need none.
+    num_kv_heads: int
+    is_mla_enable: bool
+    v_head_dim: int
+    rope_params: RopeParams
+    q_scaling: float
+    predicted_tokens_per_seq: int
+    skip_correction_threshold: float
+    uses_spcompress: bool
+    q_lora_rank: Optional[int]
+    kv_lora_rank: Optional[int]
+    qk_nope_head_dim: Optional[int]
+    qk_rope_head_dim: Optional[int]
+    rope_append: Optional[bool]
+    rotary_inv_freq: Optional[torch.Tensor]
+    rotary_cos_sin: Optional[torch.Tensor]
+    position_embedding_type: PositionEmbeddingType
+    skip_softmax_stat: torch.Tensor
+    quant_mode: QuantMode
+
     @staticmethod
     def is_sm_version_trtllm_gen_kernel(sm):
         return is_sm_100f(sm)
